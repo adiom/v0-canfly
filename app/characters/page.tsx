@@ -1,13 +1,14 @@
 import { Character, CharacterRelationship } from '@/lib/types';
 import { CharacterCard } from '@/components/character-card';
 import { CharacterGraph } from '@/components/character-graph';
+import { CharacterPostsFeed } from '@/components/character-posts-feed';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
 export const metadata = {
-  title: 'Персонажи - CanFly',
-  description: 'Встретьте героев вселенной CanFly и откройте их взаимосвязи',
+  title: 'Персонажи - canfly | культура твоего сознания',
+  description: 'Встретьте героев вселенной и откройте их взаимосвязи',
 };
 
 async function CharactersContent() {
@@ -58,10 +59,10 @@ async function CharactersContent() {
         </section>
 
         {/* Characters Grid */}
-        <section>
+        <section className="mb-16">
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">Персонажи</h2>
-            <p className="text-slate-400">Исследуйте героев и их истории</p>
+            <h2 className="text-3xl font-bold text-white mb-2">Профили персонажей</h2>
+            <p className="text-slate-400">Исследуйте героев, их посты и историю</p>
           </div>
           
           {characters.length > 0 ? (
@@ -75,6 +76,15 @@ async function CharactersContent() {
               <p className="text-slate-400">Персонажей не найдено</p>
             </div>
           )}
+        </section>
+
+        {/* Posts Feed */}
+        <section>
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-white mb-2">Лента активности</h2>
+            <p className="text-slate-400">Что думают персонажи и какие анонсы они делают</p>
+          </div>
+          <CharacterPostsFeed />
         </section>
       </>
     );
@@ -95,7 +105,7 @@ export default function CharactersPage() {
       <header className="border-b border-slate-800 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
           <Link href="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-            CanFly
+            canfly
           </Link>
           
           <nav className="flex gap-6 items-center">
@@ -122,7 +132,7 @@ export default function CharactersPage() {
       {/* Footer */}
       <footer className="border-t border-slate-800 mt-20 py-8 bg-slate-950/50">
         <div className="max-w-7xl mx-auto px-4 text-center text-slate-400 text-sm">
-          <p>&copy; 2024 CanFly. Все права защищены.</p>
+          <p>&copy; 2024 canfly | культура твоего сознания. Все права защищены.</p>
         </div>
       </footer>
     </main>

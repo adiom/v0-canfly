@@ -10,17 +10,35 @@ import { Button } from '@/components/ui/button';
 export function BooksCarousel() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const res = await fetch('/api/books?featured=true');
-        if (res.ok) {
-          const data = await res.json();
+        const res = await fetch('/api/books?featured=true', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!res.ok) {
+          throw new Error(`API error: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        if (Array.isArray(data)) {
           setBooks(data);
+          setError(null);
+        } else if (data.error) {
+          setError(data.error);
+          setBooks([]);
         }
       } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Failed to fetch books';
         console.error('Error fetching books:', error);
+        setError(errorMsg);
+        setBooks([]); // Set empty array on error
       } finally {
         setLoading(false);
       }
@@ -30,7 +48,15 @@ export function BooksCarousel() {
   }, []);
 
   if (loading) {
-    return <div className="h-96 bg-slate-900 rounded-lg flex items-center justify-center">Загрузка...</div>;
+    return <div className="h-96 bg-slate-900 rounded-lg flex items-center justify-center text-slate-300">Загрузка книг...</div>;
+  }
+
+  if (error || books.length === 0) {
+    return (
+      <div className="h-96 bg-slate-900 rounded-lg flex items-center justify-center text-slate-400">
+        {error ? `Ошибка: ${error}` : 'Книги не найдены'}
+      </div>
+    );
   }
 
   return (

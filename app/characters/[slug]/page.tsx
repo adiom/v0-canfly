@@ -2,6 +2,7 @@ import { Character, CharacterRelationship } from '@/lib/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { CharacterChat } from '@/components/character-chat';
 
 interface CharacterPageProps {
   params: Promise<{ slug: string }>;
@@ -34,12 +35,12 @@ export async function generateMetadata({ params }: CharacterPageProps) {
   
   if (!data?.character) {
     return {
-      title: 'Персонаж не найден - CanFly',
+      title: 'Персонаж не найден - canfly',
     };
   }
 
   return {
-    title: `${data.character.name} - CanFly`,
+    title: `${data.character.name} - canfly | культура твоего сознания`,
     description: data.character.bio,
   };
 }
@@ -54,7 +55,7 @@ export default async function CharacterPage({ params }: CharacterPageProps) {
         <header className="border-b border-slate-800 backdrop-blur-sm sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
             <Link href="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-              CanFly
+              canfly
             </Link>
             <Link href="/characters" className="text-slate-300 hover:text-white">
               Назад к персонажам
@@ -77,7 +78,7 @@ export default async function CharacterPage({ params }: CharacterPageProps) {
       <header className="border-b border-slate-800 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
           <Link href="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-            CanFly
+            canfly
           </Link>
           <Link href="/characters" className="text-slate-300 hover:text-white transition-colors">
             ← Назад к персонажам
@@ -155,10 +156,25 @@ export default async function CharacterPage({ params }: CharacterPageProps) {
         </div>
       </section>
 
+      {/* Chat Section */}
+      <section className="max-w-7xl mx-auto px-4 py-16">
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-8">
+          <h2 className="text-3xl font-bold text-white mb-2">Поговори с {character.name}</h2>
+          <p className="text-slate-400 mb-8">Спроси о его/её мыслях, книгах вселенной или просто поговори</p>
+          <div className="h-96 flex flex-col">
+            <CharacterChat 
+              characterSlug={character.slug} 
+              characterName={character.name}
+              characterAvatar={character.avatar || ''}
+            />
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-slate-800 mt-20 py-8 bg-slate-950/50">
         <div className="max-w-7xl mx-auto px-4 text-center text-slate-400 text-sm">
-          <p>&copy; 2024 CanFly. Все права защищены.</p>
+          <p>&copy; 2024 canfly | культура твоего сознания. Все права защищены.</p>
         </div>
       </footer>
     </main>

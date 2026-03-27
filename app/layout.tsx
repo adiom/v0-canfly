@@ -8,8 +8,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'CanFly - Вселенная комиксов и книг',
-  description: 'Артхаусное издательство комиксов, книг и аудиокниг CanFly',
+  title: 'canfly | культура твоего сознания',
+  description: 'Артхаусное издательство с комиксами, книгами и аудиокнигами. Встреться с персонажами и поговори с ними через AI.',
   generator: 'v0.app',
   icons: {
     icon: [

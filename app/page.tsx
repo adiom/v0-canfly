@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'CanFly - Вселенная комиксов и книг',
-  description: 'Погрузитесь в артхаусную вселенную CanFly с комиксами, книгами и аудиокнигами',
+  title: 'canfly | культура твоего сознания',
+  description: 'Погрузитесь в артхаусную вселенную с комиксами, книгами и аудиокнигами',
 };
 
 export default function Home() {
@@ -14,7 +14,7 @@ export default function Home() {
       <header className="border-b border-slate-800 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
           <Link href="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-            CanFly
+            canfly
           </Link>
           
           <nav className="flex gap-6 items-center">
@@ -38,9 +38,12 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 text-balance">
-            Добро пожаловать в <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">CanFly</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">canfly</span>
           </h1>
-          <p className="text-xl text-slate-300 text-balance">
+          <p className="text-xl text-slate-300 text-balance mb-2">
+            культура твоего сознания
+          </p>
+          <p className="text-lg text-slate-400 text-balance">
             Артхаусная вселенная героев, магии и восстания против времени
           </p>
         </div>
@@ -81,7 +84,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-slate-800 mt-20 py-8 bg-slate-950/50">
         <div className="max-w-7xl mx-auto px-4 text-center text-slate-400 text-sm">
-          <p>&copy; 2024 CanFly. Все права защищены. Артхаусное издательство комиксов и книг.</p>
+          <p>&copy; 2024 canfly | культура твоего сознания. Все права защищены.</p>
         </div>
       </footer>
     </main>
