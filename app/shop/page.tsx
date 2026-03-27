@@ -15,13 +15,24 @@ export default function ShopPage() {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const res = await fetch('/api/books');
-        if (res.ok) {
-          const data = await res.json();
+        const res = await fetch('/api/books', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!res.ok) {
+          throw new Error(`API error: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        if (Array.isArray(data)) {
           setBooks(data);
         }
       } catch (error) {
         console.error('Error fetching books:', error);
+        setBooks([]);
       } finally {
         setLoading(false);
       }
