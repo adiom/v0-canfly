@@ -15,14 +15,12 @@ async function CharactersContent() {
   try {
     const [charactersRes, relationshipsRes] = await Promise.all([
       fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/characters`, {
-        cache: 'revalidate',
-        revalidateIn: 3600,
+        next: { revalidate: 3600 },
       }),
       fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/characters`,
         {
-          cache: 'revalidate',
-          revalidateIn: 3600,
+          next: { revalidate: 3600 },
         }
       ),
     ]);
@@ -35,8 +33,7 @@ async function CharactersContent() {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/characters/${char.slug}`,
         {
-          cache: 'revalidate',
-          revalidateIn: 3600,
+          next: { revalidate: 3600 },
         }
       );
       const data = await res.json();

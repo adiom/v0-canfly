@@ -13,8 +13,7 @@ async function getCharacterData(slug: string) {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/characters/${slug}`,
       {
-        cache: 'revalidate',
-        revalidateIn: 3600,
+        next: { revalidate: 3600 },
       }
     );
     
