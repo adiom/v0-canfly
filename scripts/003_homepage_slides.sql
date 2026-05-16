@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS homepage_slides (
   primary_cta_href TEXT,
   secondary_cta_label TEXT,
   secondary_cta_href TEXT,
+  aside_label TEXT,
+  aside_number TEXT,
+  aside_text TEXT,
   theme homepage_slide_theme NOT NULL DEFAULT 'atelier',
   is_active BOOLEAN DEFAULT true,
   display_order INTEGER DEFAULT 0,
@@ -99,3 +102,8 @@ INSERT INTO homepage_slides (
     4
   )
 ON CONFLICT DO NOTHING;
+
+ALTER TABLE homepage_slides
+  ADD COLUMN IF NOT EXISTS aside_label TEXT,
+  ADD COLUMN IF NOT EXISTS aside_number TEXT,
+  ADD COLUMN IF NOT EXISTS aside_text TEXT;

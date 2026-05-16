@@ -22,6 +22,9 @@ const emptyForm = {
   primary_cta_href: '',
   secondary_cta_label: '',
   secondary_cta_href: '',
+  aside_label: '',
+  aside_number: '',
+  aside_text: '',
   theme: 'atelier' as HomepageSlideTheme,
   is_active: true,
   display_order: '0',
@@ -70,6 +73,9 @@ export function HomepageSlideForm({ slideId }: HomepageSlideFormProps) {
           primary_cta_href: slide.primary_cta_href || '',
           secondary_cta_label: slide.secondary_cta_label || '',
           secondary_cta_href: slide.secondary_cta_href || '',
+          aside_label: slide.aside_label || '',
+          aside_number: slide.aside_number || '',
+          aside_text: slide.aside_text || '',
           theme: slide.theme || 'atelier',
           is_active: Boolean(slide.is_active),
           display_order:
@@ -98,6 +104,9 @@ export function HomepageSlideForm({ slideId }: HomepageSlideFormProps) {
       primary_cta_href: form.primary_cta_href,
       secondary_cta_label: form.secondary_cta_label,
       secondary_cta_href: form.secondary_cta_href,
+      aside_label: form.aside_label,
+      aside_number: form.aside_number,
+      aside_text: form.aside_text,
       theme: form.theme,
       is_active: form.is_active,
       display_order: form.display_order ? Number(form.display_order) : 0,
@@ -212,6 +221,42 @@ export function HomepageSlideForm({ slideId }: HomepageSlideFormProps) {
           className="border-slate-700 bg-slate-950 text-white"
         />
       </label>
+
+      <div className="space-y-4 rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Правая колонка (только большие экраны)
+        </p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="space-y-2 text-sm text-slate-300">
+            <span>Подпись над номером</span>
+            <Input
+              value={form.aside_label}
+              onChange={(event) => updateField('aside_label', event.target.value)}
+              placeholder="featured"
+              className="border-slate-700 bg-slate-950 text-white"
+            />
+          </label>
+          <label className="space-y-2 text-sm text-slate-300">
+            <span>Номер (необязательно)</span>
+            <Input
+              value={form.aside_number}
+              onChange={(event) => updateField('aside_number', event.target.value)}
+              placeholder="01 — иначе по порядку слайда"
+              className="border-slate-700 bg-slate-950 text-white"
+            />
+          </label>
+        </div>
+        <label className="block space-y-2 text-sm text-slate-300">
+          <span>Текст под номером</span>
+          <Textarea
+            value={form.aside_text}
+            onChange={(event) => updateField('aside_text', event.target.value)}
+            rows={3}
+            placeholder="Короткий текст для боковой колонки"
+            className="border-slate-700 bg-slate-950 text-white"
+          />
+        </label>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <label className="space-y-2 text-sm text-slate-300">

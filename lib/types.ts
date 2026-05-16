@@ -92,6 +92,9 @@ export interface HomepageSlide {
   primary_cta_href: string | null;
   secondary_cta_label: string | null;
   secondary_cta_href: string | null;
+  aside_label: string | null;
+  aside_number: string | null;
+  aside_text: string | null;
   theme: HomepageSlideTheme;
   is_active: boolean;
   display_order: number;

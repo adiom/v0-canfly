@@ -14,11 +14,15 @@ export function AdminShell({ title, description, children }: AdminShellProps) {
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
       <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-6">
-          <Link
+        <Link href="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+        Canfly 
+        </Link>
+        
+        <Link
             href="/admin"
             className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent"
           >
-            Canfly Admin
+           Admin
           </Link>
           <Link href="/admin">
             <Button variant="outline" size="sm">

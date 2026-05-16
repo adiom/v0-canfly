@@ -103,6 +103,10 @@ export function HomeHeroSlider({ slides }: HomeHeroSliderProps) {
           {slides.map((slide, index) => {
             const theme = themeStyles[slide.theme]
             const imageUrl = slide.background_image || slide.mobile_image
+            const asideLabel = slide.aside_label?.trim() || 'Дополнения'
+            const asideNumber =
+              slide.aside_number?.trim() || String(index + 1).padStart(2, '0')
+            const asideText = slide.aside_text?.trim()
 
             return (
               <CarouselItem key={slide.id} className="pl-0">
@@ -161,13 +165,13 @@ export function HomeHeroSlider({ slides }: HomeHeroSliderProps) {
                     </div>
 
                     <div className="mt-10 hidden border-l border-[#f4efe5]/12 pl-6 lg:block">
-                      <p className="text-xs uppercase tracking-[0.24em] text-[#9f978b]">featured</p>
+                      <p className="text-xs uppercase tracking-[0.24em] text-[#9f978b]">{asideLabel}</p>
                       <p className="mt-4 text-7xl font-black leading-none text-[#f4efe5]/12">
-                        {String(index + 1).padStart(2, '0')}
+                        {asideNumber}
                       </p>
-                      <p className="mt-5 max-w-xs text-sm leading-6 text-[#b9b1a6]">
-                        Слайд управляется в админке: текст, ссылка, изображение, тема и порядок показа.
-                      </p>
+                      {asideText ? (
+                        <p className="mt-5 max-w-xs text-sm leading-6 text-[#b9b1a6]">{asideText}</p>
+                      ) : null}
                     </div>
                   </div>
                 </article>
