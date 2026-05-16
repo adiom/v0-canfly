@@ -1,14 +1,29 @@
 -- Canfly Database Schema
 -- Таблицы для издательства комиксов и книг
 
--- Enum для типов книг
-CREATE TYPE book_type AS ENUM ('comic', 'book', 'audiobook');
+-- Enum для типов книг (идемпотентно при повторном запуске скрипта)
+DO $$
+BEGIN
+  CREATE TYPE book_type AS ENUM ('comic', 'book', 'audiobook');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- Enum для статусов заказов
-CREATE TYPE order_status AS ENUM ('pending', 'confirmed', 'shipped', 'completed', 'cancelled');
+DO $$
+BEGIN
+  CREATE TYPE order_status AS ENUM ('pending', 'confirmed', 'shipped', 'completed', 'cancelled');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- Enum для тем hero-слайдов главной
-CREATE TYPE homepage_slide_theme AS ENUM ('atelier', 'night-city', 'pvz', 'volga', 'dreams');
+DO $$
+BEGIN
+  CREATE TYPE homepage_slide_theme AS ENUM ('atelier', 'night-city', 'pvz', 'volga', 'dreams');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- Таблица книг/комиксов
 CREATE TABLE IF NOT EXISTS books (
@@ -119,21 +134,25 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_books_updated_at ON books;
 CREATE TRIGGER update_books_updated_at
   BEFORE UPDATE ON books
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_characters_updated_at ON characters;
 CREATE TRIGGER update_characters_updated_at
   BEFORE UPDATE ON characters
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
 CREATE TRIGGER update_orders_updated_at
   BEFORE UPDATE ON orders
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_homepage_slides_updated_at ON homepage_slides;
 CREATE TRIGGER update_homepage_slides_updated_at
   BEFORE UPDATE ON homepage_slides
   FOR EACH ROW
@@ -149,13 +168,23 @@ ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE homepage_slides ENABLE ROW LEVEL SECURITY;
 
 -- Публичное чтение для книг и персонажей
+DROP POLICY IF EXISTS "Books are viewable by everyone" ON books;
 CREATE POLICY "Books are viewable by everyone" ON books FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Characters are viewable by everyone" ON characters;
 CREATE POLICY "Characters are viewable by everyone" ON characters FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Character relationships are viewable by everyone" ON character_relationships;
 CREATE POLICY "Character relationships are viewable by everyone" ON character_relationships FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Book characters are viewable by everyone" ON book_characters;
 CREATE POLICY "Book characters are viewable by everyone" ON book_characters FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Homepage slides are viewable by everyone" ON homepage_slides;
 CREATE POLICY "Homepage slides are viewable by everyone" ON homepage_slides FOR SELECT USING (true);
 
 -- Заказы может создавать любой (анонимная покупка)
+DROP POLICY IF EXISTS "Anyone can create orders" ON orders;
 CREATE POLICY "Anyone can create orders" ON orders FOR INSERT WITH CHECK (true);
 
 -- Админы могут всё (через service role в админке)

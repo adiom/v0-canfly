@@ -1,8 +1,11 @@
 import { Character, CharacterRelationship } from '@/lib/types';
+import { fetchCharacterBySlug } from '@/lib/server/characters';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { CharacterChat } from '@/components/character-chat';
+
+export const revalidate = 3600;
 
 interface CharacterPageProps {
   params: Promise<{ slug: string }>;
@@ -10,18 +13,7 @@ interface CharacterPageProps {
 
 async function getCharacterData(slug: string) {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/characters/${slug}`,
-      {
-        next: { revalidate: 3600 },
-      }
-    );
-    
-    if (!res.ok) {
-      return null;
-    }
-    
-    return res.json();
+    return await fetchCharacterBySlug(slug);
   } catch (error) {
     console.error('Error fetching character:', error);
     return null;
