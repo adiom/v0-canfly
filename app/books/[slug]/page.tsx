@@ -5,6 +5,7 @@ import { BookWithCharacters } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/lib/cart-context';
+import { MarkdownRenderer } from '@/components/markdown-renderer';
 
 interface BookPageProps {
   params: Promise<{ slug: string }>;
@@ -13,19 +14,17 @@ interface BookPageProps {
 export default function BookPage({ params }: BookPageProps) {
   const [book, setBook] = useState<BookWithCharacters | null>(null);
   const [loading, setLoading] = useState(true);
+  // Состояние для комиксов (страницы картинок)
   const [currentPage, setCurrentPage] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
+  // Состояние для книг (главы)
+  const [currentChapter, setCurrentChapter] = useState(0);
   const { addItem } = useCart();
-
-  const getParams = async () => {
-    const p = await params;
-    return p;
-  };
 
   useEffect(() => {
     const fetchBook = async () => {
       try {
-        const p = await getParams();
+        const p = await params;
         const res = await fetch('/api/books');
         if (res.ok) {
           const books: BookWithCharacters[] = await res.json();
@@ -71,7 +70,9 @@ export default function BookPage({ params }: BookPageProps) {
   }
 
   const pages = book.preview_pages || [];
-  const hasPages = pages.length > 0;
+  const chapters = book.chapters || [];
+  const isComicMode = book.type === 'comic' && pages.length > 0;
+  const isBookMode = book.type === 'book' && chapters.length > 0;
 
   const handleAddToCart = () => {
     if (!book.price) return;
@@ -121,9 +122,9 @@ export default function BookPage({ params }: BookPageProps) {
                     />
                   </div>
                 )}
-                
+
                 <h1 className="text-2xl font-bold text-white mb-4">{book.title}</h1>
-                
+
                 <div className="inline-block px-3 py-1 bg-purple-900/50 text-purple-200 text-sm rounded-full mb-4 capitalize">
                   {book.type === 'comic' && 'Комикс'}
                   {book.type === 'book' && 'Книга'}
@@ -185,7 +186,7 @@ export default function BookPage({ params }: BookPageProps) {
                 <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
                   <div className="flex justify-between items-center mb-6 pb-6 border-b border-slate-700">
                     <h2 className="text-xl font-bold text-white">Читать онлайн</h2>
-                    {hasPages && (
+                    {isComicMode && (
                       <Button
                         onClick={() => setFullscreen(true)}
                         variant="outline"
@@ -196,22 +197,20 @@ export default function BookPage({ params }: BookPageProps) {
                     )}
                   </div>
 
-                  {hasPages ? (
+                  {/* Режим комикса — картинки */}
+                  {isComicMode && (
                     <div>
-                      {/* Page Display */}
                       <div className="bg-black rounded-lg mb-6 flex items-center justify-center min-h-96">
                         {pages[currentPage] ? (
                           <img
                             src={pages[currentPage]}
-                            alt={`Page ${currentPage + 1}`}
+                            alt={`Страница ${currentPage + 1}`}
                             className="max-w-full max-h-96 rounded"
                           />
                         ) : (
                           <p className="text-slate-400">Страница не найдена</p>
                         )}
                       </div>
-
-                      {/* Navigation */}
                       <div className="flex items-center justify-between">
                         <button
                           onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
@@ -220,11 +219,9 @@ export default function BookPage({ params }: BookPageProps) {
                         >
                           ← Назад
                         </button>
-
                         <div className="text-slate-300 text-sm">
                           Страница {currentPage + 1} из {pages.length}
                         </div>
-
                         <button
                           onClick={() => setCurrentPage(Math.min(pages.length - 1, currentPage + 1))}
                           disabled={currentPage === pages.length - 1}
@@ -234,7 +231,73 @@ export default function BookPage({ params }: BookPageProps) {
                         </button>
                       </div>
                     </div>
-                  ) : (
+                  )}
+
+                  {/* Режим книги — главы с markdown */}
+                  {isBookMode && (
+                    <div className="grid md:grid-cols-4 gap-6">
+                      {/* Оглавление */}
+                      <nav className="md:col-span-1">
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-[0.18em] mb-3">
+                          Оглавление
+                        </p>
+                        <ul className="space-y-1">
+                          {chapters.map((ch, i) => (
+                            <li key={i}>
+                              <button
+                                onClick={() => setCurrentChapter(i)}
+                                className={[
+                                  'w-full text-left px-3 py-2 rounded text-sm transition-colors',
+                                  i === currentChapter
+                                    ? 'bg-purple-900/50 text-purple-200 font-medium'
+                                    : 'text-slate-400 hover:text-white hover:bg-slate-700',
+                                ].join(' ')}
+                              >
+                                <span className="text-xs text-slate-500 mr-1">{i + 1}.</span>
+                                {ch.title}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </nav>
+
+                      {/* Содержимое главы */}
+                      <div className="md:col-span-3">
+                        <h3 className="text-lg font-bold text-white mb-6 pb-4 border-b border-slate-700">
+                          {chapters[currentChapter]?.title}
+                        </h3>
+
+                        <MarkdownRenderer
+                          content={chapters[currentChapter]?.content}
+                          className="mb-8"
+                        />
+
+                        {/* Навигация по главам */}
+                        <div className="flex items-center justify-between pt-6 border-t border-slate-700">
+                          <button
+                            onClick={() => setCurrentChapter((prev) => Math.max(0, prev - 1))}
+                            disabled={currentChapter === 0}
+                            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors text-sm"
+                          >
+                            ← Предыдущая
+                          </button>
+                          <span className="text-slate-400 text-sm">
+                            Глава {currentChapter + 1} из {chapters.length}
+                          </span>
+                          <button
+                            onClick={() => setCurrentChapter((prev) => Math.min(chapters.length - 1, prev + 1))}
+                            disabled={currentChapter === chapters.length - 1}
+                            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors text-sm"
+                          >
+                            Следующая →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Заглушка — нет контента */}
+                  {!isComicMode && !isBookMode && (
                     <div className="text-center py-12">
                       <p className="text-slate-400 mb-6">Содержимое недоступно для чтения онлайн</p>
                       <p className="text-slate-500 text-sm mb-6">{book.description}</p>
@@ -245,9 +308,8 @@ export default function BookPage({ params }: BookPageProps) {
             </div>
           </div>
         ) : (
-          // Fullscreen Reader
+          // Fullscreen Reader (только для комиксов)
           <div className="flex-1 flex flex-col bg-black">
-            {/* Fullscreen Controls */}
             <div className="flex justify-between items-center p-4 bg-slate-900/80 backdrop-blur border-b border-slate-700">
               <h2 className="text-white font-bold">{book.title}</h2>
               <button
@@ -258,12 +320,11 @@ export default function BookPage({ params }: BookPageProps) {
               </button>
             </div>
 
-            {/* Fullscreen Page */}
             <div className="flex-1 flex items-center justify-center p-4">
               {pages[currentPage] ? (
                 <img
                   src={pages[currentPage]}
-                  alt={`Page ${currentPage + 1}`}
+                  alt={`Страница ${currentPage + 1}`}
                   className="max-w-full max-h-full object-contain"
                 />
               ) : (
@@ -271,7 +332,6 @@ export default function BookPage({ params }: BookPageProps) {
               )}
             </div>
 
-            {/* Fullscreen Navigation */}
             <div className="flex items-center justify-between p-4 bg-slate-900/80 backdrop-blur border-t border-slate-700">
               <button
                 onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
@@ -280,11 +340,9 @@ export default function BookPage({ params }: BookPageProps) {
               >
                 ← Назад
               </button>
-
               <div className="text-slate-300 text-sm">
                 {currentPage + 1} / {pages.length}
               </div>
-
               <button
                 onClick={() => setCurrentPage(Math.min(pages.length - 1, currentPage + 1))}
                 disabled={currentPage === pages.length - 1}

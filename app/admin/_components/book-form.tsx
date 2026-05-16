@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { BookType, BookWithCharacters, Character } from '@/lib/types'
+import { BookChapter, BookType, BookWithCharacters, Character } from '@/lib/types'
+import { ChapterEditor } from './chapter-editor'
 
 interface BookFormProps {
   bookId?: string
@@ -45,6 +46,7 @@ export function BookForm({ bookId }: BookFormProps) {
   const [error, setError] = useState('')
   const [characters, setCharacters] = useState<Character[]>([])
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([])
+  const [chapters, setChapters] = useState<BookChapter[]>([])
   const isEditing = Boolean(bookId)
 
   useEffect(() => {
@@ -88,6 +90,7 @@ export function BookForm({ bookId }: BookFormProps) {
                 : String(book.display_order),
           })
           setSelectedCharacterIds(book.character_ids || [])
+          setChapters(book.chapters ?? [])
         }
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Ошибка загрузки')
@@ -120,8 +123,9 @@ export function BookForm({ bookId }: BookFormProps) {
       is_featured: form.is_featured,
       display_order: form.display_order ? Number(form.display_order) : 0,
       character_ids: selectedCharacterIds,
+      chapters: form.type === 'book' ? chapters : undefined,
     }
-  }, [form, selectedCharacterIds])
+  }, [form, selectedCharacterIds, chapters])
 
   const updateField = <Field extends keyof typeof form>(field: Field, value: (typeof form)[Field]) => {
     setForm((current) => ({ ...current, [field]: value }))
@@ -146,6 +150,16 @@ export function BookForm({ bookId }: BookFormProps) {
       setSaving(false)
       setError('External links должны быть валидным JSON-объектом')
       return
+    }
+
+    // Валидация глав для книг
+    if (form.type === 'book') {
+      const invalidChapter = chapters.some((ch) => !ch.title.trim() || !ch.content.trim())
+      if (invalidChapter) {
+        setSaving(false)
+        setError('Все главы должны иметь заголовок и содержимое')
+        return
+      }
     }
 
     try {
@@ -309,15 +323,21 @@ export function BookForm({ bookId }: BookFormProps) {
         )}
       </div>
 
-      <label className="space-y-2 text-sm text-slate-300">
-        <span>Preview pages URLs, по одному на строку</span>
-        <Textarea
-          value={form.preview_pages}
-          onChange={(event) => updateField('preview_pages', event.target.value)}
-          rows={5}
-          className="border-slate-700 bg-slate-950 text-white"
-        />
-      </label>
+      {form.type === 'book' ? (
+        <div className="space-y-2">
+          <ChapterEditor chapters={chapters} onChange={setChapters} />
+        </div>
+      ) : (
+        <label className="space-y-2 text-sm text-slate-300">
+          <span>Preview pages URLs, по одному на строку</span>
+          <Textarea
+            value={form.preview_pages}
+            onChange={(event) => updateField('preview_pages', event.target.value)}
+            rows={5}
+            className="border-slate-700 bg-slate-950 text-white"
+          />
+        </label>
+      )}
 
       <label className="space-y-2 text-sm text-slate-300">
         <span>External links JSON</span>

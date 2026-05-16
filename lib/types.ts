@@ -1,4 +1,9 @@
 export type BookType = 'comic' | 'book' | 'audiobook';
+
+export interface BookChapter {
+  title: string;
+  content: string;
+}
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'completed' | 'cancelled';
 export type HomepageSlideTheme = 'atelier' | 'night-city' | 'pvz' | 'volga' | 'dreams';
 
@@ -10,6 +15,7 @@ export interface Book {
   description: string | null;
   cover_image: string | null;
   preview_pages: string[] | null;
+  chapters?: BookChapter[] | null;
   external_links: Record<string, string> | null;
   price: number | null;
   is_featured: boolean;

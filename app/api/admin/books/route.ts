@@ -1,6 +1,6 @@
 import { requireAdminSession } from '@/lib/admin-session'
 import { supabaseAdminRequest } from '@/lib/supabase/admin-rest'
-import { Book, BookType, BookWithCharacters } from '@/lib/types'
+import { Book, BookChapter, BookType, BookWithCharacters } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +32,31 @@ function normalizeExternalLinks(value: unknown) {
   )
 }
 
+function normalizeChapters(value: unknown): BookChapter[] | { error: string } {
+  if (value === undefined || value === null) return []
+  if (!Array.isArray(value)) return { error: 'chapters must be an array' }
+
+  for (let i = 0; i < value.length; i++) {
+    const item = value[i]
+    if (!item || typeof item !== 'object') return { error: `chapter[${i}] must be an object` }
+    const title = typeof (item as Record<string, unknown>).title === 'string'
+      ? ((item as Record<string, unknown>).title as string).trim()
+      : ''
+    const content = typeof (item as Record<string, unknown>).content === 'string'
+      ? ((item as Record<string, unknown>).content as string).trim()
+      : ''
+    if (!title) return { error: `chapter[${i}].title is required` }
+    if (!content) return { error: `chapter[${i}].content is required` }
+    if (title.length > 500) return { error: `chapter[${i}].title exceeds 500 chars` }
+    if (content.length > 500_000) return { error: `chapter[${i}].content exceeds 500000 chars` }
+  }
+
+  return (value as Array<Record<string, unknown>>).map((ch) => ({
+    title: (ch.title as string).trim(),
+    content: (ch.content as string).trim(),
+  }))
+}
+
 function normalizeBookPayload(body: Record<string, unknown>) {
   const title = typeof body.title === 'string' ? body.title.trim() : ''
   const slug = typeof body.slug === 'string' ? body.slug.trim() : ''
@@ -44,6 +69,11 @@ function normalizeBookPayload(body: Record<string, unknown>) {
 
   if (!title || !slug) {
     return { error: 'Title and slug are required' }
+  }
+
+  const chaptersResult = normalizeChapters(body.chapters)
+  if ('error' in chaptersResult) {
+    return { error: chaptersResult.error }
   }
 
   return {
@@ -64,6 +94,7 @@ function normalizeBookPayload(body: Record<string, unknown>) {
       price,
       is_featured: Boolean(body.is_featured),
       display_order: displayOrder,
+      ...(body.chapters !== undefined ? { chapters: chaptersResult } : {}),
     },
     characterIds: normalizeCharacterIds(body.character_ids),
   }

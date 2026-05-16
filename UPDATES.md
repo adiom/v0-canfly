@@ -1,4 +1,44 @@
-# Обновления версии 2.0 - Социальная сеть персонажей и AI-чат
+# Обновления
+
+---
+
+## v3.0 — Главы книг и Markdown-читалка (16 мая 2026)
+
+### Что изменено
+
+**Новые файлы:**
+- `supabase/migrations/20260516_add_chapters_to_books.sql` — миграция: поле `chapters JSONB` в таблице `books`
+- `components/markdown-renderer.tsx` — рендер markdown с XSS-санитизацией (без внешних зависимостей)
+- `app/admin/_components/chapter-editor.tsx` — редактор глав в админке (CRUD + порядок)
+
+**Изменённые файлы:**
+- `lib/types.ts` — добавлен интерфейс `BookChapter`, расширен `Book.chapters`
+- `app/admin/_components/book-form.tsx` — для книг типа `book` показывается `ChapterEditor` вместо `preview_pages`
+- `app/api/admin/books/route.ts` — валидация и сохранение `chapters` в POST
+- `app/api/admin/books/[id]/route.ts` — валидация и сохранение `chapters` в PATCH
+- `app/books/[slug]/page.tsx` — Reader поддерживает оба формата: картинки (комиксы) и главы (книги)
+
+### Как использовать
+
+**Создание книги с главами:**
+1. В админке создать/редактировать книгу с типом `Книга`
+2. Появится редактор глав вместо поля preview pages
+3. Добавить главы с заголовком и markdown-содержимым
+4. Сохранить
+
+**Читалка:**
+- Комиксы: постраничный просмотр картинок (без изменений)
+- Книги: оглавление + навигация по главам + рендер markdown
+
+**Применить миграцию БД** (если ещё не сделано):
+```sql
+ALTER TABLE books
+  ADD COLUMN IF NOT EXISTS chapters JSONB NOT NULL DEFAULT '[]'::jsonb;
+```
+
+---
+
+## v2.0 — Социальная сеть персонажей и AI-чат
 
 ## ✅ Что было добавлено
 
