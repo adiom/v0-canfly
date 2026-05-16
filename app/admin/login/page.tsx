@@ -26,9 +26,8 @@ export default function AdminLoginPage() {
       });
 
       if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('admin-token', data.token);
         router.push('/admin');
+        router.refresh();
       } else {
         const error = await res.json();
         setError(error.error || 'Ошибка при входе');

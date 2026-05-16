@@ -1,7 +1,32 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { ADMIN_SESSION_COOKIE, verifyAdminToken } from '@/lib/admin-auth'
 
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+  const isAdminPage = pathname.startsWith('/admin')
+  const isAdminLoginPage = pathname === '/admin/login'
+
+  if (isAdminPage) {
+    const session = await verifyAdminToken(request.cookies.get(ADMIN_SESSION_COOKIE)?.value)
+
+    if (!session && !isAdminLoginPage) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/login'
+      url.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(url)
+    }
+
+    if (session && isAdminLoginPage) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin'
+      url.search = ''
+      return NextResponse.redirect(url)
+    }
+
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -32,14 +57,6 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  // Защита админ-панели
-  if (request.nextUrl.pathname.startsWith('/admin') && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
-    url.searchParams.set('redirect', request.nextUrl.pathname)
-    return NextResponse.redirect(url)
-  }
 
   return supabaseResponse
 }

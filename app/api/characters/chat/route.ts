@@ -54,7 +54,7 @@ ${character?.full_description ? `\nПолное описание: ${character.fu
         content: msg.content,
       })),
       temperature: 0.8,
-      maxTokens: 1024,
+      maxOutputTokens: 1024,
     })
 
     return result.toTextStreamResponse()

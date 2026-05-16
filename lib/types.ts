@@ -17,6 +17,19 @@ export interface Book {
   updated_at: string;
 }
 
+export interface BookCharacterLink {
+  id: string;
+  name: string;
+  slug: string;
+  avatar: string | null;
+  bio: string | null;
+}
+
+export interface BookWithCharacters extends Book {
+  characters?: BookCharacterLink[];
+  character_ids?: string[];
+}
+
 export interface Character {
   id: string;
   name: string;

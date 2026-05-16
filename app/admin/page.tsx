@@ -13,40 +13,45 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [activeTab, setActiveTab] = useState<'books' | 'characters' | 'orders'>('books');
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Check auth
-    const token = localStorage.getItem('admin-token');
-    if (!token) {
-      router.push('/admin/login');
-      return;
-    }
-
-    // Load data
     const loadData = async () => {
       try {
         const [booksRes, ordersRes, charsRes] = await Promise.all([
-          fetch('/api/books'),
+          fetch('/api/admin/books'),
           fetch('/api/admin/orders'),
-          fetch('/api/characters'),
+          fetch('/api/admin/characters'),
         ]);
+
+        if (booksRes.status === 401 || charsRes.status === 401 || ordersRes.status === 401) {
+          router.push('/admin/login');
+          return;
+        }
 
         if (booksRes.ok) {
           const data = await booksRes.json();
           setBooks(data);
+        } else {
+          setError('Не удалось загрузить книги');
         }
 
         if (charsRes.ok) {
           const data = await charsRes.json();
           setCharacters(data);
+        } else {
+          setError('Не удалось загрузить персонажей');
         }
 
         if (ordersRes.ok) {
           const data = await ordersRes.json();
           setOrders(data);
+        } else {
+          setError('Не удалось загрузить заказы');
         }
       } catch (error) {
         console.error('Error loading data:', error);
+        setError('Ошибка загрузки админки');
       } finally {
         setLoading(false);
       }
@@ -55,9 +60,45 @@ export default function AdminPage() {
     loadData();
   }, [router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('admin-token');
+  const handleLogout = async () => {
+    await fetch('/api/admin/logout', { method: 'POST' });
     router.push('/admin/login');
+  };
+
+  const deleteBook = async (book: Book) => {
+    if (!window.confirm(`Удалить книгу "${book.title}"?`)) return;
+
+    const response = await fetch(`/api/admin/books/${book.id}`, { method: 'DELETE' });
+
+    if (response.status === 401) {
+      router.push('/admin/login');
+      return;
+    }
+
+    if (!response.ok) {
+      setError('Не удалось удалить книгу');
+      return;
+    }
+
+    setBooks((current) => current.filter((item) => item.id !== book.id));
+  };
+
+  const deleteCharacter = async (character: Character) => {
+    if (!window.confirm(`Удалить персонажа "${character.name}"?`)) return;
+
+    const response = await fetch(`/api/admin/characters/${character.id}`, { method: 'DELETE' });
+
+    if (response.status === 401) {
+      router.push('/admin/login');
+      return;
+    }
+
+    if (!response.ok) {
+      setError('Не удалось удалить персонажа');
+      return;
+    }
+
+    setCharacters((current) => current.filter((item) => item.id !== character.id));
   };
 
   if (loading) {
@@ -89,6 +130,12 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <section className="max-w-7xl mx-auto px-4 py-8">
+        {error && (
+          <div className="mb-6 rounded-md border border-red-900/60 bg-red-950/40 px-4 py-3 text-sm text-red-200">
+            {error}
+          </div>
+        )}
+
         <div className="flex gap-4 mb-8 border-b border-slate-800">
           <button
             onClick={() => setActiveTab('books')}
@@ -147,7 +194,12 @@ export default function AdminPage() {
                     <Link href={`/admin/books/${book.id}/edit`}>
                       <Button variant="outline" size="sm">Редактировать</Button>
                     </Link>
-                    <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-400 hover:text-red-300"
+                      onClick={() => deleteBook(book)}
+                    >
                       Удалить
                     </Button>
                   </div>
@@ -180,7 +232,12 @@ export default function AdminPage() {
                     <Link href={`/admin/characters/${char.id}/edit`}>
                       <Button variant="outline" size="sm">Редактировать</Button>
                     </Link>
-                    <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-400 hover:text-red-300"
+                      onClick={() => deleteCharacter(char)}
+                    >
                       Удалить
                     </Button>
                   </div>

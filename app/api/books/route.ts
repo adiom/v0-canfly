@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
-import { Book } from '@/lib/types';
+import { BookWithCharacters } from '@/lib/types';
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
     let query = supabase
       .from('books')
-      .select('*')
+      .select('*, book_characters(characters(id, name, slug, avatar, bio))')
       .order('display_order', { ascending: true });
 
     if (featured) {
@@ -26,7 +26,18 @@ export async function GET(request: Request) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json(data || []);
+    const books = (data || []).map((book) => {
+      const { book_characters, ...rest } = book;
+
+      return {
+        ...rest,
+        characters: (book_characters || [])
+          .map((row: { characters: unknown }) => row.characters)
+          .filter(Boolean),
+      };
+    });
+
+    return Response.json(books as BookWithCharacters[]);
   } catch (err) {
     console.error('API error:', err);
     return Response.json(

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Book } from '@/lib/types';
+import { BookWithCharacters } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/lib/cart-context';
@@ -11,7 +11,7 @@ interface BookPageProps {
 }
 
 export default function BookPage({ params }: BookPageProps) {
-  const [book, setBook] = useState<Book | null>(null);
+  const [book, setBook] = useState<BookWithCharacters | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
@@ -28,7 +28,7 @@ export default function BookPage({ params }: BookPageProps) {
         const p = await getParams();
         const res = await fetch('/api/books');
         if (res.ok) {
-          const books: Book[] = await res.json();
+          const books: BookWithCharacters[] = await res.json();
           const found = books.find((b) => b.slug === p.slug);
           setBook(found || null);
         }
@@ -160,6 +160,21 @@ export default function BookPage({ params }: BookPageProps) {
                       >
                         {store}
                       </a>
+                    ))}
+                  </div>
+                )}
+
+                {book.characters && book.characters.length > 0 && (
+                  <div className="mt-6 space-y-2">
+                    <p className="text-sm font-medium text-slate-400">Персонажи:</p>
+                    {book.characters.map((character) => (
+                      <Link
+                        key={character.id}
+                        href={`/characters/${character.slug}`}
+                        className="block rounded bg-slate-800 px-4 py-2 text-sm text-slate-200 transition-colors hover:bg-slate-700 hover:text-white"
+                      >
+                        {character.name}
+                      </Link>
                     ))}
                   </div>
                 )}
