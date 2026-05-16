@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🧪 CanFly API Test"
+echo "🧪 Canfly API Test"
 echo "=================="
 echo ""
 

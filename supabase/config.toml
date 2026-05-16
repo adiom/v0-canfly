@@ -1,0 +1,5 @@
+project_id = "v0-canfly"
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]

@@ -1,7 +1,6 @@
--- Тестовые данные для Canfly
+-- Demo data for local Supabase resets.
 
--- Книги/Комиксы
-INSERT INTO books (title, slug, type, description, cover_image, price, is_featured, display_order, external_links) VALUES
+INSERT INTO public.books (title, slug, type, description, cover_image, price, is_featured, display_order, external_links) VALUES
 (
   'Крылья Судьбы',
   'wings-of-destiny',
@@ -56,10 +55,10 @@ INSERT INTO books (title, slug, type, description, cover_image, price, is_featur
   true,
   5,
   '{"ozon": "https://ozon.ru"}'::jsonb
-);
+)
+ON CONFLICT (slug) DO NOTHING;
 
--- Персонажи
-INSERT INTO characters (name, slug, avatar, bio, full_description, abilities) VALUES
+INSERT INTO public.characters (name, slug, avatar, bio, full_description, abilities) VALUES
 (
   'Кира Волкова',
   'kira-volkova',
@@ -99,80 +98,103 @@ INSERT INTO characters (name, slug, avatar, bio, full_description, abilities) VA
   'Таинственная девочка с пророческим даром.',
   'Мира появляется в видениях Киры задолго до их реальной встречи. Её способность видеть будущее — проклятие, которое она несёт с детства. Она знает, чем закончится история, но не может изменить судьбу.',
   '["Пророческие видения", "Телепатия", "Астральная проекция", "Временные петли"]'::jsonb
-);
+)
+ON CONFLICT (slug) DO NOTHING;
 
--- Связи между персонажами
-INSERT INTO character_relationships (character_id, related_character_id, relationship_type, description)
-SELECT 
-  c1.id, c2.id, 'наставник', 'Дмитрий обучает Киру контролировать её способности'
-FROM characters c1, characters c2
-WHERE c1.slug = 'dmitry-cherny' AND c2.slug = 'kira-volkova';
+INSERT INTO public.character_relationships (character_id, related_character_id, relationship_type, description)
+SELECT c1.id, c2.id, item.relationship_type, item.description
+FROM (
+  VALUES
+    ('dmitry-cherny', 'kira-volkova', 'наставник', 'Дмитрий обучает Киру контролировать её способности'),
+    ('kira-volkova', 'dmitry-cherny', 'ученица', 'Кира — ученица Дмитрия'),
+    ('kira-volkova', 'liza-svetlova', 'лучшая подруга', 'Кира и Лиза — лучшие подруги с детства'),
+    ('liza-svetlova', 'kira-volkova', 'лучшая подруга', 'Лиза и Кира — лучшие подруги с детства'),
+    ('arseniy-gromov', 'kira-volkova', 'враг', 'Арсений — главный противник Киры'),
+    ('kira-volkova', 'arseniy-gromov', 'враг', 'Кира противостоит Арсению'),
+    ('dmitry-cherny', 'arseniy-gromov', 'бывшие союзники', 'Дмитрий и Арсений когда-то сражались вместе'),
+    ('arseniy-gromov', 'dmitry-cherny', 'бывшие союзники', 'Арсений и Дмитрий когда-то сражались вместе'),
+    ('mira', 'kira-volkova', 'видит в видениях', 'Мира видит Киру в своих пророчествах')
+) AS item(character_slug, related_slug, relationship_type, description)
+JOIN public.characters c1 ON c1.slug = item.character_slug
+JOIN public.characters c2 ON c2.slug = item.related_slug
+ON CONFLICT (character_id, related_character_id) DO NOTHING;
 
-INSERT INTO character_relationships (character_id, related_character_id, relationship_type, description)
-SELECT 
-  c1.id, c2.id, 'ученица', 'Кира — ученица Дмитрия'
-FROM characters c1, characters c2
-WHERE c1.slug = 'kira-volkova' AND c2.slug = 'dmitry-cherny';
+INSERT INTO public.book_characters (book_id, character_id)
+SELECT b.id, c.id
+FROM public.books b
+JOIN LATERAL (
+  SELECT unnest(
+    CASE b.slug
+      WHEN 'wings-of-destiny' THEN ARRAY['kira-volkova', 'dmitry-cherny', 'liza-svetlova', 'arseniy-gromov']
+      WHEN 'shadows-of-sky' THEN ARRAY['kira-volkova', 'dmitry-cherny', 'liza-svetlova', 'arseniy-gromov', 'mira']
+      WHEN 'fall-of-angels' THEN ARRAY['kira-volkova', 'dmitry-cherny', 'liza-svetlova', 'arseniy-gromov', 'mira']
+      WHEN 'voices-of-abyss' THEN ARRAY['kira-volkova', 'dmitry-cherny', 'liza-svetlova']
+      WHEN 'artbook-canfly-world' THEN ARRAY['kira-volkova', 'dmitry-cherny', 'liza-svetlova', 'arseniy-gromov', 'mira']
+      ELSE ARRAY[]::text[]
+    END
+  ) AS character_slug
+) bc ON true
+JOIN public.characters c ON c.slug = bc.character_slug
+ON CONFLICT (book_id, character_id) DO NOTHING;
 
-INSERT INTO character_relationships (character_id, related_character_id, relationship_type, description)
-SELECT 
-  c1.id, c2.id, 'лучшая подруга', 'Кира и Лиза — лучшие подруги с детства'
-FROM characters c1, characters c2
-WHERE c1.slug = 'kira-volkova' AND c2.slug = 'liza-svetlova';
-
-INSERT INTO character_relationships (character_id, related_character_id, relationship_type, description)
-SELECT 
-  c1.id, c2.id, 'лучшая подруга', 'Лиза и Кира — лучшие подруги с детства'
-FROM characters c1, characters c2
-WHERE c1.slug = 'liza-svetlova' AND c2.slug = 'kira-volkova';
-
-INSERT INTO character_relationships (character_id, related_character_id, relationship_type, description)
-SELECT 
-  c1.id, c2.id, 'враг', 'Арсений — главный противник Киры'
-FROM characters c1, characters c2
-WHERE c1.slug = 'arseniy-gromov' AND c2.slug = 'kira-volkova';
-
-INSERT INTO character_relationships (character_id, related_character_id, relationship_type, description)
-SELECT 
-  c1.id, c2.id, 'враг', 'Кира противостоит Арсению'
-FROM characters c1, characters c2
-WHERE c1.slug = 'kira-volkova' AND c2.slug = 'arseniy-gromov';
-
-INSERT INTO character_relationships (character_id, related_character_id, relationship_type, description)
-SELECT 
-  c1.id, c2.id, 'бывшие союзники', 'Дмитрий и Арсений когда-то сражались вместе'
-FROM characters c1, characters c2
-WHERE c1.slug = 'dmitry-cherny' AND c2.slug = 'arseniy-gromov';
-
-INSERT INTO character_relationships (character_id, related_character_id, relationship_type, description)
-SELECT 
-  c1.id, c2.id, 'бывшие союзники', 'Арсений и Дмитрий когда-то сражались вместе'
-FROM characters c1, characters c2
-WHERE c1.slug = 'arseniy-gromov' AND c2.slug = 'dmitry-cherny';
-
-INSERT INTO character_relationships (character_id, related_character_id, relationship_type, description)
-SELECT 
-  c1.id, c2.id, 'видит в видениях', 'Мира видит Киру в своих пророчествах'
-FROM characters c1, characters c2
-WHERE c1.slug = 'mira' AND c2.slug = 'kira-volkova';
-
--- Связи книг и персонажей
-INSERT INTO book_characters (book_id, character_id)
-SELECT b.id, c.id FROM books b, characters c
-WHERE b.slug = 'wings-of-destiny' AND c.slug IN ('kira-volkova', 'dmitry-cherny', 'liza-svetlova', 'arseniy-gromov');
-
-INSERT INTO book_characters (book_id, character_id)
-SELECT b.id, c.id FROM books b, characters c
-WHERE b.slug = 'shadows-of-sky' AND c.slug IN ('kira-volkova', 'dmitry-cherny', 'liza-svetlova', 'arseniy-gromov', 'mira');
-
-INSERT INTO book_characters (book_id, character_id)
-SELECT b.id, c.id FROM books b, characters c
-WHERE b.slug = 'fall-of-angels' AND c.slug IN ('kira-volkova', 'dmitry-cherny', 'liza-svetlova', 'arseniy-gromov', 'mira');
-
-INSERT INTO book_characters (book_id, character_id)
-SELECT b.id, c.id FROM books b, characters c
-WHERE b.slug = 'voices-of-abyss' AND c.slug IN ('kira-volkova', 'dmitry-cherny', 'liza-svetlova');
-
-INSERT INTO book_characters (book_id, character_id)
-SELECT b.id, c.id FROM books b, characters c
-WHERE b.slug = 'artbook-canfly-world' AND c.slug IN ('kira-volkova', 'dmitry-cherny', 'liza-svetlova', 'arseniy-gromov', 'mira');
+INSERT INTO public.homepage_slides (
+  title,
+  eyebrow,
+  description,
+  primary_cta_label,
+  primary_cta_href,
+  secondary_cta_label,
+  secondary_cta_href,
+  theme,
+  is_active,
+  display_order
+) VALUES
+  (
+    'Крой по душе',
+    'бытовой магический реализм',
+    'Швея Соня создаёт одежду, которая работает как эмоциональная броня: ткань говорит за человека, когда голос не выдерживает.',
+    'Читать',
+    '/books',
+    'Персонажи',
+    '/characters',
+    'atelier',
+    true,
+    1
+  ),
+  (
+    'Маша Можно',
+    'ночной город / ненадёжная память',
+    'Остановки, автобусы, странные разговоры и мягкий хоррор повседневности, где невозможно до конца доверять собственному восприятию.',
+    'Войти в историю',
+    '/books',
+    'Город N',
+    '/characters',
+    'night-city',
+    true,
+    2
+  ),
+  (
+    'Неучтённая',
+    'производственное технофэнтези',
+    'Сотрудница ПВЗ попадает в мир, где реальность устроена как повреждённая система хранения: маршруты, ячейки, узлы и архивы.',
+    'Открыть цикл',
+    '/books',
+    'Смотреть миры',
+    '/characters',
+    'pvz',
+    true,
+    3
+  ),
+  (
+    'Железный Хан Волги',
+    'инженерное попаданчество',
+    'Инженер XXI века в XVI столетии собирает не легенду о себе, а инфраструктуру, правила и систему, которая переживёт человека.',
+    'Читать роман',
+    '/books',
+    'Карта связей',
+    '/characters',
+    'volga',
+    true,
+    4
+  )
+ON CONFLICT DO NOTHING;

@@ -56,7 +56,7 @@ export default function BookPage({ params }: BookPageProps) {
         <header className="border-b border-slate-800 backdrop-blur-sm sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
             <Link href="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-              CanFly
+              Canfly
             </Link>
             <Link href="/shop" className="text-slate-300 hover:text-white">
               Назад к магазину
@@ -91,7 +91,7 @@ export default function BookPage({ params }: BookPageProps) {
         <header className="border-b border-slate-800 backdrop-blur-sm sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
             <Link href="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-              CanFly
+              Canfly
             </Link>
             <div className="flex gap-4 items-center">
               <Link href="/shop" className="text-slate-300 hover:text-white transition-colors">
@@ -301,7 +301,7 @@ export default function BookPage({ params }: BookPageProps) {
       {!fullscreen && (
         <footer className="border-t border-slate-800 py-8 bg-slate-950/50">
           <div className="max-w-7xl mx-auto px-4 text-center text-slate-400 text-sm">
-            <p>&copy; 2024 CanFly. Все права защищены.</p>
+            <p>&copy; 2024 Canfly. Все права защищены.</p>
           </div>
         </footer>
       )}

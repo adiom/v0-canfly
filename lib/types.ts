@@ -1,5 +1,6 @@
 export type BookType = 'comic' | 'book' | 'audiobook';
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'completed' | 'cancelled';
+export type HomepageSlideTheme = 'atelier' | 'night-city' | 'pvz' | 'volga' | 'dreams';
 
 export interface Book {
   id: string;
@@ -78,4 +79,22 @@ export interface CartItem {
   price: number;
   quantity: number;
   image: string | null;
+}
+
+export interface HomepageSlide {
+  id: string;
+  title: string;
+  eyebrow: string | null;
+  description: string | null;
+  background_image: string | null;
+  mobile_image: string | null;
+  primary_cta_label: string | null;
+  primary_cta_href: string | null;
+  secondary_cta_label: string | null;
+  secondary_cta_href: string | null;
+  theme: HomepageSlideTheme;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
 }

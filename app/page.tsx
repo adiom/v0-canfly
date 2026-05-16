@@ -1,36 +1,259 @@
-import Link from 'next/link';
-import { MarkdownEditor } from '@/components/markdown-editor';
+import Link from 'next/link'
+import { BookOpen, Boxes, Newspaper, Radio, Search, UserRound } from 'lucide-react'
+
+import { HomeHeroSlider } from '@/components/home-hero-slider'
+import {
+  getPublicHomepageSlides,
+  isHomepageSlidesTableMissing,
+} from '@/lib/homepage-slide-store'
+import { HomepageSlide } from '@/lib/types'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'canfly | культура твоего сознания',
-  description: 'Погрузитесь в артхаусную вселенную с комиксами, книгами и аудиокнигами',
-};
+  title: 'canfly | литературная вселенная Адиома Тимура',
+  description:
+    'Canfly — литературная вселенная о тревоге, ремесле, памяти, цифровой усталости и людях, которые продолжают функционировать.',
+}
 
-export default function Home() {
+const navItems = [
+  { label: 'Новости', href: '#news' },
+  { label: 'Книги', href: '/books' },
+  { label: 'Персонажи', href: '/characters' },
+  { label: 'Миры', href: '#worlds' },
+  { label: 'Выпуски', href: '#issues' },
+  { label: 'Блог', href: '/markdown' },
+  { label: 'Магазин', href: '/shop' },
+]
+
+const issues = [
+  {
+    title: 'Крой по душе. Глава 1',
+    label: 'atelier cut',
+    description: 'Лампа, кофе, ткань и первая вещь, которая делает с тревогой невозможное.',
+    tone: 'bg-[#f6d6a8]',
+  },
+  {
+    title: 'Маша Можно. Ночной автобус',
+    label: 'city issue',
+    description: 'Память пропускает остановки, а город отвечает слишком длинной паузой.',
+    tone: 'bg-[#9db5c8]',
+  },
+  {
+    title: 'Неучтённая. Коробка без маркировки',
+    label: 'pvz file',
+    description: 'Возврат, ячейка, зеркало в примерочной и реальность с повреждённым учётом.',
+    tone: 'bg-[#d7c6ad]',
+  },
+  {
+    title: 'Железный Хан Волги. Кодекс',
+    label: 'volga log',
+    description: 'Пятьдесят человек, один кузнец и правила, которые должны пережить автора.',
+    tone: 'bg-[#b9c7b3]',
+  },
+]
+
+const news = [
+  {
+    section: 'Книги',
+    title: 'С чего начать читать Canfly',
+    time: 'гид',
+  },
+  {
+    section: 'Миры',
+    title: 'Город N как центральный узел вселенной',
+    time: 'заметка',
+  },
+  {
+    section: 'Персонажи',
+    title: 'Соня, Маша и Варя: три способа удержаться',
+    time: 'досье',
+  },
+]
+
+export default async function Home() {
+  let slides: HomepageSlide[] = []
+  let isMigrationMissing = false
+
+  try {
+    slides = await getPublicHomepageSlides()
+  } catch (error) {
+    if (!isHomepageSlidesTableMissing(error)) {
+      throw error
+    }
+
+    isMigrationMissing = true
+  }
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-sky-50 via-sky-100 to-sky-50">
-      <header className="border-b border-sky-100/80 backdrop-blur-sm sticky top-0 z-50 bg-sky-50/70">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
-          <Link
-            href="/"
-            className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-cyan-500"
-          >
-            canfly | культура твоего сознания
+    <main className="min-h-screen bg-[#111210] text-[#f4efe5]">
+      <header className="sticky top-0 z-50 border-b border-[#f4efe5]/10 bg-[#111210]/92 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 md:px-8">
+          <Link href="/" className="flex h-14 items-center gap-3" aria-label="Canfly home">
+            <span className="flex h-9 w-16 items-center justify-center bg-[#d52525] text-lg font-black uppercase tracking-[-0.04em] text-white">
+              CF
+            </span>
+            <span className="hidden text-xs font-semibold uppercase tracking-[0.22em] text-[#9f978b] sm:block">
+              литературная вселенная
+            </span>
           </Link>
 
-         
+          <nav className="hidden h-14 items-center lg:flex" aria-label="Главная навигация">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex h-full items-center border-x border-transparent px-3 text-xs font-black uppercase tracking-[0.12em] text-[#ded7cc] transition-colors hover:border-[#f4efe5]/10 hover:bg-[#f4efe5]/6 hover:text-white lg:px-4"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <Link
+            href="/search"
+            className="flex h-10 w-10 items-center justify-center rounded-sm border border-[#f4efe5]/12 text-[#ded7cc] hover:bg-[#f4efe5]/8"
+            aria-label="Поиск"
+          >
+            <Search className="h-5 w-5" />
+          </Link>
         </div>
       </header>
 
-      <div className="bg-sky-50/70">
-        <MarkdownEditor />
-      </div>
+      {slides.length > 0 ? (
+        <HomeHeroSlider slides={slides} />
+      ) : (
+        <section className="border-b border-[#f4efe5]/10 bg-[#111210] px-4 py-24 md:px-8">
+          <div className="mx-auto max-w-7xl">
+            <p className="mb-4 text-xs font-black uppercase tracking-[0.22em] text-[#d52525]">
+              hero-слайдер
+            </p>
+            <h1 className="max-w-4xl text-5xl font-black uppercase leading-none text-[#fff8ea] md:text-7xl">
+              {isMigrationMissing ? 'Создайте таблицу слайдера' : 'Добавьте первый слайд в админке'}
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#c9c1b4]">
+              {isMigrationMissing
+                ? 'Главная страница больше не использует fallback. Выполните SQL-миграцию `scripts/003_homepage_slides.sql`, чтобы создать `homepage_slides` в Supabase.'
+                : 'Главная страница читает слайды только из таблицы Supabase `homepage_slides`.'}
+            </p>
+            <Link
+              href="/admin"
+              className="mt-8 inline-flex h-12 items-center rounded-sm bg-[#f6d6a8] px-5 text-sm font-black uppercase text-[#171713]"
+            >
+              Открыть админку
+            </Link>
+          </div>
+        </section>
+      )}
 
-      <footer className="border-t border-sky-100 mt-10 md:mt-20 py-8 bg-sky-50/80">
-        <div className="max-w-7xl mx-auto px-4 text-center text-sky-700 text-sm">
-          <p>&copy; 2005-2026 canfly | культура твоего сознания. Все права защищены.</p>
+      <section id="issues" className="border-b border-[#f4efe5]/10 bg-[#f4efe5] px-4 py-12 text-[#171713] md:px-8 md:py-16">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8 flex items-end justify-between gap-4">
+            <div>
+              <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-[#d52525]">
+                новые выпуски
+              </p>
+              <h2 className="text-3xl font-black uppercase leading-none md:text-5xl">Свежие фрагменты</h2>
+            </div>
+            <Link href="/books" className="hidden text-sm font-black uppercase text-[#d52525] hover:text-[#a81919] sm:block">
+              все книги
+            </Link>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {issues.map((issue, index) => (
+              <article key={issue.title} className="group border border-[#171713]/12 bg-white">
+                <div className={`relative aspect-[3/4] overflow-hidden ${issue.tone}`}>
+                  <div className="absolute inset-5 border border-[#171713]/16" />
+                  <div className="absolute bottom-5 left-5 right-5">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#171713]/60">
+                      {issue.label}
+                    </p>
+                    <p className="mt-3 text-6xl font-black leading-none text-[#171713]/18">
+                      {String(index + 1).padStart(2, '0')}
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="min-h-14 text-lg font-black leading-tight">{issue.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-[#5a534a]">{issue.description}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="news" className="border-b border-[#f4efe5]/10 bg-[#111210] px-4 py-12 md:px-8 md:py-16">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.7fr_1.3fr]">
+          <div>
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-[#d52525]">
+              canfly dispatch
+            </p>
+            <h2 className="text-3xl font-black uppercase leading-none text-[#fff8ea] md:text-5xl">
+              Новости, заметки, маршруты
+            </h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {news.map((item) => (
+              <article key={item.title} className="border-t border-[#f4efe5]/18 pt-5">
+                <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-[#9db5c8]">
+                  {item.section}
+                </p>
+                <h3 className="text-xl font-bold leading-tight text-[#f4efe5]">{item.title}</h3>
+                <p className="mt-5 text-xs uppercase tracking-[0.14em] text-[#8f877c]">{item.time}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="worlds" className="bg-[#1b1c19] px-4 py-12 md:px-8 md:py-16">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8">
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-[#d52525]">
+              explore canfly
+            </p>
+            <h2 className="text-3xl font-black uppercase leading-none text-[#fff8ea] md:text-5xl">
+              Входы во вселенную
+            </h2>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <Link href="/books" className="group border border-[#f4efe5]/10 bg-[#111210] p-6 hover:border-[#f6d6a8]/45">
+              <BookOpen className="mb-10 h-7 w-7 text-[#f6d6a8]" />
+              <h3 className="text-2xl font-black uppercase text-[#fff8ea]">Книги</h3>
+              <p className="mt-4 leading-7 text-[#c9c1b4]">Романы, повести и циклы как самостоятельные точки входа.</p>
+            </Link>
+            <Link href="/characters" className="group border border-[#f4efe5]/10 bg-[#111210] p-6 hover:border-[#9db5c8]/45">
+              <UserRound className="mb-10 h-7 w-7 text-[#9db5c8]" />
+              <h3 className="text-2xl font-black uppercase text-[#fff8ea]">Персонажи</h3>
+              <p className="mt-4 leading-7 text-[#c9c1b4]">Люди функции: швеи, инженеры, операторы, сотрудники ПВЗ.</p>
+            </Link>
+            <Link href="/markdown" className="group border border-[#f4efe5]/10 bg-[#111210] p-6 hover:border-[#d7c6ad]/45">
+              <Boxes className="mb-10 h-7 w-7 text-[#d7c6ad]" />
+              <h3 className="text-2xl font-black uppercase text-[#fff8ea]">Архив</h3>
+              <p className="mt-4 leading-7 text-[#c9c1b4]">Старая главная и большой markdown-путеводитель по системе мира.</p>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-[#f4efe5]/10 bg-[#0c0d0c] px-4 py-8 md:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 text-sm text-[#8f877c] md:flex-row md:items-center">
+          <p>© 2005-2026 canfly. Литературная вселенная Адиома Тимура.</p>
+          <div className="flex flex-wrap gap-4">
+            <span className="inline-flex items-center gap-2">
+              <Newspaper className="h-4 w-4" />
+              новости
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <Radio className="h-4 w-4" />
+              обновления вселенной
+            </span>
+          </div>
         </div>
       </footer>
     </main>
-  );
+  )
 }

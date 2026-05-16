@@ -1,14 +1,12 @@
-import { ADMIN_SESSION_COOKIE, verifyAdminToken } from '@/lib/admin-auth';
+import { requireAdminSession } from '@/lib/admin-session';
 import { supabaseAdminRequest } from '@/lib/supabase/admin-rest';
 import { Order } from '@/lib/types';
-import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const session = await verifyAdminToken(cookieStore.get(ADMIN_SESSION_COOKIE)?.value);
+    const session = await requireAdminSession();
 
     if (!session) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });

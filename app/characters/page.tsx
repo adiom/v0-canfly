@@ -46,7 +46,7 @@ async function CharactersContent() {
         <section className="mb-16">
           <div className="mb-6">
             <h2 className="text-3xl font-bold text-white mb-2">Карта взаимосвязей</h2>
-            <p className="text-slate-400">Визуализация связей между персонажами вселенной CanFly</p>
+            <p className="text-slate-400">Визуализация связей между персонажами вселенной Canfly</p>
           </div>
           <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
             <div className="w-full h-96">

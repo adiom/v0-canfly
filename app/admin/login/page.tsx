@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 inline-block">
-            CanFly
+            Canfly
           </Link>
           <p className="text-slate-400 mt-2">Администраторская панель</p>
         </div>

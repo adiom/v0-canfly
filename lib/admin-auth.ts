@@ -12,6 +12,15 @@ export interface AdminSession {
   email: string
 }
 
+export function isLocalAdminHostname(hostname: string) {
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]' ||
+    hostname === '::1'
+  )
+}
+
 function getSessionSecret() {
   return process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || 'admin123'
 }
@@ -77,4 +86,3 @@ export async function verifyAdminToken(token: string | undefined): Promise<Admin
     return null
   }
 }
-

@@ -18,7 +18,7 @@ export function AdminShell({ title, description, children }: AdminShellProps) {
             href="/admin"
             className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent"
           >
-            CanFly Admin
+            Canfly Admin
           </Link>
           <Link href="/admin">
             <Button variant="outline" size="sm">

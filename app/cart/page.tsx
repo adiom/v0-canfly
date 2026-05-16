@@ -75,7 +75,7 @@ export default function CartPage() {
       <header className="border-b border-slate-800 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
           <Link href="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-            CanFly
+            Canfly
           </Link>
           
           <nav className="flex gap-6 items-center">
@@ -318,7 +318,7 @@ export default function CartPage() {
       {/* Footer */}
       <footer className="border-t border-slate-800 mt-20 py-8 bg-slate-950/50">
         <div className="max-w-7xl mx-auto px-4 text-center text-slate-400 text-sm">
-          <p>&copy; 2024 CanFly. Все права защищены.</p>
+          <p>&copy; 2024 Canfly. Все права защищены.</p>
         </div>
       </footer>
     </main>
