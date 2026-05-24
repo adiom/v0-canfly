@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
-import Script from 'next/script'
 import { CartProvider } from '@/lib/cart-context'
-import {YandexMetrika} from "@/components/yandex-metrika";
+import { YandexMetricaProvider, standardYMInitParameters } from '@artginzburg/next-ym'
 import { generateOrganizationSchema } from '@/lib/seo/schema'
 import './globals.css'
 
@@ -43,37 +42,19 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body className="font-sans antialiased">
-
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
-        <CartProvider>
-          {children}
-        </CartProvider>
-        <Script id="yandex-metrika" strategy="lazyOnload">
-          {`
-            (function(m, e, t, r, i, k, a) {
-              m[i] = m[i] || function() {
-                (m[i].a = m[i].a || []).push(arguments)
-              };
-              m[i].l = 1 * new Date();
-              k = e.createElement(t), a = e.getElementsByTagName(t)[0], k.async = 1, k.src = r, a.parentNode.insertBefore(k, a)
-            })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
-
-            ym(42420764, 'init', {
-              webvisor: true,
-              clickmap: true,
-              referrer: document.referrer,
-              url: location.href,
-              accurateTrackBounce: true,
-              trackLinks: true
-            });
-          `}
-        </Script>
-        
+        <YandexMetricaProvider
+          tagID={42420764}
+          initParameters={standardYMInitParameters}
+        >
+          <CartProvider>
+            {children}
+          </CartProvider>
+        </YandexMetricaProvider>
       </body>
-      
     </html>
   )
 }

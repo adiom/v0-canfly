@@ -28,8 +28,8 @@ export function generateBookSchema(
     description: book.description,
     image: book.cover_image,
     url: bookUrl,
-    datePublished: book.created_at ? book.created_at.split('T')[0] : undefined,
-    dateModified: book.updated_at ? book.updated_at.split('T')[0] : undefined,
+    datePublished: book.created_at ? new Date(book.created_at).toISOString().split('T')[0] : undefined,
+    dateModified: book.updated_at ? new Date(book.updated_at).toISOString().split('T')[0] : undefined,
     author: {
       '@type': 'Person',
       name: 'Адиом Тимур',
@@ -135,8 +135,7 @@ export function generateOrganizationSchema(baseUrl: string) {
     url: baseUrl,
     logo: `${baseUrl}/logo.png`,
     sameAs: [
-      'https://twitter.com/adiom',
-      'https://instagram.com/adiom',
+      'https://twitter.com/adiomtimur',
       'https://github.com/adiom',
     ],
     founder: {
@@ -147,7 +146,7 @@ export function generateOrganizationSchema(baseUrl: string) {
       '@type': 'ContactPoint',
       telephone: '+7-XXX-XXX-XX-XX',
       contactType: 'Customer Support',
-      email: 'contact@canfly.ru',
+      email: 'contact@canfly.org',
     },
   }
 }
