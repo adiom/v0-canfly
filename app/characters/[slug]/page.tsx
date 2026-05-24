@@ -3,7 +3,6 @@ import { fetchCharacterBySlug } from '@/lib/server/characters';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { CharacterChat } from '@/components/character-chat';
 
 export const dynamic = 'force-dynamic';
 
@@ -147,18 +146,16 @@ export default async function CharacterPage({ params }: CharacterPageProps) {
         </div>
       </section>
 
-      {/* Chat Section */}
+      {/* Chat CTA */}
       <section className="max-w-7xl mx-auto px-4 py-16">
-        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-8">
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-2">Поговори с {character.name}</h2>
           <p className="text-slate-400 mb-8">Спроси о его/её мыслях, книгах вселенной или просто поговори</p>
-          <div className="h-96 flex flex-col">
-            <CharacterChat 
-              characterSlug={character.slug} 
-              characterName={character.name}
-              characterAvatar={character.avatar || ''}
-            />
-          </div>
+          <Link href={`/characters/${character.slug}/chat`}>
+            <Button className="bg-purple-600 hover:bg-purple-700 text-white text-lg px-8 py-3">
+              Начать чат
+            </Button>
+          </Link>
         </div>
       </section>
 

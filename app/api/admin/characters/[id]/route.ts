@@ -58,7 +58,25 @@ export async function GET(
       return Response.json({ error: 'Character not found' }, { status: 404 })
     }
 
-    return Response.json(character)
+    // Parse JSONB fields
+    const parsedCharacter = {
+      ...character,
+      abilities: (() => {
+        if (!character.abilities) return []
+        if (Array.isArray(character.abilities)) return character.abilities
+        if (typeof character.abilities === 'string') {
+          try {
+            const parsed = JSON.parse(character.abilities)
+            return Array.isArray(parsed) ? parsed : []
+          } catch {
+            return []
+          }
+        }
+        return []
+      })(),
+    }
+
+    return Response.json(parsedCharacter)
   } catch (error) {
     console.error('Error fetching admin character:', error)
     return Response.json({ error: 'Failed to fetch character' }, { status: 500 })
@@ -90,7 +108,25 @@ export async function PATCH(
       return Response.json({ error: 'Character not found' }, { status: 404 })
     }
 
-    return Response.json(character)
+    // Parse JSONB fields
+    const parsedCharacter = {
+      ...character,
+      abilities: (() => {
+        if (!character.abilities) return []
+        if (Array.isArray(character.abilities)) return character.abilities
+        if (typeof character.abilities === 'string') {
+          try {
+            const parsed = JSON.parse(character.abilities)
+            return Array.isArray(parsed) ? parsed : []
+          } catch {
+            return []
+          }
+        }
+        return []
+      })(),
+    }
+
+    return Response.json(parsedCharacter)
   } catch (error) {
     console.error('Error updating character:', error)
     return Response.json({ error: 'Failed to update character' }, { status: 500 })

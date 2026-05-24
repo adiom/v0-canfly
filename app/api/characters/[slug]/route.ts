@@ -16,8 +16,26 @@ export async function GET(
       return Response.json({ error: 'Character not found' }, { status: 404 });
     }
 
+    // Parse JSONB fields
+    const parsedCharacter = {
+      ...result.character,
+      abilities: (() => {
+        if (!result.character.abilities) return []
+        if (Array.isArray(result.character.abilities)) return result.character.abilities
+        if (typeof result.character.abilities === 'string') {
+          try {
+            const parsed = JSON.parse(result.character.abilities)
+            return Array.isArray(parsed) ? parsed : []
+          } catch {
+            return []
+          }
+        }
+        return []
+      })(),
+    };
+
     return Response.json({
-      character: result.character as Character,
+      character: parsedCharacter as Character,
       relationships: result.relationships as CharacterRelationship[]
     });
   } catch (error) {

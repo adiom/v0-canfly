@@ -60,7 +60,9 @@ export function CharacterForm({ characterId }: CharacterFormProps) {
           avatar: character.avatar || '',
           bio: character.bio || '',
           full_description: character.full_description || '',
-          abilities: (character.abilities || []).join('\n'),
+          abilities: Array.isArray(character.abilities) 
+            ? character.abilities.join('\n') 
+            : '',
         })
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Ошибка загрузки')

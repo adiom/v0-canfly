@@ -240,11 +240,38 @@ export function BookReader({ book }: { book: BookWithCharacters }) {
                     </div>
                   )}
 
-                  {/* Заглушка — нет контента */}
+                  {/* Нет контента — ссылки на внешние площадки */}
                   {!isComicMode && !isBookMode && (
                     <div className="text-center py-12">
-                      <p className="text-slate-400 mb-6">Содержимое недоступно для чтения онлайн</p>
-                      <p className="text-slate-500 text-sm mb-6">{book.description}</p>
+                      {book.description && (
+                        <p className="text-slate-300 text-base mb-8 max-w-xl mx-auto leading-relaxed">
+                          {book.description}
+                        </p>
+                      )}
+
+                      {book.external_links && Object.keys(book.external_links).length > 0 ? (
+                        <div className="space-y-6">
+                          <p className="text-slate-400 text-sm font-medium">
+                            Эта книга доступна на следующих площадках:
+                          </p>
+                          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                            {Object.entries(book.external_links).map(([store, url]) => (
+                              <a
+                                key={store}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-base transition-colors min-w-[200px]"
+                              >
+                                {store}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-slate-500 text-sm">Скоро в продаже</p>
+                      )}
                     </div>
                   )}
                 </div>

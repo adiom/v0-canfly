@@ -46,7 +46,25 @@ export async function GET() {
 
     const characters = await fetchCharactersList()
 
-    return Response.json(characters)
+    // Parse JSONB fields
+    const parsedCharacters = characters.map((character) => ({
+      ...character,
+      abilities: (() => {
+        if (!character.abilities) return []
+        if (Array.isArray(character.abilities)) return character.abilities
+        if (typeof character.abilities === 'string') {
+          try {
+            const parsed = JSON.parse(character.abilities)
+            return Array.isArray(parsed) ? parsed : []
+          } catch {
+            return []
+          }
+        }
+        return []
+      })(),
+    }))
+
+    return Response.json(parsedCharacters)
   } catch (error) {
     console.error('Error fetching admin characters:', error)
     return Response.json({ error: 'Failed to fetch characters' }, { status: 500 })
@@ -70,7 +88,25 @@ export async function POST(request: Request) {
 
     const character = await createCharacter(normalized.data)
 
-    return Response.json(character, { status: 201 })
+    // Parse JSONB fields
+    const parsedCharacter = {
+      ...character,
+      abilities: (() => {
+        if (!character.abilities) return []
+        if (Array.isArray(character.abilities)) return character.abilities
+        if (typeof character.abilities === 'string') {
+          try {
+            const parsed = JSON.parse(character.abilities)
+            return Array.isArray(parsed) ? parsed : []
+          } catch {
+            return []
+          }
+        }
+        return []
+      })(),
+    }
+
+    return Response.json(parsedCharacter, { status: 201 })
   } catch (error) {
     console.error('Error creating character:', error)
     return Response.json({ error: 'Failed to create character' }, { status: 500 })
