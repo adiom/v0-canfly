@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BookOpen, Boxes, Newspaper, Radio, Search, UserRound } from 'lucide-react'
+import { BookOpen, Boxes, Newspaper, Radio, UserRound } from 'lucide-react'
 
 import { HomeHeroSlider } from '@/components/home-hero-slider'
 import {
@@ -8,13 +8,14 @@ import {
 } from '@/lib/homepage-slide-store'
 import { fetchIssueBooks, fetchNewsPosts } from '@/lib/server/books'
 import { HomepageSlide } from '@/lib/types'
+import { SearchDialog } from '@/components/search/search-dialog'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'canfly | литературная вселенная Адиома Тимура',
+  title: 'canfly | культура твоего сознания',
   description:
-    'Canfly — литературная вселенная о тревоге, ремесле, памяти, цифровой усталости и людях, которые продолжают функционировать.',
+    'canfly — литературная вселенная о тревоге, ремесле, памяти, цифровой усталости и людях, которые продолжают функционировать.',
 }
 
 const navItems = [
@@ -49,10 +50,10 @@ export default async function Home() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 md:px-8">
           <Link href="/" className="flex h-14 items-center gap-3" aria-label="Canfly home">
             <span className="flex h-9 w-16 items-center justify-center bg-[#d52525] text-lg font-black uppercase tracking-[-0.04em] text-white">
-              CF
+              canfly
             </span>
             <span className="hidden text-xs font-semibold uppercase tracking-[0.22em] text-[#9f978b] sm:block">
-              литературная вселенная
+              beta
             </span>
           </Link>
 
@@ -68,13 +69,7 @@ export default async function Home() {
             ))}
           </nav>
 
-          <Link
-            href="/search"
-            className="flex h-10 w-10 items-center justify-center rounded-sm border border-[#f4efe5]/12 text-[#ded7cc] hover:bg-[#f4efe5]/8"
-            aria-label="Поиск"
-          >
-            <Search className="h-5 w-5" />
-          </Link>
+          <SearchDialog />
         </div>
       </header>
 

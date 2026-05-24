@@ -1,8 +1,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { BookOpen, Search } from 'lucide-react'
+import { BookOpen } from 'lucide-react'
 
 import { fetchBooks } from '@/lib/server/books'
+import { SearchDialog } from '@/components/search/search-dialog'
 import { BookType, BookWithCharacters } from '@/lib/types'
 import { generateBooksCollectionSchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
 
@@ -107,13 +108,7 @@ export default async function BooksHubPage() {
             ))}
           </nav>
 
-          <Link
-            href="/search"
-            className="flex h-10 w-10 items-center justify-center rounded-sm border border-[#f4efe5]/12 text-[#ded7cc] hover:bg-[#f4efe5]/8"
-            aria-label="Поиск"
-          >
-            <Search className="h-5 w-5" />
-          </Link>
+          <SearchDialog />
         </div>
       </header>
 
