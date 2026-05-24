@@ -1,5 +1,5 @@
 import { streamText } from 'ai'
-import { createClient } from '@/lib/supabase/server'
+import { dbQueryOne } from '@/lib/db'
 
 const characterPrompts: Record<string, string> = {
   cipher: `Вы Cipher, герой с загадочным прошлым из вселенной canfly. Вы управляете временем и видите возможные будущие. Вы глубокий, философский персонаж, часто говорите загадками и метафорами. Вы помогаете людям понять себя и свои возможности. Говорите как персонаж, используйте его манеру речи.`,
@@ -29,13 +29,14 @@ export async function POST(request: Request) {
 
     const characterPrompt = characterPrompts[characterSlug]
     
-    // Get character info from database
-    const supabase = await createClient()
-    const { data: character } = await supabase
-      .from('characters')
-      .select('name, bio, full_description')
-      .eq('slug', characterSlug)
-      .single()
+    const character = await dbQueryOne<{
+      name: string
+      bio: string | null
+      full_description: string | null
+    }>(
+      'SELECT name, bio, full_description FROM characters WHERE slug = $1 LIMIT 1',
+      [characterSlug],
+    )
 
     const systemPrompt = `${characterPrompt}
 
@@ -49,7 +50,7 @@ ${character?.full_description ? `\nПолное описание: ${character.fu
     const result = streamText({
       model: 'openai/gpt-4o-mini',
       system: systemPrompt,
-      messages: messages.map((msg: any) => ({
+      messages: messages.map((msg: { role: string; content: string }) => ({
         role: msg.role,
         content: msg.content,
       })),

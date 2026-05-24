@@ -1,33 +1,33 @@
-import { createClient } from '@/lib/supabase/server'
+import { dbQuery } from '@/lib/db'
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const characterSlug = searchParams.get('character')
     
-    const supabase = await createClient()
+    const data = await dbQuery(
+      `
+        SELECT
+          p.id,
+          p.content,
+          p.post_type,
+          p.image_url,
+          p.created_at,
+          json_build_object(
+            'id', c.id,
+            'name', c.name,
+            'slug', c.slug,
+            'avatar', c.avatar
+          ) AS character
+        FROM character_posts p
+        JOIN characters c ON c.id = p.character_id
+        WHERE ($1::text IS NULL OR c.slug = $1)
+        ORDER BY p.created_at DESC
+      `,
+      [characterSlug],
+    )
     
-    let query = supabase
-      .from('character_posts')
-      .select(`
-        id,
-        content,
-        post_type,
-        image_url,
-        created_at,
-        character:characters(id, name, slug, avatar)
-      `)
-      .order('created_at', { ascending: false })
-    
-    if (characterSlug) {
-      query = query.eq('characters.slug', characterSlug)
-    }
-    
-    const { data, error } = await query
-    
-    if (error) throw error
-    
-    return Response.json(data || [])
+    return Response.json(data)
   } catch (error) {
     return Response.json(
       { error: 'Failed to fetch posts' },

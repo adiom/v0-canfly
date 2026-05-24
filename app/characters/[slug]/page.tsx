@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { CharacterChat } from '@/components/character-chat';
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 interface CharacterPageProps {
   params: Promise<{ slug: string }>;

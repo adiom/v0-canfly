@@ -16,7 +16,7 @@
 
 - **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS v4
 - **Backend**: Next.js API Routes
-- **База данных**: Supabase (PostgreSQL)
+- **База данных**: Neon/Vercel Postgres
 - **UI**: shadcn/ui компоненты
 - **Аутентификация**: Простая система для администраторов
 
@@ -40,9 +40,7 @@ pnpm install
 Создайте файл `.env.local`:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+DATABASE_URL=postgres://user:password@host/db?sslmode=require
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ADMIN_PASSWORD=admin123
 ```
@@ -181,4 +179,4 @@ pnpm start
 
 ---
 
-**Вопросы?** Обратитесь к документации Supabase и Next.js.
+**Вопросы?** Обратитесь к документации Neon/Vercel Postgres и Next.js.

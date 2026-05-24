@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { BookOpen, Search } from 'lucide-react'
 
-import { createClient } from '@/lib/supabase/server'
+import { fetchBooks } from '@/lib/server/books'
 import { BookType, BookWithCharacters } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -42,31 +42,12 @@ function formatPrice(kopeks: number): string {
 }
 
 async function getBooks(): Promise<BookWithCharacters[]> {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('books')
-    .select('*, book_characters(characters(id, name, slug, avatar, bio))')
-    .order('display_order', { ascending: true })
-
-  if (error) {
-    console.error('Books hub Supabase error:', error)
+  try {
+    return await fetchBooks()
+  } catch (error) {
+    console.error('Books hub database error:', error)
     return []
   }
-
-  const rows = data ?? []
-  return rows.map((book) => {
-    const { book_characters, ...rest } = book as {
-      book_characters?: { characters: unknown }[]
-      [key: string]: unknown
-    }
-
-    return {
-      ...rest,
-      characters: (book_characters ?? [])
-        .map((row) => row.characters)
-        .filter(Boolean),
-    } as BookWithCharacters
-  })
 }
 
 export default async function BooksHubPage() {
@@ -173,7 +154,7 @@ export default async function BooksHubPage() {
             <div className="rounded-sm border border-[#f4efe5]/10 bg-[#1b1c19] p-12 text-center">
               <BookOpen className="mx-auto mb-6 h-10 w-10 text-[#8f877c]" />
               <p className="text-[#c9c1b4]">Пока нет опубликованных книг в базе.</p>
-              <p className="mt-3 text-sm text-[#8f877c]">Добавьте издания в админке или проверьте миграции Supabase.</p>
+              <p className="mt-3 text-sm text-[#8f877c]">Добавьте издания в админке или проверьте схему Postgres.</p>
               <Link
                 href="/admin"
                 className="mt-8 inline-flex h-12 items-center bg-[#d52525] px-5 text-sm font-black uppercase text-white hover:bg-[#b01e1e]"

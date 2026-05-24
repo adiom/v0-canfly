@@ -1,5 +1,5 @@
 import { requireAdminSession } from '@/lib/admin-session'
-import { supabaseAdminRequest } from '@/lib/supabase/admin-rest'
+import { createCharacter, fetchCharactersList } from '@/lib/server/characters'
 import { Character } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -44,9 +44,7 @@ export async function GET() {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const characters = await supabaseAdminRequest<Character[]>(
-      '/rest/v1/characters?select=*&order=created_at.desc',
-    )
+    const characters = await fetchCharactersList()
 
     return Response.json(characters)
   } catch (error) {
@@ -70,18 +68,11 @@ export async function POST(request: Request) {
       return Response.json({ error: normalized.error }, { status: 400 })
     }
 
-    const characters = await supabaseAdminRequest<Character[]>('/rest/v1/characters?select=*', {
-      method: 'POST',
-      headers: {
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify(normalized.data),
-    })
+    const character = await createCharacter(normalized.data)
 
-    return Response.json(characters[0], { status: 201 })
+    return Response.json(character, { status: 201 })
   } catch (error) {
     console.error('Error creating character:', error)
     return Response.json({ error: 'Failed to create character' }, { status: 500 })
   }
 }
-

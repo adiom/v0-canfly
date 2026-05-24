@@ -38,16 +38,14 @@ pnpm install
 cp .env.example .env.local
 ```
 
-### 2. Настройка Supabase
+### 2. Настройка Postgres
 
-1. Создайте проект на [supabase.com](https://supabase.com)
-2. Получите ключи в **Settings → API**
+1. Создайте Postgres базу в Neon/Vercel
+2. Выполните SQL из `postgres/schema.sql`
 3. Обновите `.env.local`:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
-SUPABASE_SERVICE_ROLE_KEY=xxx
+DATABASE_URL=postgres://user:password@host/db?sslmode=require
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ADMIN_PASSWORD=admin123
 ```
@@ -94,7 +92,7 @@ Email: admin@canfly.local
 - **Orders API**: POST `/api/orders`, GET `/api/admin/orders`
 - **Auth API**: POST `/api/admin/login`
 
-### База данных (Supabase PostgreSQL)
+### База данных (Neon/Vercel Postgres)
 ```
 books → type: comic|book|audiobook
         preview_pages: JSON массив URL
@@ -218,8 +216,8 @@ INSERT INTO character_relationships (
 
 ### Backend
 - Next.js API Routes
-- Supabase SDK
-- PostgreSQL (Supabase)
+- pg
+- PostgreSQL (Neon/Vercel)
 
 ### DevTools
 - ESLint
@@ -243,9 +241,8 @@ INSERT INTO character_relationships (
 
 ### Переменные окружения
 ```
-NEXT_PUBLIC_SUPABASE_URL        # URL Supabase проекта
-NEXT_PUBLIC_SUPABASE_ANON_KEY   # Public API ключ
-SUPABASE_SERVICE_ROLE_KEY       # Service role ключ
+DATABASE_URL                    # Основная строка подключения Neon/Postgres
+# или POSTGRES_URL              # Vercel Postgres/Neon integration
 NEXT_PUBLIC_BASE_URL            # URL приложения
 ADMIN_PASSWORD                  # Пароль администратора
 ```
@@ -253,7 +250,7 @@ ADMIN_PASSWORD                  # Пароль администратора
 ## 🐛 Решение проблем
 
 **Q: Ошибка "Таблицы не найдены"**
-A: Убедитесь, что SQL миграции выполнены в Supabase console. Сделайте это один раз вручную.
+A: Убедитесь, что SQL из `postgres/schema.sql` выполнен в Neon/Vercel Postgres.
 
 **Q: Корзина пуста после перезагрузки**
 A: Это нормально — корзина хранится в localStorage браузера. В продакшене используйте БД.
@@ -273,7 +270,7 @@ A: Убедитесь, что URLs изображений доступны. Ис
 - ✅ Админ-панель
 
 ### Phase 2
-- [ ] Аутентификация для пользователей (Supabase Auth)
+- [ ] Аутентификация для пользователей
 - [ ] Система рецензий и рейтингов
 - [ ] Поиск и фильтрация
 - [ ] Уведомления по email

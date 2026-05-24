@@ -74,7 +74,7 @@ export async function GET(
       return Response.json(
         {
           error:
-            'Таблица homepage_slides не создана. Выполните SQL из scripts/003_homepage_slides.sql в Supabase.',
+            'Таблица homepage_slides не создана. Выполните SQL из postgres/schema.sql в Postgres.',
         },
         { status: 424 },
       )
@@ -116,7 +116,7 @@ export async function PATCH(
       return Response.json(
         {
           error:
-            'Таблица homepage_slides не создана. Выполните SQL из scripts/003_homepage_slides.sql в Supabase.',
+            'Таблица homepage_slides не создана. Выполните SQL из postgres/schema.sql в Postgres.',
         },
         { status: 424 },
       )
@@ -148,7 +148,7 @@ export async function DELETE(
       return Response.json(
         {
           error:
-            'Таблица homepage_slides не создана. Выполните SQL из scripts/003_homepage_slides.sql в Supabase.',
+            'Таблица homepage_slides не создана. Выполните SQL из postgres/schema.sql в Postgres.',
         },
         { status: 424 },
       )

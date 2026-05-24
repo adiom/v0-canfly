@@ -1,5 +1,11 @@
 import { requireAdminSession } from '@/lib/admin-session'
-import { supabaseAdminRequest } from '@/lib/supabase/admin-rest'
+import {
+  deleteBook,
+  fetchBookById,
+  getBookCharacterIds,
+  updateBook,
+  updateBookCharacters,
+} from '@/lib/server/books'
 import { Book, BookChapter, BookType, BookWithCharacters } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -100,40 +106,6 @@ function normalizeBookPayload(body: Record<string, unknown>) {
   }
 }
 
-async function getBookCharacterIds(bookId: string) {
-  const rows = await supabaseAdminRequest<Array<{ character_id: string }>>(
-    `/rest/v1/book_characters?select=character_id&book_id=eq.${encodeURIComponent(bookId)}`,
-  )
-
-  return rows.map((row) => row.character_id)
-}
-
-async function updateBookCharacters(bookId: string, characterIds: string[]) {
-  await supabaseAdminRequest(`/rest/v1/book_characters?book_id=eq.${encodeURIComponent(bookId)}`, {
-    method: 'DELETE',
-    headers: {
-      Prefer: 'return=minimal',
-    },
-  })
-
-  if (characterIds.length === 0) {
-    return
-  }
-
-  await supabaseAdminRequest('/rest/v1/book_characters', {
-    method: 'POST',
-    headers: {
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify(
-      characterIds.map((characterId) => ({
-        book_id: bookId,
-        character_id: characterId,
-      })),
-    ),
-  })
-}
-
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -146,21 +118,16 @@ export async function GET(
     }
 
     const { id } = await params
-    const searchParams = new URLSearchParams({
-      select: '*',
-      id: `eq.${id}`,
-      limit: '1',
-    })
-    const books = await supabaseAdminRequest<Book[]>(`/rest/v1/books?${searchParams.toString()}`)
+    const book = await fetchBookById(id)
 
-    if (!books[0]) {
+    if (!book) {
       return Response.json({ error: 'Book not found' }, { status: 404 })
     }
 
     const characterIds = await getBookCharacterIds(id)
 
     return Response.json({
-      ...books[0],
+      ...book,
       character_ids: characterIds,
     } satisfies BookWithCharacters)
   } catch (error) {
@@ -188,25 +155,16 @@ export async function PATCH(
       return Response.json({ error: normalized.error }, { status: 400 })
     }
 
-    const books = await supabaseAdminRequest<Book[]>(
-      `/rest/v1/books?id=eq.${encodeURIComponent(id)}&select=*`,
-      {
-        method: 'PATCH',
-        headers: {
-          Prefer: 'return=representation',
-        },
-        body: JSON.stringify(normalized.data),
-      },
-    )
+    const book = await updateBook(id, normalized.data)
 
-    if (!books[0]) {
+    if (!book) {
       return Response.json({ error: 'Book not found' }, { status: 404 })
     }
 
     await updateBookCharacters(id, normalized.characterIds)
 
     return Response.json({
-      ...books[0],
+      ...book,
       character_ids: normalized.characterIds,
     } satisfies BookWithCharacters)
   } catch (error) {
@@ -228,12 +186,7 @@ export async function DELETE(
 
     const { id } = await params
 
-    await supabaseAdminRequest<Book[]>(`/rest/v1/books?id=eq.${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-      headers: {
-        Prefer: 'return=minimal',
-      },
-    })
+    await deleteBook(id)
 
     return Response.json({ ok: true })
   } catch (error) {

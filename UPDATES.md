@@ -2,6 +2,25 @@
 
 ---
 
+## v4.0 — Переход с Supabase на Neon/Postgres (24 мая 2026)
+
+### Что изменено
+
+- Серверные API routes и страницы переведены с Supabase SDK/PostgREST на прямые SQL-запросы через `pg`.
+- Добавлен общий Postgres-клиент `lib/db.ts` и серверные репозитории для книг, персонажей и администраторов.
+- Добавлен bootstrap schema-файл `postgres/schema.sql` для Neon/Vercel Postgres.
+- Скрипт `pnpm db:structure` теперь читает структуру через `information_schema` из Postgres.
+- Удалена зависимость `@supabase/ssr`; переменные Supabase больше не нужны приложению.
+
+### Как использовать
+
+1. Создать Neon/Vercel Postgres базу.
+2. Выполнить SQL из `postgres/schema.sql`.
+3. Добавить в `.env.local` `DATABASE_URL` или `POSTGRES_URL`.
+4. Запустить `pnpm build` или `pnpm dev`.
+
+---
+
 ## v3.0 — Главы книг и Markdown-читалка (16 мая 2026)
 
 ### Что изменено

@@ -1,20 +1,14 @@
-import { createClient } from '@/lib/supabase/server';
+import { fetchCharactersList } from '@/lib/server/characters';
 import { Character } from '@/lib/types';
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from('characters')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
+  try {
+    const data = await fetchCharactersList();
+    return Response.json(data as Character[]);
+  } catch (error) {
     console.error('Error fetching characters:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'Failed to fetch characters' }, { status: 500 });
   }
-
-  return Response.json(data as Character[]);
 }

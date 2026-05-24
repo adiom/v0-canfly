@@ -9,7 +9,7 @@
 ### Технологический стек
 - **Frontend**: Next.js 16 (App Router), React 19.2, TypeScript 5.7
 - **Styling**: Tailwind CSS v4, shadcn/ui компоненты
-- **Backend**: Next.js API Routes, Supabase PostgreSQL
+- **Backend**: Next.js API Routes, Neon/Vercel Postgres
 - **AI**: OpenAI GPT-4 Mini для чата с персонажами
 - **Deployment**: Vercel
 
@@ -19,7 +19,7 @@
   "next": "16.2.0",
   "react": "19.2.4",
   "typescript": "5.7.3",
-  "@supabase/ssr": "^0.9.0",
+  "pg": "^8.21.0",
   "ai": "^6.0.140",
   "tailwindcss": "^4.2.0"
 }
@@ -51,13 +51,14 @@ components/
 └── home-hero-slider.tsx
 
 lib/
-├── supabase/         # Supabase клиенты
+├── db.ts             # Neon/Postgres клиент
+├── server/           # Серверные репозитории
 ├── cart-context.tsx  # Context для корзины
 ├── types.ts          # TypeScript типы
 └── utils.ts          # Утилиты
 ```
 
-### База данных (Supabase)
+### База данных (Neon/Vercel Postgres)
 
 **Таблицы:**
 1. `books` — книги, комиксы, аудиокниги
@@ -68,7 +69,7 @@ lib/
 6. `homepage_slides` — слайды главной страницы
 7. `admins` — whitelist администраторов
 
-**SQL миграции:** `supabase/migrations/`
+**SQL schema:** `postgres/schema.sql`
 
 ## Правила разработки
 
@@ -111,10 +112,10 @@ lib/
 ```typescript
 // app/api/example/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { dbQuery } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient()
+  const data = await dbQuery('SELECT * FROM books')
   
   // Логика
   
@@ -123,31 +124,29 @@ export async function GET(request: NextRequest) {
 ```
 
 **Правила:**
-- Всегда использовать `createClient()` из `lib/supabase/server`
+- Всегда использовать серверный доступ к БД через `lib/db.ts` или `lib/server/*`
 - Обрабатывать ошибки с понятными сообщениями
 - Возвращать JSON с полями `data` или `error`
 - Использовать правильные HTTP статусы
 
-### 4. Supabase
+### 4. Postgres
 
-**Клиенты:**
-- Server: `lib/supabase/server.ts` — для API Routes и Server Components
-- Client: `lib/supabase/client.ts` — для Client Components
+**Клиент:**
+- `lib/db.ts` — общий Postgres `pg` Pool для API Routes и Server Components
+- `lib/server/*` — доменные функции для книг, персонажей, админов
 
 **Запросы:**
 ```typescript
 // Получение данных
-const { data, error } = await supabase
-  .from('books')
-  .select('*')
-  .eq('is_featured', true)
+const data = await dbQuery<Book>(
+  'SELECT * FROM books WHERE is_featured = true ORDER BY display_order ASC'
+)
 
 // Вставка
-const { data, error } = await supabase
-  .from('orders')
-  .insert({ customer_name, items })
-  .select()
-  .single()
+const order = await dbQueryOne<Order>(
+  'INSERT INTO orders (customer_name, customer_email, items, total) VALUES ($1, $2, $3::jsonb, $4) RETURNING *',
+  [customer_name, customer_email, JSON.stringify(items), total]
+)
 ```
 
 ### 5. AI-чат с персонажами
@@ -215,15 +214,12 @@ export default function NewPage() {
 ```typescript
 // app/api/new-endpoint/route.ts
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { dbQuery } from '@/lib/db'
 
 export async function GET() {
-  const supabase = await createClient()
-  const { data, error } = await supabase.from('table').select()
+  const data = await dbQuery('SELECT * FROM table_name')
   
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+  return NextResponse.json({ data })
   
   return NextResponse.json({ data })
 }
@@ -261,10 +257,8 @@ VALUES (uuid1, uuid2, 'Союзник');
 ## Переменные окружения
 
 ```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
-SUPABASE_SERVICE_ROLE_KEY=xxx
+# Postgres
+DATABASE_URL=postgres://user:password@host/db?sslmode=require
 
 # OpenAI
 OPENAI_API_KEY=sk-xxx
@@ -335,7 +329,7 @@ pnpm db:structure
 ## Контакты и ресурсы
 
 - **Документация Next.js**: https://nextjs.org/docs
-- **Supabase Docs**: https://supabase.com/docs
+- **Neon Docs**: https://neon.com/docs
 - **shadcn/ui**: https://ui.shadcn.com
 - **Tailwind CSS**: https://tailwindcss.com
 

@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import pg from 'pg'
 
 const ENV_FILES = ['.env.local', '.env']
 
@@ -43,60 +44,76 @@ for (const envFile of ENV_FILES) {
   loadEnvFile(resolve(process.cwd(), envFile))
 }
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const databaseUrl =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.POSTGRES_URL_NON_POOLING
 const schema = process.argv[2] || 'public'
 
-if (!supabaseUrl || !apiKey) {
-  console.error('Missing NEXT_PUBLIC_SUPABASE_URL and Supabase API key in .env.local or environment.')
+if (!databaseUrl) {
+  console.error('Missing DATABASE_URL or POSTGRES_URL in .env.local or environment.')
   process.exit(1)
 }
 
-const openApiUrl = new URL('/rest/v1/', supabaseUrl)
+function isLocalDatabaseUrl(value) {
+  try {
+    const url = new URL(value)
+    return ['localhost', '127.0.0.1', '::1'].includes(url.hostname)
+  } catch {
+    return false
+  }
+}
 
-const response = await fetch(openApiUrl, {
-  headers: {
-    apikey: apiKey,
-    Authorization: `Bearer ${apiKey}`,
-    Accept: 'application/openapi+json',
-    'Accept-Profile': schema,
-  },
+const pool = new pg.Pool({
+  connectionString: databaseUrl,
+  ssl: isLocalDatabaseUrl(databaseUrl) ? false : { rejectUnauthorized: false },
 })
 
-if (!response.ok) {
-  const detail = await response.text()
-  console.error(`Failed to read Supabase schema (${response.status} ${response.statusText}).`)
-  console.error(detail)
-  process.exit(1)
-}
+const result = await pool.query(
+  `
+    SELECT
+      table_name,
+      column_name,
+      data_type,
+      udt_name,
+      is_nullable,
+      column_default
+    FROM information_schema.columns
+    WHERE table_schema = $1
+    ORDER BY table_name, ordinal_position
+  `,
+  [schema],
+)
+await pool.end()
 
-const document = await response.json()
-const definitions = document.definitions || document.components?.schemas || {}
-const tables = Object.entries(definitions)
-  .filter(([, definition]) => definition?.type === 'object' && definition.properties)
-  .sort(([left], [right]) => left.localeCompare(right))
+const rows = result.rows
 
-if (tables.length === 0) {
+if (rows.length === 0) {
   console.log(`No tables found in schema "${schema}".`)
   process.exit(0)
 }
 
-console.log(`Supabase schema: ${schema}`)
-console.log(`Tables: ${tables.length}`)
+const tables = new Map()
 
-for (const [tableName, definition] of tables) {
+for (const row of rows) {
+  const columns = tables.get(row.table_name) ?? []
+  columns.push(row)
+  tables.set(row.table_name, columns)
+}
+
+console.log(`Postgres schema: ${schema}`)
+console.log(`Tables: ${tables.size}`)
+
+for (const [tableName, columns] of tables) {
   console.log(`\n${tableName}`)
 
-  const required = new Set(definition.required || [])
-  const columns = Object.entries(definition.properties).sort(([left], [right]) =>
-    left.localeCompare(right),
-  )
+  for (const column of columns) {
+    const type =
+      column.data_type === 'USER-DEFINED' ? column.udt_name : column.data_type
+    const nullable = column.is_nullable === 'NO' ? 'not null' : 'nullable'
+    const defaultValue = column.column_default ? ` default ${column.column_default}` : ''
 
-  for (const [columnName, column] of columns) {
-    const type = column.format ? `${column.type}:${column.format}` : column.type || 'unknown'
-    const nullable = required.has(columnName) ? 'not null' : 'nullable'
-    const description = column.description ? ` - ${column.description}` : ''
-
-    console.log(`  - ${columnName}: ${type} (${nullable})${description}`)
+    console.log(`  - ${column.column_name}: ${type} (${nullable})${defaultValue}`)
   }
 }

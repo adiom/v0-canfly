@@ -1,5 +1,5 @@
 import { ADMIN_SESSION_COOKIE, createAdminToken } from '@/lib/admin-auth';
-import { findAdminByEmail } from '@/lib/supabase/admin-rest';
+import { findAdminByEmail } from '@/lib/server/admins';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {

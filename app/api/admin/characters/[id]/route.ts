@@ -1,5 +1,9 @@
 import { requireAdminSession } from '@/lib/admin-session'
-import { supabaseAdminRequest } from '@/lib/supabase/admin-rest'
+import {
+  deleteCharacter,
+  fetchCharacterById,
+  updateCharacter,
+} from '@/lib/server/characters'
 import { Character } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -48,20 +52,13 @@ export async function GET(
     }
 
     const { id } = await params
-    const searchParams = new URLSearchParams({
-      select: '*',
-      id: `eq.${id}`,
-      limit: '1',
-    })
-    const characters = await supabaseAdminRequest<Character[]>(
-      `/rest/v1/characters?${searchParams.toString()}`,
-    )
+    const character = await fetchCharacterById(id)
 
-    if (!characters[0]) {
+    if (!character) {
       return Response.json({ error: 'Character not found' }, { status: 404 })
     }
 
-    return Response.json(characters[0])
+    return Response.json(character)
   } catch (error) {
     console.error('Error fetching admin character:', error)
     return Response.json({ error: 'Failed to fetch character' }, { status: 500 })
@@ -87,22 +84,13 @@ export async function PATCH(
       return Response.json({ error: normalized.error }, { status: 400 })
     }
 
-    const characters = await supabaseAdminRequest<Character[]>(
-      `/rest/v1/characters?id=eq.${encodeURIComponent(id)}&select=*`,
-      {
-        method: 'PATCH',
-        headers: {
-          Prefer: 'return=representation',
-        },
-        body: JSON.stringify(normalized.data),
-      },
-    )
+    const character = await updateCharacter(id, normalized.data)
 
-    if (!characters[0]) {
+    if (!character) {
       return Response.json({ error: 'Character not found' }, { status: 404 })
     }
 
-    return Response.json(characters[0])
+    return Response.json(character)
   } catch (error) {
     console.error('Error updating character:', error)
     return Response.json({ error: 'Failed to update character' }, { status: 500 })
@@ -122,15 +110,7 @@ export async function DELETE(
 
     const { id } = await params
 
-    await supabaseAdminRequest<Character[]>(
-      `/rest/v1/characters?id=eq.${encodeURIComponent(id)}`,
-      {
-        method: 'DELETE',
-        headers: {
-          Prefer: 'return=minimal',
-        },
-      },
-    )
+    await deleteCharacter(id)
 
     return Response.json({ ok: true })
   } catch (error) {
@@ -138,4 +118,3 @@ export async function DELETE(
     return Response.json({ error: 'Failed to delete character' }, { status: 500 })
   }
 }
-

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Персонажи - canfly | культура твоего сознания',

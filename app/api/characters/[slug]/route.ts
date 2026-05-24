@@ -1,42 +1,30 @@
-import { createClient } from '@/lib/supabase/server';
+import { fetchCharacterBySlug } from '@/lib/server/characters';
 import { Character, CharacterRelationship } from '@/lib/types';
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const supabase = await createClient();
 
-  // Get character
-  const { data: character, error: charError } = await supabase
-    .from('characters')
-    .select('*')
-    .eq('slug', slug)
-    .single();
+  try {
+    const result = await fetchCharacterBySlug(slug);
 
-  if (charError || !character) {
-    return Response.json({ error: 'Character not found' }, { status: 404 });
-  }
+    if (!result) {
+      return Response.json({ error: 'Character not found' }, { status: 404 });
+    }
 
-  // Get relationships
-  const { data: relationships, error: relError } = await supabase
-    .from('character_relationships')
-    .select('*')
-    .eq('character_id', character.id);
-
-  if (relError) {
-    console.error('Error fetching relationships:', relError);
+    return Response.json({
+      character: result.character as Character,
+      relationships: result.relationships as CharacterRelationship[]
+    });
+  } catch (error) {
+    console.error('Error fetching relationships:', error);
     return Response.json(
-      { error: relError.message },
+      { error: 'Failed to fetch character' },
       { status: 500 }
     );
   }
-
-  return Response.json({
-    character: character as Character,
-    relationships: relationships as CharacterRelationship[]
-  });
 }

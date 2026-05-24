@@ -175,7 +175,7 @@ export function generateBreadcrumbSchema(
  * Schema для Список книг
  */
 export function generateBooksCollectionSchema(
-  books: BookWithCharatures[],
+  books: BookWithCharacters[],
   baseUrl: string
 ) {
   return {

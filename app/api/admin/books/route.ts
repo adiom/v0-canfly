@@ -1,5 +1,9 @@
 import { requireAdminSession } from '@/lib/admin-session'
-import { supabaseAdminRequest } from '@/lib/supabase/admin-rest'
+import {
+  createBook,
+  listAdminBooks,
+  updateBookCharacters,
+} from '@/lib/server/books'
 import { Book, BookChapter, BookType, BookWithCharacters } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -100,32 +104,6 @@ function normalizeBookPayload(body: Record<string, unknown>) {
   }
 }
 
-async function updateBookCharacters(bookId: string, characterIds: string[]) {
-  await supabaseAdminRequest(`/rest/v1/book_characters?book_id=eq.${encodeURIComponent(bookId)}`, {
-    method: 'DELETE',
-    headers: {
-      Prefer: 'return=minimal',
-    },
-  })
-
-  if (characterIds.length === 0) {
-    return
-  }
-
-  await supabaseAdminRequest('/rest/v1/book_characters', {
-    method: 'POST',
-    headers: {
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify(
-      characterIds.map((characterId) => ({
-        book_id: bookId,
-        character_id: characterId,
-      })),
-    ),
-  })
-}
-
 export async function GET() {
   try {
     const session = await requireAdminSession()
@@ -134,9 +112,7 @@ export async function GET() {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const books = await supabaseAdminRequest<Book[]>(
-      '/rest/v1/books?select=*&order=display_order.asc',
-    )
+    const books = await listAdminBooks()
 
     return Response.json(books)
   } catch (error) {
@@ -160,14 +136,7 @@ export async function POST(request: Request) {
       return Response.json({ error: normalized.error }, { status: 400 })
     }
 
-    const books = await supabaseAdminRequest<Book[]>('/rest/v1/books?select=*', {
-      method: 'POST',
-      headers: {
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify(normalized.data),
-    })
-    const book = books[0]
+    const book = await createBook(normalized.data)
 
     if (!book) {
       return Response.json({ error: 'Failed to create book' }, { status: 500 })

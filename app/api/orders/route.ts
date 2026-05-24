@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { dbQueryOne } from '@/lib/db';
 import { Order, OrderItem } from '@/lib/types';
 
 export async function POST(request: Request) {
@@ -26,26 +26,45 @@ export async function POST(request: Request) {
       sum + (item.price * item.quantity), 0
     );
 
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
-      .from('orders')
-      .insert({
+    const data = await dbQueryOne<Order>(
+      `
+        INSERT INTO orders (
+          customer_name,
+          customer_email,
+          customer_phone,
+          customer_address,
+          items,
+          total,
+          notes,
+          status
+        )
+        VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, 'pending')
+        RETURNING
+          id,
+          customer_name,
+          customer_email,
+          customer_phone,
+          customer_address,
+          items,
+          total::float8 AS total,
+          status,
+          notes,
+          created_at,
+          updated_at
+      `,
+      [
         customer_name,
         customer_email,
-        customer_phone: customer_phone || null,
-        customer_address: customer_address || null,
-        items,
+        customer_phone || null,
+        customer_address || null,
+        JSON.stringify(items),
         total,
-        notes: notes || null,
-        status: 'pending'
-      })
-      .select()
-      .single();
+        notes || null,
+      ],
+    );
 
-    if (error) {
-      console.error('Error creating order:', error);
-      return Response.json({ error: error.message }, { status: 500 });
+    if (!data) {
+      return Response.json({ error: 'Failed to create order' }, { status: 500 });
     }
 
     return Response.json(data as Order, { status: 201 });
