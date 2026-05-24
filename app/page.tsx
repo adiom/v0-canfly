@@ -6,6 +6,7 @@ import {
   getPublicHomepageSlides,
   isHomepageSlidesTableMissing,
 } from '@/lib/homepage-slide-store'
+import { fetchIssueBooks, fetchNewsPosts } from '@/lib/server/books'
 import { HomepageSlide } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -26,54 +27,11 @@ const navItems = [
   { label: 'Магазин', href: '/shop' },
 ]
 
-const issues = [
-  {
-    title: 'Крой по душе. Глава 1',
-    label: 'atelier cut',
-    description: 'Лампа, кофе, ткань и первая вещь, которая делает с тревогой невозможное.',
-    tone: 'bg-[#f6d6a8]',
-  },
-  {
-    title: 'Маша Можно. Ночной автобус',
-    label: 'city issue',
-    description: 'Память пропускает остановки, а город отвечает слишком длинной паузой.',
-    tone: 'bg-[#9db5c8]',
-  },
-  {
-    title: 'Неучтённая. Коробка без маркировки',
-    label: 'pvz file',
-    description: 'Возврат, ячейка, зеркало в примерочной и реальность с повреждённым учётом.',
-    tone: 'bg-[#d7c6ad]',
-  },
-  {
-    title: 'Железный Хан Волги. Кодекс',
-    label: 'volga log',
-    description: 'Пятьдесят человек, один кузнец и правила, которые должны пережить автора.',
-    tone: 'bg-[#b9c7b3]',
-  },
-]
-
-const news = [
-  {
-    section: 'Книги',
-    title: 'С чего начать читать Canfly',
-    time: 'гид',
-  },
-  {
-    section: 'Миры',
-    title: 'Город N как центральный узел вселенной',
-    time: 'заметка',
-  },
-  {
-    section: 'Персонажи',
-    title: 'Соня, Маша и Варя: три способа удержаться',
-    time: 'досье',
-  },
-]
-
 export default async function Home() {
   let slides: HomepageSlide[] = []
   let isMigrationMissing = false
+
+  const [issues, news] = await Promise.all([fetchIssueBooks(4), fetchNewsPosts(3)])
 
   try {
     slides = await getPublicHomepageSlides()
@@ -133,8 +91,8 @@ export default async function Home() {
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-[#c9c1b4]">
               {isMigrationMissing
-                ? 'Главная страница больше не использует fallback. Выполните SQL-миграцию `scripts/003_homepage_slides.sql`, чтобы создать `homepage_slides` в Supabase.'
-                : 'Главная страница читает слайды только из таблицы Supabase `homepage_slides`.'}
+                ? 'Главная страница больше не использует fallback. Выполните SQL из `postgres/schema.sql`, чтобы создать `homepage_slides` в Postgres.'
+                : 'Главная страница читает слайды только из таблицы Postgres `homepage_slides`.'}
             </p>
             <Link
               href="/admin"
@@ -162,8 +120,11 @@ export default async function Home() {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {issues.map((issue, index) => (
-              <article key={issue.title} className="group border border-[#171713]/12 bg-white">
-                <div className={`relative aspect-[3/4] overflow-hidden ${issue.tone}`}>
+              <Link key={issue.id} href={`/books/${issue.slug}`} className="group border border-[#171713]/12 bg-white">
+                <div
+                  className="relative aspect-[3/4] overflow-hidden"
+                  style={{ backgroundColor: issue.tone ?? '#e8e2da' }}
+                >
                   <div className="absolute inset-5 border border-[#171713]/16" />
                   <div className="absolute bottom-5 left-5 right-5">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-[#171713]/60">
@@ -178,7 +139,7 @@ export default async function Home() {
                   <h3 className="min-h-14 text-lg font-black leading-tight">{issue.title}</h3>
                   <p className="mt-3 text-sm leading-6 text-[#5a534a]">{issue.description}</p>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         </div>
@@ -196,12 +157,12 @@ export default async function Home() {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {news.map((item) => (
-              <article key={item.title} className="border-t border-[#f4efe5]/18 pt-5">
+              <article key={item.id} className="border-t border-[#f4efe5]/18 pt-5">
                 <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-[#9db5c8]">
                   {item.section}
                 </p>
                 <h3 className="text-xl font-bold leading-tight text-[#f4efe5]">{item.title}</h3>
-                <p className="mt-5 text-xs uppercase tracking-[0.14em] text-[#8f877c]">{item.time}</p>
+                <p className="mt-5 text-xs uppercase tracking-[0.14em] text-[#8f877c]">{item.tag}</p>
               </article>
             ))}
           </div>

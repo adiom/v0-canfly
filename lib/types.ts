@@ -20,8 +20,20 @@ export interface Book {
   price: number | null;
   is_featured: boolean;
   display_order: number;
+  label: string | null;
+  tone: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface NewsPost {
+  id: string;
+  section: string;
+  title: string;
+  tag: string | null;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
 }
 
 export interface BookCharacterLink {
