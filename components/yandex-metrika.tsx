@@ -1,26 +1,43 @@
-'use client'
+// components/yandex-metrika.tsx
+"use client";
 
-import { useEffect } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, Suspense } from "react";
+import ym, { YMInitializer } from "react-yandex-metrika";
 
-const YM_ID = 42420764
+const YM_COUNTER_ID = 42420764; // замените на ваш ID счётчика
 
-declare global {
-  interface Window {
-    ym: (...args: unknown[]) => void
-  }
-}
-
-export function YandexMetrika() {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
+function RouterTracker() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (typeof window.ym === 'function') {
-      const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '')
-      window.ym(YM_ID, 'hit', url)
+    if (pathname) {
+      const url = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+      ym("hit", url);
     }
-  }, [pathname, searchParams])
+  }, [pathname, searchParams]);
 
-  return null
+  return null;
 }
+
+export const YandexMetrika = () => {
+  return (
+    <>
+      <YMInitializer
+        accounts={[YM_COUNTER_ID]}
+        options={{
+          defer: true,
+          webvisor: true,
+          clickmap: true,
+          trackLinks: true,
+          accurateTrackBounce: true,
+        }}
+        version="2"
+      />
+      <Suspense fallback={null}>
+        <RouterTracker />
+      </Suspense>
+    </>
+  );
+};

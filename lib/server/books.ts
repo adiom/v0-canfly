@@ -78,6 +78,18 @@ export async function fetchBookById(id: string) {
   return dbQueryOne<Book>(`SELECT ${bookColumns} FROM books WHERE id = $1 LIMIT 1`, [id])
 }
 
+export async function fetchBookBySlug(slug: string): Promise<BookWithCharacters | null> {
+  return dbQueryOne<BookWithCharacters>(
+    `
+      ${booksWithCharactersSelect}
+      WHERE b.slug = $1
+      GROUP BY b.id
+      LIMIT 1
+    `,
+    [slug],
+  )
+}
+
 export async function listAdminBooks() {
   return dbQuery<Book>(`SELECT ${bookColumns} FROM books ORDER BY display_order ASC`)
 }

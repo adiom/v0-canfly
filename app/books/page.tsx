@@ -4,6 +4,7 @@ import { BookOpen, Search } from 'lucide-react'
 
 import { fetchBooks } from '@/lib/server/books'
 import { BookType, BookWithCharacters } from '@/lib/types'
+import { generateBooksCollectionSchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,6 +51,8 @@ async function getBooks(): Promise<BookWithCharacters[]> {
   }
 }
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.ru'
+
 export default async function BooksHubPage() {
   const booksRaw = await getBooks()
   const books = [...booksRaw].sort((a, b) => {
@@ -58,8 +61,25 @@ export default async function BooksHubPage() {
   })
   const featured = booksRaw.filter((b) => b.is_featured)
 
+  const collectionSchema = generateBooksCollectionSchema(books, BASE_URL)
+  const breadcrumbSchema = generateBreadcrumbSchema(
+    [
+      { label: 'Главная', url: BASE_URL },
+      { label: 'Книги', url: `${BASE_URL}/books` },
+    ],
+    BASE_URL,
+  )
+
   return (
     <main className="min-h-screen bg-[#111210]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <header className="sticky top-0 z-50 border-b border-[#f4efe5]/10 bg-[#111210]/92 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 md:px-8">
           <Link href="/" className="flex h-14 items-center gap-3" aria-label="Canfly home">
