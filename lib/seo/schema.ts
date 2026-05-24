@@ -35,8 +35,7 @@ export function generateBookSchema(
       name: 'Адиом Тимур',
       url: `${baseUrl}/`,
       sameAs: [
-        'https://twitter.com/adiom',
-        'https://instagram.com/adiom',
+        'https://twitter.com/adiomtimur',
         'https://github.com/adiom',
       ],
     },

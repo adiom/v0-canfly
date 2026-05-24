@@ -6,7 +6,7 @@ import { fetchBookBySlug } from '@/lib/server/books'
 import { generateBookSchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
 import { BookReader } from '@/components/book-reader'
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.ru'
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
 
 interface BookPageProps {
   params: Promise<{ slug: string }>

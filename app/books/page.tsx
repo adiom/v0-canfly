@@ -51,7 +51,7 @@ async function getBooks(): Promise<BookWithCharacters[]> {
   }
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.ru'
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
 
 export default async function BooksHubPage() {
   const booksRaw = await getBooks()

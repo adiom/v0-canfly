@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   },
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.ru'
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
 const organizationSchema = generateOrganizationSchema(BASE_URL)
 
 export default function RootLayout({
