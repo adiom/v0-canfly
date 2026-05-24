@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Book, Order, Character, HomepageSlide } from '@/lib/types';
+import { Book, Order, Character, HomepageSlide, NewsPost } from '@/lib/types';
 import Link from 'next/link';
 
 export default function AdminPage() {
@@ -13,24 +13,27 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [slides, setSlides] = useState<HomepageSlide[]>([]);
-  const [activeTab, setActiveTab] = useState<'books' | 'characters' | 'slides' | 'orders'>('books');
+  const [newsPosts, setNewsPosts] = useState<NewsPost[]>([]);
+  const [activeTab, setActiveTab] = useState<'books' | 'characters' | 'slides' | 'news' | 'orders'>('books');
   const [error, setError] = useState('');
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [booksRes, ordersRes, charsRes, slidesRes] = await Promise.all([
+        const [booksRes, ordersRes, charsRes, slidesRes, newsRes] = await Promise.all([
           fetch('/api/admin/books'),
           fetch('/api/admin/orders'),
           fetch('/api/admin/characters'),
           fetch('/api/admin/homepage-slides'),
+          fetch('/api/admin/news'),
         ]);
 
         if (
           booksRes.status === 401 ||
           charsRes.status === 401 ||
           ordersRes.status === 401 ||
-          slidesRes.status === 401
+          slidesRes.status === 401 ||
+          newsRes.status === 401
         ) {
           router.push('/admin/login');
           return;
@@ -63,6 +66,13 @@ export default function AdminPage() {
           setOrders(data);
         } else {
           setError('Не удалось загрузить заказы');
+        }
+
+        if (newsRes.ok) {
+          const data = await newsRes.json();
+          setNewsPosts(data);
+        } else {
+          setError('Не удалось загрузить новости');
         }
       } catch (error) {
         console.error('Error loading data:', error);
@@ -134,6 +144,24 @@ export default function AdminPage() {
     setSlides((current) => current.filter((item) => item.id !== slide.id));
   };
 
+  const deleteNews = async (post: NewsPost) => {
+    if (!window.confirm(`Удалить новость "${post.title}"?`)) return;
+
+    const response = await fetch(`/api/admin/news/${post.id}`, { method: 'DELETE' });
+
+    if (response.status === 401) {
+      router.push('/admin/login');
+      return;
+    }
+
+    if (!response.ok) {
+      setError('Не удалось удалить новость');
+      return;
+    }
+
+    setNewsPosts((current) => current.filter((item) => item.id !== post.id));
+  };
+
   if (loading) {
     return (
       <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
@@ -199,6 +227,16 @@ export default function AdminPage() {
             }`}
           >
             Слайдер ({slides.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('news')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === 'news'
+                ? 'text-purple-400 border-b-2 border-purple-400'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Новости ({newsPosts.length})
           </button>
           <button
             onClick={() => setActiveTab('orders')}
@@ -347,6 +385,67 @@ export default function AdminPage() {
               ) : (
                 <div className="text-center py-12 text-slate-400">
                   Слайды пока не добавлены
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* News Tab */}
+        {activeTab === 'news' && (
+          <div>
+            <div className="mb-6 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-white">Управление новостями</h2>
+              <Link href="/admin/news/new">
+                <Button className="bg-purple-600 hover:bg-purple-700">
+                  Добавить новость
+                </Button>
+              </Link>
+            </div>
+
+            <div className="space-y-4">
+              {newsPosts.length > 0 ? (
+                newsPosts.map((post) => (
+                  <div key={post.id} className="bg-slate-800 border border-slate-700 rounded-lg p-6 flex justify-between items-center gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <h3 className="text-lg font-bold text-white">{post.title}</h3>
+                        <span className={`rounded-full px-2 py-1 text-xs ${
+                          post.is_active
+                            ? 'bg-green-900/50 text-green-200'
+                            : 'bg-slate-700 text-slate-300'
+                        }`}>
+                          {post.is_active ? 'активна' : 'скрыта'}
+                        </span>
+                        <span className="rounded-full bg-slate-950 px-2 py-1 text-xs text-slate-400">
+                          #{post.display_order}
+                        </span>
+                      </div>
+                      <p className="text-slate-400 text-sm">
+                        {post.section}{post.tag ? ` • ${post.tag}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <Link href={`/news/${post.id}`} target="_blank">
+                        <Button variant="outline" size="sm">Просмотр</Button>
+                      </Link>
+                      <Link href={`/admin/news/${post.id}/edit`}>
+                        <Button variant="outline" size="sm">Редактировать</Button>
+                      </Link>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-400 hover:text-red-300"
+                        onClick={() => deleteNews(post)}
+                      >
+                        Удалить
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12 text-slate-400">
+                  Новости пока не добавлены
                 </div>
               )}
             </div>

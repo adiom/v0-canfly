@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS public.news_posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   section TEXT NOT NULL,
   title TEXT NOT NULL,
+  content TEXT,
   tag TEXT,
   display_order INTEGER NOT NULL DEFAULT 0,
   is_active BOOLEAN NOT NULL DEFAULT true,

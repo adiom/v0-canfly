@@ -30,6 +30,7 @@ export interface NewsPost {
   id: string;
   section: string;
   title: string;
+  content: string | null;
   tag: string | null;
   display_order: number;
   is_active: boolean;
