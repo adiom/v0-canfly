@@ -2,7 +2,9 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { CartProvider } from '@/lib/cart-context'
+import { YandexMetrika } from '@/components/yandex-metrika'
 import Script from 'next/script'
+import { Suspense } from 'react'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -44,28 +46,31 @@ export default function RootLayout({
         </CartProvider>
         <Analytics />
         <Script
+          id="yandex-metrika"
+          strategy="afterInteractive"
+          src="https://mc.yandex.ru/metrika/tag.js"
+        />
+        <Script
+          id="yandex-metrika-init"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
-              (function(m,e,t,r,i,k,a){
-                m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-                m[i].l=1*new Date();
-                for (var j = 0; j < document.scripts.length; j++) {
-                  if (document.scripts[j].src === r) { return; }
-                }
-                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-              })(window, document,'script','https://mc.yandex.ru/metrika/tag.js', 'ym');
+              window.ym = window.ym || function(){(window.ym.a = window.ym.a || []).push(arguments)};
+              window.ym.l = 1*new Date();
               ym(42420764, 'init', {
-                webvisor:true,
-                clickmap:true,
-                referrer: document.referrer,
-                url: location.href,
-                accurateTrackBounce:true,
-                trackLinks:true
+                defer: true,
+                webvisor: true,
+                clickmap: true,
+                trackLinks: true,
+                accurateTrackBounce: true,
+                trackHash: true
               });
             `
           }}
         />
+        <Suspense fallback={null}>
+          <YandexMetrika />
+        </Suspense>
         <noscript>
           <div>
             <img src="https://mc.yandex.ru/watch/42420764" style={{ position: 'absolute', left: '-9999px' }} alt="" />
