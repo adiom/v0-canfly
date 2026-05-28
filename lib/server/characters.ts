@@ -1,5 +1,5 @@
 import { dbQuery, dbQueryOne } from '@/lib/db'
-import { Character, CharacterRelationship } from '@/lib/types'
+import { Character, CharacterBookAppearance, CharacterRelationship } from '@/lib/types'
 
 export async function fetchCharactersList(): Promise<Character[]> {
   return dbQuery<Character>('SELECT * FROM characters ORDER BY created_at DESC')
@@ -21,6 +21,7 @@ export async function fetchRelationshipsForCharacters(
 export async function fetchCharacterBySlug(slug: string): Promise<{
   character: Character
   relationships: CharacterRelationship[]
+  books: CharacterBookAppearance[]
 } | null> {
   const character = await dbQueryOne<Character>('SELECT * FROM characters WHERE slug = $1 LIMIT 1', [
     slug,
@@ -35,10 +36,48 @@ export async function fetchCharacterBySlug(slug: string): Promise<{
     [character.id],
   )
 
+  let books: CharacterBookAppearance[] = []
+
+  try {
+    books = await fetchBooksForCharacter(character.id)
+  } catch (error) {
+    console.warn('Character book appearances are unavailable:', error)
+  }
+
   return {
     character,
     relationships,
+    books,
   }
+}
+
+export async function fetchBooksForCharacter(characterId: string) {
+  return dbQuery<CharacterBookAppearance>(
+    `
+      SELECT
+        b.id,
+        b.title,
+        b.slug,
+        b.type,
+        b.cover_image,
+        bc.role,
+        bc.importance_score
+      FROM book_characters bc
+      JOIN books b ON b.id = bc.book_id
+      WHERE bc.character_id = $1
+      ORDER BY
+        CASE bc.role
+          WHEN 'main' THEN 1
+          WHEN 'supporting' THEN 2
+          WHEN 'cameo' THEN 3
+          ELSE 4
+        END,
+        bc.importance_score DESC,
+        b.display_order ASC,
+        b.created_at DESC
+    `,
+    [characterId],
+  )
 }
 
 export async function fetchCharacterById(id: string) {
@@ -48,8 +87,22 @@ export async function fetchCharacterById(id: string) {
 export async function createCharacter(data: Record<string, unknown>) {
   return dbQueryOne<Character>(
     `
-      INSERT INTO characters (name, slug, avatar, bio, full_description, abilities)
-      VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+      INSERT INTO characters (
+        name,
+        slug,
+        avatar,
+        bio,
+        full_description,
+        abilities,
+        speaking_style,
+        personality,
+        boundaries,
+        knowledge_scope,
+        spoiler_policy,
+        reply_mode,
+        can_receive_messages
+      )
+      VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10, $11, $12::character_reply_mode, $13)
       RETURNING *
     `,
     [
@@ -59,6 +112,13 @@ export async function createCharacter(data: Record<string, unknown>) {
       data.bio,
       data.full_description,
       JSON.stringify(data.abilities ?? []),
+      data.speaking_style,
+      data.personality,
+      data.boundaries,
+      data.knowledge_scope,
+      data.spoiler_policy,
+      data.reply_mode ?? 'ai_auto',
+      data.can_receive_messages ?? true,
     ],
   )
 }
@@ -73,7 +133,14 @@ export async function updateCharacter(id: string, data: Record<string, unknown>)
         avatar = $4,
         bio = $5,
         full_description = $6,
-        abilities = $7::jsonb
+        abilities = $7::jsonb,
+        speaking_style = $8,
+        personality = $9,
+        boundaries = $10,
+        knowledge_scope = $11,
+        spoiler_policy = $12,
+        reply_mode = $13::character_reply_mode,
+        can_receive_messages = $14
       WHERE id = $1
       RETURNING *
     `,
@@ -85,6 +152,13 @@ export async function updateCharacter(id: string, data: Record<string, unknown>)
       data.bio,
       data.full_description,
       JSON.stringify(data.abilities ?? []),
+      data.speaking_style,
+      data.personality,
+      data.boundaries,
+      data.knowledge_scope,
+      data.spoiler_policy,
+      data.reply_mode ?? 'ai_auto',
+      data.can_receive_messages ?? true,
     ],
   )
 }

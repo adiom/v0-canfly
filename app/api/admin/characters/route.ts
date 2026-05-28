@@ -32,6 +32,31 @@ function normalizeCharacterPayload(body: Record<string, unknown>) {
           ? body.full_description.trim()
           : null,
       abilities: normalizeStringArray(body.abilities),
+      speaking_style:
+        typeof body.speaking_style === 'string' && body.speaking_style.trim()
+          ? body.speaking_style.trim()
+          : null,
+      personality:
+        typeof body.personality === 'string' && body.personality.trim()
+          ? body.personality.trim()
+          : null,
+      boundaries:
+        typeof body.boundaries === 'string' && body.boundaries.trim()
+          ? body.boundaries.trim()
+          : null,
+      knowledge_scope:
+        typeof body.knowledge_scope === 'string' && body.knowledge_scope.trim()
+          ? body.knowledge_scope.trim()
+          : null,
+      spoiler_policy:
+        typeof body.spoiler_policy === 'string' && body.spoiler_policy.trim()
+          ? body.spoiler_policy.trim()
+          : null,
+      reply_mode:
+        body.reply_mode === 'manual' || body.reply_mode === 'hybrid' || body.reply_mode === 'disabled'
+          ? body.reply_mode
+          : 'ai_auto',
+      can_receive_messages: body.can_receive_messages !== false,
     },
   }
 }

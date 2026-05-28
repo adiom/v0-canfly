@@ -19,6 +19,13 @@ const emptyForm = {
   bio: '',
   full_description: '',
   abilities: '',
+  speaking_style: '',
+  personality: '',
+  boundaries: '',
+  knowledge_scope: '',
+  spoiler_policy: '',
+  reply_mode: 'ai_auto',
+  can_receive_messages: 'true',
 }
 
 function createSlug(value: string) {
@@ -63,6 +70,13 @@ export function CharacterForm({ characterId }: CharacterFormProps) {
           abilities: Array.isArray(character.abilities) 
             ? character.abilities.join('\n') 
             : '',
+          speaking_style: character.speaking_style || '',
+          personality: character.personality || '',
+          boundaries: character.boundaries || '',
+          knowledge_scope: character.knowledge_scope || '',
+          spoiler_policy: character.spoiler_policy || '',
+          reply_mode: character.reply_mode || 'ai_auto',
+          can_receive_messages: character.can_receive_messages === false ? 'false' : 'true',
         })
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Ошибка загрузки')
@@ -82,6 +96,13 @@ export function CharacterForm({ characterId }: CharacterFormProps) {
       bio: form.bio,
       full_description: form.full_description,
       abilities: form.abilities.split('\n'),
+      speaking_style: form.speaking_style,
+      personality: form.personality,
+      boundaries: form.boundaries,
+      knowledge_scope: form.knowledge_scope,
+      spoiler_policy: form.spoiler_policy,
+      reply_mode: form.reply_mode,
+      can_receive_messages: form.can_receive_messages === 'true',
     }),
     [form],
   )
@@ -201,6 +222,84 @@ export function CharacterForm({ characterId }: CharacterFormProps) {
         />
       </label>
 
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="space-y-2 text-sm text-slate-300">
+          <span>Режим ответов</span>
+          <select
+            value={form.reply_mode}
+            onChange={(event) => updateField('reply_mode', event.target.value)}
+            className="h-10 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-sm text-white"
+          >
+            <option value="ai_auto">AI автоматически</option>
+            <option value="manual">Вручную</option>
+            <option value="hybrid">AI + подтверждение</option>
+            <option value="disabled">Отключено</option>
+          </select>
+        </label>
+
+        <label className="space-y-2 text-sm text-slate-300">
+          <span>Можно писать персонажу</span>
+          <select
+            value={form.can_receive_messages}
+            onChange={(event) => updateField('can_receive_messages', event.target.value)}
+            className="h-10 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-sm text-white"
+          >
+            <option value="true">Да</option>
+            <option value="false">Нет</option>
+          </select>
+        </label>
+      </div>
+
+      <label className="space-y-2 text-sm text-slate-300">
+        <span>Манера речи</span>
+        <Textarea
+          value={form.speaking_style}
+          onChange={(event) => updateField('speaking_style', event.target.value)}
+          rows={3}
+          className="border-slate-700 bg-slate-950 text-white"
+        />
+      </label>
+
+      <label className="space-y-2 text-sm text-slate-300">
+        <span>Характер</span>
+        <Textarea
+          value={form.personality}
+          onChange={(event) => updateField('personality', event.target.value)}
+          rows={3}
+          className="border-slate-700 bg-slate-950 text-white"
+        />
+      </label>
+
+      <label className="space-y-2 text-sm text-slate-300">
+        <span>Границы знаний</span>
+        <Textarea
+          value={form.knowledge_scope}
+          onChange={(event) => updateField('knowledge_scope', event.target.value)}
+          rows={3}
+          className="border-slate-700 bg-slate-950 text-white"
+        />
+      </label>
+
+      <label className="space-y-2 text-sm text-slate-300">
+        <span>Политика спойлеров</span>
+        <Textarea
+          value={form.spoiler_policy}
+          onChange={(event) => updateField('spoiler_policy', event.target.value)}
+          rows={3}
+          className="border-slate-700 bg-slate-950 text-white"
+        />
+      </label>
+
+      <label className="space-y-2 text-sm text-slate-300">
+        <span>Ограничения персонажа</span>
+        <Textarea
+          value={form.boundaries}
+          onChange={(event) => updateField('boundaries', event.target.value)}
+          rows={3}
+          className="border-slate-700 bg-slate-950 text-white"
+        />
+      </label>
+
       <div className="flex justify-end gap-3">
         <Button type="button" variant="outline" onClick={() => router.push('/admin')}>
           Отмена
@@ -212,4 +311,3 @@ export function CharacterForm({ characterId }: CharacterFormProps) {
     </form>
   )
 }
-

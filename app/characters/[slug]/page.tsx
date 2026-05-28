@@ -3,6 +3,7 @@ import { fetchCharacterBySlug } from '@/lib/server/characters';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { CharacterFriendButton } from '@/components/character-friend-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,6 +62,8 @@ export default async function CharacterPage({ params }: CharacterPageProps) {
 
   const character: Character = data.character;
   const relationships: CharacterRelationship[] = data.relationships || [];
+  const mainBooks = (data.books || []).filter((book) => book.role === 'main');
+  const supportingBooks = (data.books || []).filter((book) => book.role !== 'main');
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
@@ -116,12 +119,79 @@ export default async function CharacterPage({ params }: CharacterPageProps) {
             <h1 className="text-5xl font-bold text-white mb-4">{character.name}</h1>
             
             <p className="text-2xl text-purple-300 mb-6">{character.bio}</p>
+
+            <div className="mb-8">
+              <CharacterFriendButton
+                characterSlug={character.slug}
+                canReceiveMessages={character.can_receive_messages !== false && character.reply_mode !== 'disabled'}
+              />
+            </div>
             
             <div className="prose prose-invert max-w-none mb-8">
               <p className="text-slate-300 text-lg leading-relaxed whitespace-pre-wrap">
                 {character.full_description || 'Подробное описание отсутствует.'}
               </p>
             </div>
+
+            {(mainBooks.length > 0 || supportingBooks.length > 0) && (
+              <div className="mt-12">
+                <h3 className="text-2xl font-bold text-white mb-6">Книги с персонажем</h3>
+                {mainBooks.length > 0 && (
+                  <div className="mb-8">
+                    <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-[#f6d6a8]">
+                      Основные книги
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {mainBooks.map((book) => (
+                        <Link
+                          key={book.id}
+                          href={`/books/${book.slug}`}
+                          className="group flex gap-4 rounded-lg border border-slate-700 bg-slate-800/70 p-4 transition-colors hover:border-[#f6d6a8]/45"
+                        >
+                          {book.cover_image ? (
+                            <div className="relative h-20 w-14 flex-shrink-0 overflow-hidden rounded border border-slate-700">
+                              <Image src={book.cover_image} alt={book.title} fill className="object-cover" />
+                            </div>
+                          ) : null}
+                          <div>
+                            <h4 className="font-bold text-white group-hover:text-[#f6d6a8]">{book.title}</h4>
+                            <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">
+                              Главная роль
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {supportingBooks.length > 0 && (
+                  <div>
+                    <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                      Второстепенные появления
+                    </p>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {supportingBooks.map((book) => (
+                        <Link
+                          key={book.id}
+                          href={`/books/${book.slug}`}
+                          className="rounded-lg border border-slate-800 bg-slate-900/70 p-4 transition-colors hover:border-[#f6d6a8]/45"
+                        >
+                          <h4 className="font-bold text-white">{book.title}</h4>
+                          <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">
+                            {book.role === 'cameo'
+                              ? 'Камео'
+                              : book.role === 'mentioned'
+                                ? 'Упоминание'
+                                : 'Вторая роль'}
+                          </p>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Related Characters */}
             {relationships.length > 0 && (

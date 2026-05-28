@@ -89,11 +89,17 @@ export default async function CharacterChatPage({ params }: ChatPageProps) {
 
       {/* Chat */}
       <section className="flex-1 max-w-4xl w-full mx-auto px-4 py-6 flex flex-col">
-        <CharacterChat
-          characterSlug={character.slug}
-          characterName={character.name}
-          characterAvatar={character.avatar || ''}
-        />
+        {character.can_receive_messages !== false && character.reply_mode !== 'disabled' ? (
+          <CharacterChat
+            characterSlug={character.slug}
+            characterName={character.name}
+            characterAvatar={character.avatar || ''}
+          />
+        ) : (
+          <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-6 text-slate-300">
+            Сейчас этому персонажу нельзя писать.
+          </div>
+        )}
       </section>
     </main>
   );

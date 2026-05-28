@@ -58,8 +58,77 @@ export interface Character {
   bio: string | null;
   full_description: string | null;
   abilities: string[] | null;
+  speaking_style: string | null;
+  personality: string | null;
+  boundaries: string | null;
+  knowledge_scope: string | null;
+  spoiler_policy: string | null;
+  reply_mode: CharacterReplyMode;
+  can_receive_messages: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export type UserRole = 'reader' | 'author' | 'editor' | 'admin';
+export type CharacterReplyMode = 'ai_auto' | 'manual' | 'hybrid' | 'disabled';
+export type CharacterFriendshipStatus = 'pending' | 'accepted' | 'blocked';
+export type CharacterMessageRole = 'user' | 'character' | 'system';
+export type BookCharacterRole = 'main' | 'supporting' | 'cameo' | 'mentioned';
+
+export interface UserProfile {
+  id: string;
+  email: string | null;
+  login: string | null;
+  handle: string;
+  display_name: string;
+  avatar: string | null;
+  bio: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminUserProfile extends UserProfile {
+  roles: UserRole[];
+  friends_count: number;
+  conversations_count: number;
+}
+
+export interface CharacterFriendship {
+  id: string;
+  user_id: string;
+  character_id: string;
+  status: CharacterFriendshipStatus;
+  intimacy_level: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CharacterConversation {
+  id: string;
+  user_id: string;
+  character_id: string;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CharacterMessage {
+  id: string;
+  conversation_id: string;
+  role: CharacterMessageRole;
+  content: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface CharacterBookAppearance {
+  id: string;
+  title: string;
+  slug: string;
+  type: BookType;
+  cover_image: string | null;
+  role: BookCharacterRole;
+  importance_score: number;
 }
 
 export interface CharacterRelationship {

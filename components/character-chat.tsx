@@ -2,7 +2,6 @@
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card } from '@/components/ui/card'
 import Image from 'next/image'
 import { useRef, useEffect, useState } from 'react'
 
@@ -28,7 +27,44 @@ export function CharacterChat({ characterSlug, characterName, characterAvatar }:
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [historyLoading, setHistoryLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    let active = true
+
+    const loadHistory = async () => {
+      try {
+        const response = await fetch(`/api/characters/${characterSlug}/conversation`)
+        const payload = await response.json()
+        const savedMessages = payload.data?.messages
+
+        if (!active || !Array.isArray(savedMessages) || savedMessages.length === 0) {
+          return
+        }
+
+        setMessages(
+          savedMessages.map(
+            (message: { id: string; role: 'user' | 'character' | 'system'; content: string }) => ({
+              id: message.id,
+              role: message.role === 'character' ? 'assistant' : 'user',
+              content: message.content,
+            }),
+          ),
+        )
+      } catch (error) {
+        console.error('Conversation history error:', error)
+      } finally {
+        if (active) setHistoryLoading(false)
+      }
+    }
+
+    loadHistory()
+
+    return () => {
+      active = false
+    }
+  }, [characterSlug])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -108,6 +144,12 @@ export function CharacterChat({ characterSlug, characterName, characterAvatar }:
     <div className="flex flex-col h-full">
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto space-y-4 mb-6">
+        {historyLoading && (
+          <div className="rounded-lg border border-slate-800 bg-slate-900/70 px-4 py-3 text-sm text-slate-400">
+            Загружаем историю диалога...
+          </div>
+        )}
+
         {messages.map((message) => (
           <div
             key={message.id}
@@ -115,12 +157,18 @@ export function CharacterChat({ characterSlug, characterName, characterAvatar }:
           >
             {message.role === 'assistant' && (
               <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-slate-600">
-                <Image
-                  src={characterAvatar}
-                  alt={characterName}
-                  fill
-                  className="object-cover"
-                />
+                {characterAvatar ? (
+                  <Image
+                    src={characterAvatar}
+                    alt={characterName}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-slate-800 text-xs text-slate-300">
+                    {characterName.slice(0, 1)}
+                  </div>
+                )}
               </div>
             )}
 
@@ -144,12 +192,18 @@ export function CharacterChat({ characterSlug, characterName, characterAvatar }:
         {isLoading && (
           <div className="flex gap-4">
             <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-slate-600">
-              <Image
-                src={characterAvatar}
-                alt={characterName}
-                fill
-                className="object-cover"
-              />
+              {characterAvatar ? (
+                <Image
+                  src={characterAvatar}
+                  alt={characterName}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-slate-800 text-xs text-slate-300">
+                  {characterName.slice(0, 1)}
+                </div>
+              )}
             </div>
             <div className="bg-slate-700 px-4 py-3 rounded-lg">
               <div className="flex gap-2">

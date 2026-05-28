@@ -1,5 +1,12 @@
-import { streamText } from 'ai'
-import { dbQueryOne } from '@/lib/db'
+import { ModelMessage, streamText } from 'ai'
+import {
+  addCharacterMessage,
+  ensureReaderUser,
+  fetchConversationMessages,
+  getOrCreateCharacterConversation,
+  upsertCharacterFriendship,
+} from '@/lib/server/users'
+import { fetchCharacterBySlug } from '@/lib/server/characters'
 
 const characterPrompts: Record<string, string> = {
   cipher: `Вы Cipher, герой с загадочным прошлым из вселенной canfly. Вы управляете временем и видите возможные будущие. Вы глубокий, философский персонаж, часто говорите загадками и метафорами. Вы помогаете людям понять себя и свои возможности. Говорите как персонаж, используйте его манеру речи.`,
@@ -23,39 +30,85 @@ export async function POST(request: Request) {
   try {
     const { messages, characterSlug } = await request.json()
     
-    if (!characterSlug || !characterPrompts[characterSlug]) {
+    if (!characterSlug) {
       return new Response('Invalid character', { status: 400 })
     }
 
-    const characterPrompt = characterPrompts[characterSlug]
-    
-    const character = await dbQueryOne<{
-      name: string
-      bio: string | null
-      full_description: string | null
-    }>(
-      'SELECT name, bio, full_description FROM characters WHERE slug = $1 LIMIT 1',
-      [characterSlug],
-    )
+    const data = await fetchCharacterBySlug(characterSlug)
+
+    if (!data?.character) {
+      return new Response('Invalid character', { status: 400 })
+    }
+
+    const character = data.character
+
+    if (!character.can_receive_messages || character.reply_mode === 'disabled') {
+      return new Response('Character does not receive messages', { status: 403 })
+    }
+
+    const user = await ensureReaderUser()
+    const friendship = await upsertCharacterFriendship(user.id, character.id)
+    const conversation = await getOrCreateCharacterConversation(user.id, character.id)
+
+    if (!conversation) {
+      return new Response('Conversation unavailable', { status: 500 })
+    }
+
+    const incomingMessages = Array.isArray(messages) ? messages : []
+    const latestUserMessage = [...incomingMessages]
+      .reverse()
+      .find((msg: { role?: string; content?: string }) => msg.role === 'user' && msg.content?.trim())
+
+    if (latestUserMessage?.content) {
+      await addCharacterMessage(conversation.id, 'user', latestUserMessage.content.trim(), {
+        source: 'chat',
+      })
+    }
+
+    const storedMessages = await fetchConversationMessages(conversation.id, 24)
+    const modelMessages: ModelMessage[] = storedMessages.map((message) => ({
+      role: message.role === 'character' ? 'assistant' : message.role,
+      content: message.content,
+    }))
+
+    const characterPrompt = characterPrompts[characterSlug] || `Вы ${character.name}, персонаж литературной вселенной canfly.`
 
     const systemPrompt = `${characterPrompt}
 
 Информация о персонаже:
-Имя: ${character?.name}
-Описание: ${character?.bio}
-${character?.full_description ? `\nПолное описание: ${character.full_description}` : ''}
+Имя: ${character.name}
+Описание: ${character.bio}
+${character.full_description ? `\nПолное описание: ${character.full_description}` : ''}
+${character.personality ? `\nХарактер: ${character.personality}` : ''}
+${character.speaking_style ? `\nМанера речи: ${character.speaking_style}` : ''}
+${character.knowledge_scope ? `\nГраницы знаний: ${character.knowledge_scope}` : ''}
+${character.spoiler_policy ? `\nПолитика спойлеров: ${character.spoiler_policy}` : ''}
+${character.boundaries ? `\nОграничения: ${character.boundaries}` : ''}
 
-Помни эту информацию при общении. Говори только от лица этого персонажа. Если тебя спрашивают о книгах и комиксах вселенной canfly, рассказывай как этот персонаж видит эти события.`
+Отношение к пользователю:
+Пользователь добавил персонажа в друзья. Статус связи: ${friendship?.status || 'accepted'}.
+Уровень близости: ${friendship?.intimacy_level ?? 1}/100.
+
+Правила общения:
+- Говори только от лица этого персонажа.
+- Не утверждай, что ты AI.
+- Не раскрывай скрытые сюжетные детали, если пользователь явно не просит спойлеры.
+- Если тебя спрашивают о книгах и комиксах вселенной canfly, рассказывай как этот персонаж видит эти события.`
 
     const result = streamText({
       model: 'openai/gpt-4o-mini',
       system: systemPrompt,
-      messages: messages.map((msg: { role: string; content: string }) => ({
-        role: msg.role,
-        content: msg.content,
-      })),
+      messages: modelMessages,
       temperature: 0.8,
       maxOutputTokens: 1024,
+      onFinish: async ({ text }) => {
+        if (text?.trim()) {
+          await addCharacterMessage(conversation.id, 'character', text.trim(), {
+            source: 'openai',
+            model: 'gpt-4o-mini',
+          })
+        }
+      },
     })
 
     return result.toTextStreamResponse()
