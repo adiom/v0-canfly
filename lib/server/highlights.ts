@@ -53,9 +53,9 @@ export async function fetchHighlights(options: {
   const results = await dbQuery<Highlight>(query, params);
   return results.map(row => ({
     ...row,
-    type: String(row.type),
-    visibility: String(row.visibility),
-    status: String(row.status),
+    type: row.type as HighlightType,
+    visibility: row.visibility as HighlightVisibility,
+    status: row.status as HighlightStatus,
     range_data: typeof row.range_data === 'string' 
       ? JSON.parse(row.range_data) 
       : row.range_data || {}
@@ -67,9 +67,9 @@ export async function fetchHighlightById(id: string) {
   if (!result) return null;
   return {
     ...result,
-    type: String(result.type),
-    visibility: String(result.visibility),
-    status: String(result.status),
+    type: result.type as HighlightType,
+    visibility: result.visibility as HighlightVisibility,
+    status: result.status as HighlightStatus,
     range_data: typeof result.range_data === 'string' 
       ? JSON.parse(result.range_data) 
       : result.range_data || {}
@@ -108,9 +108,9 @@ export async function createHighlight(data: Partial<Highlight>) {
   if (!result) return null;
   return {
     ...result,
-    type: String(result.type),
-    visibility: String(result.visibility),
-    status: String(result.status),
+    type: result.type as HighlightType,
+    visibility: result.visibility as HighlightVisibility,
+    status: result.status as HighlightStatus,
     range_data: typeof result.range_data === 'string' 
       ? JSON.parse(result.range_data) 
       : result.range_data || {}
@@ -148,9 +148,9 @@ export async function updateHighlight(id: string, data: Partial<Highlight>) {
   if (!result) return null;
   return {
     ...result,
-    type: String(result.type),
-    visibility: String(result.visibility),
-    status: String(result.status),
+    type: result.type as HighlightType,
+    visibility: result.visibility as HighlightVisibility,
+    status: result.status as HighlightStatus,
     range_data: typeof result.range_data === 'string'
       ? JSON.parse(result.range_data)
       : result.range_data || {}

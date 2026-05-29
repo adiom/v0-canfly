@@ -3,25 +3,28 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { BookWithCharacters, Highlight, UserRole, UserProfile } from '@/lib/types'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/lib/cart-context'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { toast } from 'sonner'
 
-export function BookReader({ book, initialHighlights = [] }: { book: BookWithCharacters, initialHighlights?: Highlight[] }) {
+export function BookReader({ book, initialHighlights = [], initialChapter = 0 }: { book: BookWithCharacters, initialHighlights?: Highlight[], initialChapter?: number }) {
   const [currentPage, setCurrentPage] = useState(0)
   const [fullscreen, setFullscreen] = useState(false)
-  const [currentChapter, setCurrentChapter] = useState(0)
+  const [currentChapter, setCurrentChapter] = useState(initialChapter)
   const [user, setUser] = useState<UserProfile | null>(null)
   const [roles, setRoles] = useState<UserRole[]>([])
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null) // null = загружается
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [highlights, setHighlights] = useState<Highlight[]>(initialHighlights)
   const [selection, setSelection] = useState<{ text: string; rect: DOMRect } | null>(null)
   const [isCreatingHighlight, setIsCreatingHighlight] = useState(false)
   const [comment, setComment] = useState('')
   const [chapterRatings, setChapterRatings] = useState<Record<number, number>>({})
+  const [tocOpen, setTocOpen] = useState(false) // Оглавление на мобильных
 
   const { addItem } = useCart()
+  const router = useRouter()
   const contentRef = useRef<HTMLDivElement>(null)
 
   const pages = book.preview_pages || []
@@ -33,6 +36,13 @@ export function BookReader({ book, initialHighlights = [] }: { book: BookWithCha
   const isEditor = roles.includes('editor')
   const isAuthor = roles.includes('author')
 
+  // Навигация по главам с обновлением URL
+  const navigateToChapter = useCallback((chapterIndex: number) => {
+    if (chapterIndex < 0 || chapterIndex >= chapters.length) return
+    setCurrentChapter(chapterIndex)
+    router.push(`/books/${book.slug}/${chapterIndex + 1}`, { scroll: false })
+  }, [chapters.length, book.slug, router])
+
   useEffect(() => {
     fetch('/api/auth/session')
       .then(res => res.ok ? res.json() : null)
@@ -42,76 +52,103 @@ export function BookReader({ book, initialHighlights = [] }: { book: BookWithCha
         if (data?.user && authenticated) {
           setUser(data.user)
           setRoles(data.roles || [])
+          
+          // Загружаем рейтинги пользователя для этой книги
+          fetch(`/api/chapters/rate?bookId=${book.id}`)
+            .then(res => res.ok ? res.json() : null)
+            .then(ratingsData => {
+              if (ratingsData?.data) {
+                setChapterRatings(ratingsData.data)
+              }
+            })
+            .catch(err => console.error('Ошибка загрузки рейтингов:', err))
         }
       })
       .catch(() => {
         setIsAuthenticated(false)
       })
-  }, [])
+  }, [book.id])
 
   const floatingMenuRef = useRef<HTMLDivElement>(null)
 
-  const handleMouseUp = useCallback((e: React.MouseEvent) => {
-    // Если клик внутри floating menu — не трогаем selection
-    if (floatingMenuRef.current?.contains(e.target as Node)) return
-
+  const handleSelection = useCallback(() => {
     const sel = window.getSelection()
-    if (sel && sel.rangeCount > 0 && sel.toString().trim().length > 0) {
+    const text = sel?.toString().trim() || ''
+    
+    console.log('[handleSelection] selection text length:', text.length)
+    
+    if (sel && sel.rangeCount > 0 && text.length > 0) {
       const range = sel.getRangeAt(0)
       const rect = range.getBoundingClientRect()
-      setSelection({ text: sel.toString(), rect })
+      console.log('[handleSelection] setting selection, rect:', rect)
+      setSelection({ text, rect })
     } else {
       if (!isCreatingHighlight) {
+        console.log('[handleSelection] clearing selection')
         setSelection(null)
       }
     }
   }, [isCreatingHighlight])
 
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    if (floatingMenuRef.current?.contains(e.target as Node)) return
+    console.log('[handleMouseUp] triggered')
+    handleSelection()
+  }, [handleSelection])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (floatingMenuRef.current?.contains(e.target as Node)) return
+    console.log('[handleTouchEnd] triggered, waiting for selection...')
+    
+    // Android Chrome нужно больше времени для обновления selection
+    // Пробуем несколько раз с увеличивающейся задержкой
+    const attempts = [50, 150, 300]
+    attempts.forEach((delay, index) => {
+      setTimeout(() => {
+        const sel = window.getSelection()
+        const text = sel?.toString().trim() || ''
+        console.log(`[handleTouchEnd] attempt ${index + 1} (${delay}ms): text length =`, text.length)
+        
+        if (text.length > 0 && !selection) {
+          handleSelection()
+        }
+      }, delay)
+    })
+  }, [handleSelection, selection])
+
   const createHighlight = async (type: 'quote' | 'editorial_comment') => {
-    console.log('[createHighlight] called, type:', type, 'selection:', selection?.text?.slice(0, 50), 'user:', user?.id ?? 'null')
-    if (!selection) {
-      console.warn('[createHighlight] no selection, aborting')
-      return
-    }
+    if (!selection) return
     if (!user) {
-      console.warn('[createHighlight] user is null — showing login toast')
       toast.error('Войдите в аккаунт чтобы создавать цитаты')
       return
     }
 
     setIsCreatingHighlight(true)
-    const payload = {
-      book_id: book.id,
-      chapter_index: currentChapter,
-      text_content: selection.text,
-      comment: comment || null,
-      type: type,
-      range_data: {}
-    }
-    console.log('[createHighlight] POST /api/highlights payload:', payload)
     try {
       const res = await fetch('/api/highlights', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          book_id: book.id,
+          chapter_index: currentChapter,
+          text_content: selection.text,
+          comment: comment || null,
+          type: type,
+          range_data: {}
+        })
       })
 
-      console.log('[createHighlight] response status:', res.status)
       const responseData = await res.json()
-      console.log('[createHighlight] response body:', responseData)
 
       if (res.ok) {
-        const newHighlight = responseData
-        setHighlights([newHighlight, ...highlights])
+        setHighlights([responseData, ...highlights])
         toast.success(type === 'quote' ? 'Цитата сохранена' : 'Комментарий добавлен')
         setSelection(null)
         setComment('')
       } else {
-        console.error('[createHighlight] server error:', responseData)
         toast.error(`Ошибка: ${responseData?.error ?? res.status}`)
       }
     } catch (err) {
-      console.error('[createHighlight] network error:', err)
       toast.error('Сетевая ошибка')
     } finally {
       setIsCreatingHighlight(false)
@@ -181,9 +218,9 @@ export function BookReader({ book, initialHighlights = [] }: { book: BookWithCha
       <section className={`flex-1 flex ${fullscreen ? 'flex-col' : ''}`}>
         {!fullscreen ? (
           <div className="max-w-7xl mx-auto px-4 py-12 w-full">
-            <div className="grid md:grid-cols-4 gap-8">
-              {/* Book Info */}
-              <div className="md:col-span-1">
+            <div className="flex flex-col md:grid md:grid-cols-4 gap-8">
+              {/* Reader первым на мобильных */}
+              <div className="order-2 md:order-1 md:col-span-1 hidden md:block">
                 {book.cover_image && (
                   <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden shadow-2xl mb-6">
                     <img
@@ -253,19 +290,28 @@ export function BookReader({ book, initialHighlights = [] }: { book: BookWithCha
               </div>
 
               {/* Reader */}
-              <div className="md:col-span-3">
+              <div className="order-1 md:order-2 md:col-span-3">
                 <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
                   <div className="flex justify-between items-center mb-6 pb-6 border-b border-slate-700">
                     <h2 className="text-xl font-bold text-white">Читать онлайн</h2>
-                    {isComicMode && isAuthenticated && (
-                      <Button
-                        onClick={() => setFullscreen(true)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        На весь экран
-                      </Button>
-                    )}
+                    <div className="flex gap-2">
+                      {isBookMode && (
+                        <Link href={`/books/${book.slug}/full`}>
+                          <Button variant="outline" size="sm" className="text-xs">
+                            Полная версия
+                          </Button>
+                        </Link>
+                      )}
+                      {isComicMode && isAuthenticated && (
+                        <Button
+                          onClick={() => setFullscreen(true)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          На весь экран
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Auth gate — только для залогиненных */}
@@ -312,21 +358,21 @@ export function BookReader({ book, initialHighlights = [] }: { book: BookWithCha
                           <p className="text-slate-400">Страница не найдена</p>
                         )}
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-2">
                         <button
                           onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                           disabled={currentPage === 0}
-                          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors"
+                          className="px-4 py-3 md:py-2 min-h-[44px] bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors flex-shrink-0"
                         >
                           ← Назад
                         </button>
-                        <div className="text-slate-300 text-sm">
+                        <div className="text-slate-300 text-xs md:text-sm text-center">
                           Страница {currentPage + 1} из {pages.length}
                         </div>
                         <button
                           onClick={() => setCurrentPage(Math.min(pages.length - 1, currentPage + 1))}
                           disabled={currentPage === pages.length - 1}
-                          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors"
+                          className="px-4 py-3 md:py-2 min-h-[44px] bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors flex-shrink-0"
                         >
                           Вперед →
                         </button>
@@ -336,36 +382,55 @@ export function BookReader({ book, initialHighlights = [] }: { book: BookWithCha
 
                   {/* Режим книги — главы с markdown */}
                   {isAuthenticated && isBookMode && (
-                    <div className="grid md:grid-cols-4 gap-6">
-                      {/* Оглавление */}
+                    <div className="flex flex-col md:grid md:grid-cols-4 gap-6">
+                      {/* Оглавление — drawer на мобильных, sidebar на десктопе */}
                       <nav className="md:col-span-1">
-                        <p className="text-xs font-medium text-slate-400 uppercase tracking-[0.18em] mb-3">
-                          Оглавление
-                        </p>
-                        <ul className="space-y-1">
-                          {chapters.map((ch, i) => (
-                            <li key={i}>
-                              <button
-                                onClick={() => setCurrentChapter(i)}
-                                className={[
-                                  'w-full text-left px-3 py-2 rounded text-sm transition-colors',
-                                  i === currentChapter
-                                    ? 'bg-purple-900/50 text-purple-200 font-medium'
-                                    : 'text-slate-400 hover:text-white hover:bg-slate-700',
-                                ].join(' ')}
-                              >
-                                <span className="text-xs text-slate-500 mr-1">{i + 1}.</span>
-                                {ch.title}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
+                        {/* Кнопка открытия на мобильных */}
+                        <button
+                          onClick={() => setTocOpen(!tocOpen)}
+                          className="md:hidden w-full flex items-center justify-between px-4 py-3 bg-slate-700 rounded-lg mb-4 min-h-[44px]"
+                        >
+                          <span className="text-sm font-medium text-slate-200">
+                            {chapters[currentChapter]?.title}
+                          </span>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-transform ${tocOpen ? 'rotate-180' : ''}`}>
+                            <polyline points="6 9 12 15 18 9"/>
+                          </svg>
+                        </button>
+
+                        {/* Оглавление */}
+                        <div className={`${tocOpen ? 'block' : 'hidden'} md:block`}>
+                          <p className="text-xs font-medium text-slate-400 uppercase tracking-[0.18em] mb-3 hidden md:block">
+                            Оглавление
+                          </p>
+                          <ul className="space-y-1">
+                            {chapters.map((ch, i) => (
+                              <li key={i}>
+                                <button
+                                  onClick={() => {
+                                    navigateToChapter(i)
+                                    setTocOpen(false) // Закрываем на мобильных после выбора
+                                  }}
+                                  className={[
+                                    'w-full text-left px-3 py-2 rounded text-sm transition-colors min-h-[44px] flex items-center',
+                                    i === currentChapter
+                                      ? 'bg-purple-900/50 text-purple-200 font-medium'
+                                      : 'text-slate-400 hover:text-white hover:bg-slate-700',
+                                  ].join(' ')}
+                                >
+                                  <span className="text-xs text-slate-500 mr-2">{i + 1}.</span>
+                                  {ch.title}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </nav>
 
                       {/* Содержимое главы */}
                       <div className="md:col-span-3 relative">
                         <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-700">
-                          <h3 className="text-lg font-bold text-white">
+                          <h3 id={`chapter-${currentChapter + 1}`} className="text-lg font-bold text-white">
                             {chapters[currentChapter]?.title}
                           </h3>
                           <div className="flex gap-2">
@@ -385,6 +450,7 @@ export function BookReader({ book, initialHighlights = [] }: { book: BookWithCha
                         <div 
                           ref={contentRef}
                           onMouseUp={(e) => handleMouseUp(e)}
+                          onTouchEnd={(e) => handleTouchEnd(e)}
                           className="relative"
                         >
                           <MarkdownRenderer
@@ -392,21 +458,25 @@ export function BookReader({ book, initialHighlights = [] }: { book: BookWithCha
                             className="mb-12"
                           />
 
-                          {/* Floating Selection Menu */}
+                          {/* Floating Selection Menu — bottom sheet на мобильных */}
                           {selection && (
                             <div 
                               ref={floatingMenuRef}
                               onMouseDown={(e) => {
-                                // Не сбрасываем выделение при кликах внутри меню,
-                                // но разрешаем фокус на textarea
                                 if ((e.target as HTMLElement).tagName !== 'TEXTAREA') {
                                   e.preventDefault()
                                 }
                               }}
-                              className="fixed z-[100] bg-slate-900 border border-slate-700 rounded-lg shadow-2xl p-2 flex flex-col gap-2 min-w-[200px]"
+                              onTouchStart={(e) => {
+                                if ((e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                                  e.preventDefault()
+                                }
+                              }}
+                              className="fixed z-[100] bg-slate-900 border border-slate-700 rounded-lg shadow-2xl p-3 flex flex-col gap-2 
+                                         bottom-4 left-4 right-4 md:bottom-auto md:left-auto md:right-auto md:min-w-[240px] md:max-w-[320px]"
                               style={{ 
-                                top: Math.max(10, selection.rect.top - 120), 
-                                left: Math.max(10, selection.rect.left + (selection.rect.width / 2) - 100) 
+                                top: window.innerWidth >= 768 ? Math.max(10, selection.rect.top - 140) : undefined,
+                                left: window.innerWidth >= 768 ? Math.max(10, Math.min(window.innerWidth - 260, selection.rect.left + (selection.rect.width / 2) - 120)) : undefined
                               }}
                             >
                               <div className="text-[10px] text-slate-500 uppercase px-1">Выделено</div>
@@ -559,22 +629,22 @@ export function BookReader({ book, initialHighlights = [] }: { book: BookWithCha
                           </div>
                         </div>
 
-                        {/* Навигация по главам */}
-                        <div className="flex items-center justify-between pt-6 border-t border-slate-700">
+                        {/* Навигация по главам — увеличенные touch-таргеты */}
+                        <div className="flex items-center justify-between gap-2 pt-6 border-t border-slate-700">
                           <button
-                            onClick={() => setCurrentChapter((prev) => Math.max(0, prev - 1))}
+                            onClick={() => navigateToChapter(currentChapter - 1)}
                             disabled={currentChapter === 0}
-                            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors text-sm"
+                            className="px-4 py-3 md:py-2 min-h-[44px] bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors text-sm flex-shrink-0"
                           >
                             ← Предыдущая
                           </button>
-                          <span className="text-slate-400 text-sm">
+                          <span className="text-slate-400 text-xs md:text-sm text-center">
                             Глава {currentChapter + 1} из {chapters.length}
                           </span>
                           <button
-                            onClick={() => setCurrentChapter((prev) => Math.min(chapters.length - 1, prev + 1))}
+                            onClick={() => navigateToChapter(currentChapter + 1)}
                             disabled={currentChapter === chapters.length - 1}
-                            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors text-sm"
+                            className="px-4 py-3 md:py-2 min-h-[44px] bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors text-sm flex-shrink-0"
                           >
                             Следующая →
                           </button>
@@ -646,21 +716,21 @@ export function BookReader({ book, initialHighlights = [] }: { book: BookWithCha
               )}
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-slate-900/80 backdrop-blur border-t border-slate-700">
+            <div className="flex items-center justify-between gap-2 p-4 bg-slate-900/80 backdrop-blur border-t border-slate-700">
               <button
                 onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                 disabled={currentPage === 0}
-                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors"
+                className="px-4 py-3 min-h-[44px] bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors flex-shrink-0"
               >
                 ← Назад
               </button>
-              <div className="text-slate-300 text-sm">
+              <div className="text-slate-300 text-sm text-center">
                 {currentPage + 1} / {pages.length}
               </div>
               <button
                 onClick={() => setCurrentPage(Math.min(pages.length - 1, currentPage + 1))}
                 disabled={currentPage === pages.length - 1}
-                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors"
+                className="px-4 py-3 min-h-[44px] bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors flex-shrink-0"
               >
                 Вперед →
               </button>

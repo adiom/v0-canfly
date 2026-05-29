@@ -1,6 +1,5 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import Link from 'next/link'
 
 import { fetchBookBySlug } from '@/lib/server/books'
 import { generateBookSchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
@@ -10,22 +9,27 @@ import { getCurrentUserFromCookie, getUserRoles } from '@/lib/server/users'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
 
-interface BookPageProps {
-  params: Promise<{ slug: string }>
+interface BookChapterPageProps {
+  params: Promise<{ slug: string; chapter: string }>
 }
 
-export async function generateMetadata({ params }: BookPageProps): Promise<Metadata> {
-  const { slug } = await params
+export async function generateMetadata({ params }: BookChapterPageProps): Promise<Metadata> {
+  const { slug, chapter } = await params
   const book = await fetchBookBySlug(slug)
 
   if (!book) {
     return { title: 'Книга не найдена | canfly' }
   }
 
+  const chapterIndex = parseInt(chapter) - 1
+  const chapterData = book.chapters?.[chapterIndex]
+
   const typeLabel = book.type === 'comic' ? 'Комикс' : book.type === 'audiobook' ? 'Аудиокнига' : 'Книга'
-  const title = `${book.title} — ${typeLabel} | canfly`
+  const title = chapterData 
+    ? `${chapterData.title} — ${book.title} | canfly`
+    : `${book.title} — ${typeLabel} | canfly`
   const description = book.description || `${typeLabel} «${book.title}» от издательства canfly`
-  const url = `${BASE_URL}/books/${book.slug}`
+  const url = `${BASE_URL}/books/${book.slug}/${chapter}`
 
   return {
     title,
@@ -53,12 +57,19 @@ export async function generateMetadata({ params }: BookPageProps): Promise<Metad
   }
 }
 
-export default async function BookPage({ params }: BookPageProps) {
-  const { slug } = await params
+export default async function BookChapterPage({ params }: BookChapterPageProps) {
+  const { slug, chapter } = await params
   const book = await fetchBookBySlug(slug)
 
   if (!book) {
     notFound()
+  }
+
+  const chapterIndex = parseInt(chapter) - 1
+  
+  // Валидация главы
+  if (isNaN(chapterIndex) || chapterIndex < 0 || (book.chapters && chapterIndex >= book.chapters.length)) {
+    redirect(`/books/${slug}/1`)
   }
 
   const user = await getCurrentUserFromCookie()
@@ -76,6 +87,7 @@ export default async function BookPage({ params }: BookPageProps) {
       { label: 'Главная', url: BASE_URL },
       { label: 'Книги', url: `${BASE_URL}/books` },
       { label: book.title, url: `${BASE_URL}/books/${book.slug}/1` },
+      ...(book.chapters?.[chapterIndex] ? [{ label: book.chapters[chapterIndex].title, url: `${BASE_URL}/books/${book.slug}/${chapter}` }] : []),
     ],
     BASE_URL,
   )
@@ -90,7 +102,7 @@ export default async function BookPage({ params }: BookPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
-      <BookReader book={book} initialHighlights={initialHighlights} initialChapter={0} />
+      <BookReader book={book} initialHighlights={initialHighlights} initialChapter={chapterIndex} />
     </>
   )
 }
