@@ -6,6 +6,7 @@ import { fetchBooks } from '@/lib/server/books'
 import { SearchDialog } from '@/components/search/search-dialog'
 import { BookType, BookWithCharacters } from '@/lib/types'
 import { generateBooksCollectionSchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
+import { BooksClient } from '@/components/books-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,7 +23,6 @@ const navItems = [
   { label: 'Миры', href: '/#worlds' },
   { label: 'Выпуски', href: '/#issues' },
   { label: 'Блог', href: '/markdown' },
-  { label: 'Магазин', href: '/shop' },
 ]
 
 function typeLabel(type: BookType): string {
@@ -121,11 +121,6 @@ export default async function BooksHubPage() {
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-[#c9c1b4]">
             Точки входа в canfly: бумажные и цифровые издания, фрагменты в читалке и связи с персонажами.
-            Оформить покупку можно в{' '}
-            <Link href="/shop" className="font-semibold text-[#f6d6a8] underline decoration-[#f6d6a8]/40 underline-offset-4 hover:text-[#fff8ea]">
-              магазине
-            </Link>
-            .
           </p>
         </div>
       </section>
@@ -152,17 +147,9 @@ export default async function BooksHubPage() {
       {/* Full catalog */}
       <section className="px-4 py-12 md:px-8 md:py-16">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-[#d52525]">все издания</p>
-              <h2 className="text-2xl font-black uppercase text-[#fff8ea] md:text-4xl">Каталог</h2>
-            </div>
-            <Link
-              href="/shop"
-              className="inline-flex h-12 w-fit items-center border border-[#f4efe5]/14 px-5 text-xs font-black uppercase tracking-[0.14em] text-[#ded7cc] transition-colors hover:border-[#f6d6a8]/45 hover:text-white"
-            >
-              Перейти в магазин
-            </Link>
+          <div className="mb-10">
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-[#d52525]">все издания</p>
+            <h2 className="text-2xl font-black uppercase text-[#fff8ea] md:text-4xl">Каталог</h2>
           </div>
 
           {books.length === 0 ? (
@@ -178,90 +165,7 @@ export default async function BooksHubPage() {
               </Link>
             </div>
           ) : (
-            <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
-              {books.map((book) => (
-                <article
-                  key={book.id}
-                  className="group flex flex-col border border-[#f4efe5]/10 bg-[#1b1c19] transition-colors hover:border-[#f6d6a8]/35"
-                >
-                  <Link href={`/books/${book.slug}`} className="relative block aspect-[3/4] overflow-hidden bg-[#0c0d0c]">
-                    {book.cover_image ? (
-                      <Image
-                        src={book.cover_image}
-                        alt=""
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center p-6 text-center text-xs uppercase tracking-[0.18em] text-[#8f877c]">
-                        Нет обложки
-                      </div>
-                    )}
-                    {book.is_featured ? (
-                      <span className="absolute left-3 top-3 bg-[#d52525] px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white">
-                        Избранное
-                      </span>
-                    ) : null}
-                  </Link>
-
-                  <div className="flex flex-1 flex-col p-5 md:p-6">
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#9db5c8]">
-                        {typeLabel(book.type)}
-                      </span>
-                      {book.price ? (
-                        <span className="text-xs text-[#8f877c]">{formatPrice(book.price)}</span>
-                      ) : null}
-                    </div>
-
-                    <h3 className="text-xl font-black uppercase leading-tight text-[#fff8ea]">
-                      <Link href={`/books/${book.slug}`} className="hover:text-[#f6d6a8]">
-                        {book.title}
-                      </Link>
-                    </h3>
-
-                    {book.description ? (
-                      <p className="mt-3 line-clamp-3 flex-1 text-sm leading-7 text-[#c9c1b4]">{book.description}</p>
-                    ) : null}
-
-                    {book.characters && book.characters.length > 0 ? (
-                      <div className="mt-4 flex flex-wrap gap-2 border-t border-[#f4efe5]/10 pt-4">
-                        {book.characters.slice(0, 4).map((ch) => (
-                          <Link
-                            key={ch.id}
-                            href={`/characters/${ch.slug}`}
-                            className="inline-flex items-center gap-2 rounded-sm border border-[#f4efe5]/10 px-2 py-1 text-xs text-[#ded7cc] transition-colors hover:border-[#9db5c8]/45 hover:text-white"
-                          >
-                            {ch.avatar ? (
-                              <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-[#111210]">
-                                <Image src={ch.avatar} alt="" fill className="object-cover" sizes="24px" />
-                              </span>
-                            ) : null}
-                            <span className="truncate font-medium">{ch.name}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    ) : null}
-
-                    <div className="mt-6 flex flex-wrap gap-3">
-                      <Link
-                        href={`/books/${book.slug}`}
-                        className="inline-flex h-11 flex-1 items-center justify-center bg-[#d52525] px-4 text-xs font-black uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#b01e1e] sm:flex-none"
-                      >
-                        Читать фрагмент
-                      </Link>
-                      <Link
-                        href="/shop"
-                        className="inline-flex h-11 items-center justify-center border border-[#f4efe5]/14 px-4 text-xs font-black uppercase tracking-[0.12em] text-[#ded7cc] hover:border-[#f6d6a8]/45 hover:text-white"
-                      >
-                        Магазин
-                      </Link>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
+            <BooksClient books={books} />
           )}
         </div>
       </section>

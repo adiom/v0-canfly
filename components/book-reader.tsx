@@ -253,16 +253,21 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
     }
   }
 
-  const handleAddToCart = () => {
-    if (!book.price) return
+  const [isAddedToCart, setIsAddedToCart] = useState(false)
+
+  const handleAddToCart = useCallback(() => {
     addItem({
       bookId: book.id,
       title: book.title,
-      price: book.price,
+      price: book.price || 0,
       quantity: 1,
       image: book.cover_image,
     })
-  }
+
+    // Visual feedback
+    setIsAddedToCart(true)
+    setTimeout(() => setIsAddedToCart(false), 2000)
+  }, [addItem, book])
 
   return (
     <main className={`min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 ${fullscreen ? 'flex flex-col' : ''}`}>
@@ -274,7 +279,7 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
               Canfly
             </Link>
             <div className="flex gap-4 items-center">
-              <Link href="/shop" className="text-slate-300 hover:text-white transition-colors">
+              <Link href="/books" className="text-slate-300 hover:text-white transition-colors">
                 ← Назад
               </Link>
               <Link href="/cart">
@@ -318,13 +323,16 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
                   </div>
                 )}
 
-                <Button
+                <button
                   onClick={handleAddToCart}
-                  disabled={!book.price}
-                  className="w-full bg-purple-600 hover:bg-purple-700 mb-4"
+                  className={
+                    isAddedToCart
+                      ? 'w-full h-11 px-4 bg-[#2d5016] border border-[#4a7c2a] text-xs font-black uppercase tracking-[0.12em] text-[#c8e6c9]'
+                      : 'w-full h-11 px-4 bg-purple-600 hover:bg-purple-700 text-white text-xs font-black uppercase tracking-[0.12em] transition-colors'
+                  }
                 >
-                  Добавить в корзину
-                </Button>
+                  {isAddedToCart ? '✓ Добавлено' : 'Добавить в корзину'}
+                </button>
 
                 {book.external_links && Object.keys(book.external_links).length > 0 && (
                   <div className="space-y-2">
@@ -362,9 +370,9 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
               {/* Reader */}
               <div className="order-1 md:order-2 md:col-span-3">
                 <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
-                  <div className="flex justify-between items-center mb-6 pb-6 border-b border-slate-700">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-6 border-b border-slate-700">
                     <h2 className="text-xl font-bold text-white">Читать онлайн</h2>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                       {isBookMode && (
                         <Link href={`/books/${book.slug}/full`}>
                           <Button variant="outline" size="sm" className="text-xs">
@@ -372,6 +380,16 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
                           </Button>
                         </Link>
                       )}
+                      <button
+                        onClick={handleAddToCart}
+                        className={
+                          isAddedToCart
+                            ? 'inline-flex h-9 items-center justify-center border border-[#4a7c2a] bg-[#2d5016] px-3 text-xs font-black uppercase tracking-[0.12em] text-[#c8e6c9]'
+                            : 'inline-flex h-9 items-center justify-center border border-[#f4efe5]/14 px-3 text-xs font-black uppercase tracking-[0.12em] text-[#ded7cc] transition-colors hover:border-[#f6d6a8]/45 hover:text-white'
+                        }
+                      >
+                        {isAddedToCart ? '✓ Добавлено' : 'В корзину'}
+                      </button>
                       {/* fullscreen кнопка убрана — комиксы теперь в ComicReader */}
                     </div>
                   </div>
