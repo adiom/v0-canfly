@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { BookChapter, BookType, BookWithCharacters, Character, Highlight } from '@/lib/types'
 import { ChapterEditor } from './chapter-editor'
+import { ComicPagesEditor } from './comic-pages-editor'
 
 interface BookFormProps {
   bookId?: string
@@ -19,7 +20,7 @@ const emptyForm = {
   type: 'comic' as BookType,
   description: '',
   cover_image: '',
-  preview_pages: '',
+  preview_pages: [] as string[],
   external_links: '{}',
   price: '',
   is_featured: false,
@@ -80,7 +81,7 @@ export function BookForm({ bookId }: BookFormProps) {
             type: book.type || 'comic',
             description: book.description || '',
             cover_image: book.cover_image || '',
-            preview_pages: (book.preview_pages || []).join('\n'),
+            preview_pages: book.preview_pages || [],
             external_links: formatLinks(book.external_links),
             price: book.price === null || book.price === undefined ? '' : String(book.price),
             is_featured: Boolean(book.is_featured),
@@ -117,7 +118,7 @@ export function BookForm({ bookId }: BookFormProps) {
       type: form.type,
       description: form.description,
       cover_image: form.cover_image,
-      preview_pages: form.preview_pages.split('\n'),
+      preview_pages: form.preview_pages,
       external_links: externalLinks,
       price: form.price ? Number(form.price) : null,
       is_featured: form.is_featured,
@@ -328,15 +329,13 @@ export function BookForm({ bookId }: BookFormProps) {
           <ChapterEditor chapters={chapters} onChange={setChapters} />
         </div>
       ) : (
-        <label className="space-y-2 text-sm text-slate-300">
-          <span>Preview pages URLs, по одному на строку</span>
-          <Textarea
-            value={form.preview_pages}
-            onChange={(event) => updateField('preview_pages', event.target.value)}
-            rows={5}
-            className="border-slate-700 bg-slate-950 text-white"
+        <div className="space-y-2">
+          <ComicPagesEditor
+            bookId={bookId || 'new'}
+            initialPages={form.preview_pages}
+            onUpdate={(pages) => updateField('preview_pages', pages)}
           />
-        </label>
+        </div>
       )}
 
       <label className="space-y-2 text-sm text-slate-300">

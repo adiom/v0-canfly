@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/lib/cart-context'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { ComicReader } from '@/components/comic-reader'
 import { toast } from 'sonner'
 
 export function BookReader({ book, initialHighlights = [], initialChapter = 0 }: { book: BookWithCharacters, initialHighlights?: Highlight[], initialChapter?: number }) {
@@ -29,7 +30,12 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
 
   const pages = book.preview_pages || []
   const chapters = book.chapters || []
-  const isComicMode = book.type === 'comic' && pages.length > 0
+
+  // Комиксы рендерим отдельным компонентом (webtoon-стиль)
+  if (book.type === 'comic') {
+    return <ComicReader book={book} />
+  }
+
   const isBookMode = book.type === 'book' && chapters.length > 0
 
   const isAdmin = roles.includes('admin')
@@ -299,7 +305,6 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
                 <h1 className="text-2xl font-bold text-white mb-4">{book.title}</h1>
 
                 <div className="inline-block px-3 py-1 bg-purple-900/50 text-purple-200 text-sm rounded-full mb-4 capitalize">
-                  {book.type === 'comic' && 'Комикс'}
                   {book.type === 'book' && 'Книга'}
                   {book.type === 'audiobook' && 'Аудиокнига'}
                 </div>
@@ -367,15 +372,7 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
                           </Button>
                         </Link>
                       )}
-                      {isComicMode && isAuthenticated && (
-                        <Button
-                          onClick={() => setFullscreen(true)}
-                          variant="outline"
-                          size="sm"
-                        >
-                          На весь экран
-                        </Button>
-                      )}
+                      {/* fullscreen кнопка убрана — комиксы теперь в ComicReader */}
                     </div>
                   </div>
 
@@ -406,42 +403,6 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
                       >
                         Войти в аккаунт
                       </Link>
-                    </div>
-                  )}
-
-                  {/* Режим комикса — картинки */}
-                  {isAuthenticated && isComicMode && (
-                    <div>
-                      <div className="bg-black rounded-lg mb-6 flex items-center justify-center min-h-96">
-                        {pages[currentPage] ? (
-                          <img
-                            src={pages[currentPage]}
-                            alt={`Страница ${currentPage + 1}`}
-                            className="max-w-full max-h-96 rounded"
-                          />
-                        ) : (
-                          <p className="text-slate-400">Страница не найдена</p>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <button
-                          onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                          disabled={currentPage === 0}
-                          className="px-4 py-3 md:py-2 min-h-[44px] bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors flex-shrink-0"
-                        >
-                          ← Назад
-                        </button>
-                        <div className="text-slate-300 text-xs md:text-sm text-center">
-                          Страница {currentPage + 1} из {pages.length}
-                        </div>
-                        <button
-                          onClick={() => setCurrentPage(Math.min(pages.length - 1, currentPage + 1))}
-                          disabled={currentPage === pages.length - 1}
-                          className="px-4 py-3 md:py-2 min-h-[44px] bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded transition-colors flex-shrink-0"
-                        >
-                          Вперед →
-                        </button>
-                      </div>
                     </div>
                   )}
 
@@ -748,7 +709,7 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
                   )}
 
                   {/* Нет контента — ссылки на внешние площадки */}
-                  {isAuthenticated && !isComicMode && !isBookMode && (
+                  {isAuthenticated && !isBookMode && (
                     <div className="text-center py-12">
                       {book.description && (
                         <p className="text-slate-300 text-base mb-8 max-w-xl mx-auto leading-relaxed">
