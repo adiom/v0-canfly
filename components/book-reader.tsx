@@ -69,6 +69,55 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
       })
   }, [book.id])
 
+  // Скролл к highlight если есть #highlight-{id} в URL
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (isAuthenticated !== true) return // ждём пока контент отрендерится
+
+    const hash = window.location.hash
+    if (!hash.startsWith('#highlight-')) return
+
+    const highlightId = hash.replace('#highlight-', '')
+
+    // Переключаем на нужную главу
+    const target = highlights.find(h => h.id === highlightId)
+    if (target && target.chapter_index !== currentChapter) {
+      setCurrentChapter(target.chapter_index)
+      return
+    }
+
+    // Ждём появления элемента в DOM через MutationObserver
+    const scrollToHighlight = () => {
+      const el = document.querySelector(`[data-highlight-id="${highlightId}"]`)
+      if (!el) return false
+
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('ring-2', 'ring-yellow-400', 'ring-offset-2', 'transition-all')
+      setTimeout(() => el.classList.remove('ring-2', 'ring-yellow-400', 'ring-offset-2'), 2500)
+      return true
+    }
+
+    // Сначала пробуем сразу
+    if (scrollToHighlight()) return
+
+    // Если не нашли — наблюдаем за DOM
+    const observer = new MutationObserver(() => {
+      if (scrollToHighlight()) {
+        observer.disconnect()
+      }
+    })
+
+    observer.observe(document.body, { childList: true, subtree: true })
+
+    // Таймаут на случай если элемент так и не появится
+    const timeout = setTimeout(() => observer.disconnect(), 5000)
+
+    return () => {
+      observer.disconnect()
+      clearTimeout(timeout)
+    }
+  }, [highlights, currentChapter, isAuthenticated])
+
   const floatingMenuRef = useRef<HTMLDivElement>(null)
 
   const handleSelection = useCallback(() => {
@@ -124,6 +173,22 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
     }
 
     setIsCreatingHighlight(true)
+
+    // Вычисляем офсеты в plain text версии главы
+    const chapterContent = chapters[currentChapter]?.content || ''
+    const plainText = chapterContent.replace(/[#*`\-_\[\]]/g, '').replace(/\n+/g, ' ')
+    const selectedText = selection.text.trim()
+    
+    // Ищем позицию выделенного текста в plain text
+    const startOffset = plainText.indexOf(selectedText)
+    const endOffset = startOffset + selectedText.length
+
+    const rangeData = startOffset >= 0 ? {
+      startOffset,
+      endOffset,
+      chapterLength: plainText.length
+    } : {}
+
     try {
       const res = await fetch('/api/highlights', {
         method: 'POST',
@@ -131,10 +196,10 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
         body: JSON.stringify({
           book_id: book.id,
           chapter_index: currentChapter,
-          text_content: selection.text,
+          text_content: selectedText,
           comment: comment || null,
           type: type,
-          range_data: {}
+          range_data: rangeData
         })
       })
 
@@ -455,6 +520,19 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
                         >
                           <MarkdownRenderer
                             content={chapters[currentChapter]?.content}
+                            highlights={highlights.filter(h => {
+                              // Текущая глава
+                              if (h.chapter_index !== currentChapter) return false
+                              
+                              // Внутренние (editorial/author) — только для team
+                              const isInternal = h.type === 'editorial_comment' || h.type === 'author_note'
+                              if (isInternal) {
+                                return isAdmin || isEditor || isAuthor
+                              }
+                              
+                              // Публичные цитаты — только свои
+                              return h.user_id === user?.id
+                            })}
                             className="mb-12"
                           />
 
@@ -547,10 +625,21 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
                           
                           <div className="space-y-4">
                             {highlights
-                              .filter(h => h.chapter_index === currentChapter)
+                              .filter(h => {
+                                // Текущая глава
+                                if (h.chapter_index !== currentChapter) return false
+                                
+                                // Внутренние (editorial/author) — только для team
+                                const isInternal = h.type === 'editorial_comment' || h.type === 'author_note'
+                                if (isInternal) {
+                                  return isAdmin || isEditor || isAuthor
+                                }
+                                
+                                // Публичные цитаты — только свои
+                                return h.user_id === user?.id
+                              })
                               .map((h) => {
-                                const isInternal = h.type === 'editorial_comment' || h.type === 'author_note';
-                                if (isInternal && !isAdmin && !isEditor && !isAuthor) return null;
+                                const isInternal = h.type === 'editorial_comment' || h.type === 'author_note'
 
                                 return (
                                   <div 
@@ -623,7 +712,12 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
                                   </div>
                                 );
                               })}
-                            {highlights.filter(h => h.chapter_index === currentChapter).length === 0 && (
+                            {highlights.filter(h => {
+                              if (h.chapter_index !== currentChapter) return false
+                              const isInternal = h.type === 'editorial_comment' || h.type === 'author_note'
+                              if (isInternal) return isAdmin || isEditor || isAuthor
+                              return h.user_id === user?.id
+                            }).length === 0 && (
                               <p className="text-xs text-slate-500 italic">Пока нет отметок для этой главы.</p>
                             )}
                           </div>

@@ -350,7 +350,7 @@ export async function fetchReaderProfileSummary(userId: string) {
       `,
       [userId],
     ),
-    fetchHighlights({ userId }),
+    fetchHighlights({ userId, includeBookInfo: true }),
   ])
 
   return { roles, friendships, conversations, highlights }

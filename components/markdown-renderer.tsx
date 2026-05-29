@@ -25,6 +25,90 @@ function sanitizeHtml(html: string): string {
 }
 
 /**
+ * Подсвечивает текст из highlights в HTML используя офсеты.
+ * Алгоритм: парсим HTML в текстовые ноды, вычисляем их офсеты, вставляем <mark>.
+ */
+function highlightText(html: string, content: string, highlights: Highlight[]): string {
+  if (!highlights || highlights.length === 0) return html
+
+  // Создаём plain text версию контента (как при создании highlight)
+  const plainText = content.replace(/[#*`\-_\[\]]/g, '').replace(/\n+/g, ' ')
+
+  // Собираем валидные highlights с офсетами
+  const validHighlights: Array<{
+    start: number
+    end: number
+    id: string
+    type: string
+    text: string
+  }> = []
+
+  for (const h of highlights) {
+    const rangeData = h.range_data as { startOffset?: number; endOffset?: number }
+    
+    if (rangeData?.startOffset !== undefined && rangeData?.endOffset !== undefined) {
+      // Валидация: проверяем что текст на этой позиции совпадает
+      const expectedText = plainText.slice(rangeData.startOffset, rangeData.endOffset)
+      const actualText = h.text_content.trim()
+      
+      // Проверяем совпадение (допускаем небольшие расхождения из-за форматирования)
+      const similarity = expectedText.toLowerCase().includes(actualText.toLowerCase().slice(0, 20)) ||
+                        actualText.toLowerCase().includes(expectedText.toLowerCase().slice(0, 20))
+      
+      if (similarity) {
+        validHighlights.push({
+          start: rangeData.startOffset,
+          end: rangeData.endOffset,
+          id: h.id,
+          type: h.type,
+          text: actualText
+        })
+      }
+    }
+  }
+
+  if (validHighlights.length === 0) return html
+
+  // Сортируем по позиции
+  validHighlights.sort((a, b) => a.start - b.start)
+
+  // Теперь применяем highlights к HTML
+  // Стратегия: ищем текст в HTML и оборачиваем первое вхождение
+  let result = html
+
+  for (const h of validHighlights) {
+    let bgColor = 'bg-yellow-400/20'
+    let borderColor = 'border-l-2 border-yellow-400'
+    let title = 'Цитата'
+    
+    if (h.type === 'editorial_comment') {
+      bgColor = 'bg-blue-400/20'
+      borderColor = 'border-l-2 border-blue-400'
+      title = 'Правка редактора'
+    } else if (h.type === 'author_note') {
+      bgColor = 'bg-orange-400/20'
+      borderColor = 'border-l-2 border-orange-400'
+      title = 'Заметка автора'
+    }
+
+    // Экранируем спецсимволы для regex
+    const escapedText = h.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    
+    // Ищем ПЕРВОЕ вхождение текста (не глобально!)
+    const regex = new RegExp(`(>[^<]*?)(${escapedText})([^<]*?<)`, 'i')
+    
+    result = result.replace(regex, (match, before, highlighted, after) => {
+      // Проверяем что не внутри уже существующего <mark>
+      if (match.includes('<mark')) return match
+      
+      return `${before}<mark class="${bgColor} ${borderColor} pl-2 rounded" data-highlight-id="${h.id}" title="${title}">${highlighted}</mark>${after}`
+    })
+  }
+
+  return result
+}
+
+/**
  * Простой markdown → HTML парсер.
  * Поддерживает: заголовки h1-h6, жирный, курсив, код, списки, hr, абзацы.
  */
@@ -103,13 +187,14 @@ function parseMarkdown(md: string): string {
   return result.join('\n')
 }
 
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, className, highlights = [] }: MarkdownRendererProps) {
   if (!content?.trim()) {
     return <div className={className} />
   }
 
   const rawHtml = parseMarkdown(content)
-  const cleanHtml = sanitizeHtml(rawHtml)
+  const highlightedHtml = highlightText(rawHtml, content, highlights)
+  const cleanHtml = sanitizeHtml(highlightedHtml)
 
   return (
     <div
@@ -134,6 +219,8 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
         '[&_code]:font-mono [&_code]:text-sm [&_code]:bg-[#1b1c19] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[#f6d6a8]',
         // Разделитель
         '[&_hr]:border-[#f4efe5]/10 [&_hr]:my-6',
+        // Highlights
+        '[&_mark]:cursor-pointer [&_mark]:transition-colors [&_mark:hover]:brightness-110',
         className ?? '',
       ].join(' ')}
       dangerouslySetInnerHTML={{ __html: cleanHtml }}

@@ -22,33 +22,43 @@ export async function fetchHighlights(options: {
   type?: HighlightType;
   visibility?: HighlightVisibility;
   includeInternal?: boolean;
+  includeBookInfo?: boolean;
 } = {}) {
   const params: any[] = [];
-  let query = `SELECT ${highlightColumns} FROM highlights WHERE 1=1`;
+  
+  const selectColumns = options.includeBookInfo 
+    ? `h.id, h.book_id, h.user_id, h.chapter_index, h.text_content, h.comment, h.type, h.visibility, h.status, h.range_data, h.created_at, h.updated_at, b.slug AS book_slug, b.title AS book_title`
+    : highlightColumns;
+  
+  const fromClause = options.includeBookInfo
+    ? `FROM highlights h LEFT JOIN books b ON b.id = h.book_id`
+    : `FROM highlights`;
+  
+  let query = `SELECT ${selectColumns} ${fromClause} WHERE 1=1`;
 
   if (options.bookId) {
     params.push(options.bookId);
-    query += ` AND book_id = $${params.length}`;
+    query += ` AND ${options.includeBookInfo ? 'h.' : ''}book_id = $${params.length}`;
   }
 
   if (options.userId) {
     params.push(options.userId);
-    query += ` AND user_id = $${params.length}`;
+    query += ` AND ${options.includeBookInfo ? 'h.' : ''}user_id = $${params.length}`;
   }
 
   if (options.type) {
     params.push(options.type);
-    query += ` AND type = $${params.length}`;
+    query += ` AND ${options.includeBookInfo ? 'h.' : ''}type = $${params.length}`;
   }
 
   if (options.visibility) {
     params.push(options.visibility);
-    query += ` AND visibility = $${params.length}`;
+    query += ` AND ${options.includeBookInfo ? 'h.' : ''}visibility = $${params.length}`;
   } else if (!options.includeInternal) {
-    query += ` AND visibility = 'public'`;
+    query += ` AND ${options.includeBookInfo ? 'h.' : ''}visibility = 'public'`;
   }
 
-  query += ` ORDER BY created_at DESC`;
+  query += ` ORDER BY ${options.includeBookInfo ? 'h.' : ''}created_at DESC`;
 
   const results = await dbQuery<Highlight>(query, params);
   return results.map(row => ({

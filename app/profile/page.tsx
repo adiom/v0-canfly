@@ -147,10 +147,10 @@ export default async function ProfilePage() {
                     </p>
                     <div className="mt-3 flex items-center justify-between">
                       <Link
-                        href={`/highlight/${highlight.id}`}
+                        href={`/books/${(highlight as any).book_slug}#highlight-${highlight.id}`}
                         className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#f6d6a8] hover:underline"
                       >
-                        Поделиться
+                        Перейти к цитате
                       </Link>
                       <span className="text-[10px] uppercase tracking-[0.18em] text-[#9db5c8]">
                         {new Date(highlight.created_at).toLocaleDateString()}
