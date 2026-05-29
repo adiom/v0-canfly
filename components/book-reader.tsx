@@ -1,22 +1,149 @@
 'use client'
 
-import { useState } from 'react'
-import { BookWithCharacters } from '@/lib/types'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { BookWithCharacters, Highlight, UserRole, UserProfile } from '@/lib/types'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/lib/cart-context'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { toast } from 'sonner'
 
-export function BookReader({ book }: { book: BookWithCharacters }) {
+export function BookReader({ book, initialHighlights = [] }: { book: BookWithCharacters, initialHighlights?: Highlight[] }) {
   const [currentPage, setCurrentPage] = useState(0)
   const [fullscreen, setFullscreen] = useState(false)
   const [currentChapter, setCurrentChapter] = useState(0)
+  const [user, setUser] = useState<UserProfile | null>(null)
+  const [roles, setRoles] = useState<UserRole[]>([])
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null) // null = загружается
+  const [highlights, setHighlights] = useState<Highlight[]>(initialHighlights)
+  const [selection, setSelection] = useState<{ text: string; rect: DOMRect } | null>(null)
+  const [isCreatingHighlight, setIsCreatingHighlight] = useState(false)
+  const [comment, setComment] = useState('')
+  const [chapterRatings, setChapterRatings] = useState<Record<number, number>>({})
+
   const { addItem } = useCart()
+  const contentRef = useRef<HTMLDivElement>(null)
 
   const pages = book.preview_pages || []
   const chapters = book.chapters || []
   const isComicMode = book.type === 'comic' && pages.length > 0
   const isBookMode = book.type === 'book' && chapters.length > 0
+
+  const isAdmin = roles.includes('admin')
+  const isEditor = roles.includes('editor')
+  const isAuthor = roles.includes('author')
+
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        const authenticated = !!data?.isAuthenticated
+        setIsAuthenticated(authenticated)
+        if (data?.user && authenticated) {
+          setUser(data.user)
+          setRoles(data.roles || [])
+        }
+      })
+      .catch(() => {
+        setIsAuthenticated(false)
+      })
+  }, [])
+
+  const floatingMenuRef = useRef<HTMLDivElement>(null)
+
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    // Если клик внутри floating menu — не трогаем selection
+    if (floatingMenuRef.current?.contains(e.target as Node)) return
+
+    const sel = window.getSelection()
+    if (sel && sel.rangeCount > 0 && sel.toString().trim().length > 0) {
+      const range = sel.getRangeAt(0)
+      const rect = range.getBoundingClientRect()
+      setSelection({ text: sel.toString(), rect })
+    } else {
+      if (!isCreatingHighlight) {
+        setSelection(null)
+      }
+    }
+  }, [isCreatingHighlight])
+
+  const createHighlight = async (type: 'quote' | 'editorial_comment') => {
+    console.log('[createHighlight] called, type:', type, 'selection:', selection?.text?.slice(0, 50), 'user:', user?.id ?? 'null')
+    if (!selection) {
+      console.warn('[createHighlight] no selection, aborting')
+      return
+    }
+    if (!user) {
+      console.warn('[createHighlight] user is null — showing login toast')
+      toast.error('Войдите в аккаунт чтобы создавать цитаты')
+      return
+    }
+
+    setIsCreatingHighlight(true)
+    const payload = {
+      book_id: book.id,
+      chapter_index: currentChapter,
+      text_content: selection.text,
+      comment: comment || null,
+      type: type,
+      range_data: {}
+    }
+    console.log('[createHighlight] POST /api/highlights payload:', payload)
+    try {
+      const res = await fetch('/api/highlights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      console.log('[createHighlight] response status:', res.status)
+      const responseData = await res.json()
+      console.log('[createHighlight] response body:', responseData)
+
+      if (res.ok) {
+        const newHighlight = responseData
+        setHighlights([newHighlight, ...highlights])
+        toast.success(type === 'quote' ? 'Цитата сохранена' : 'Комментарий добавлен')
+        setSelection(null)
+        setComment('')
+      } else {
+        console.error('[createHighlight] server error:', responseData)
+        toast.error(`Ошибка: ${responseData?.error ?? res.status}`)
+      }
+    } catch (err) {
+      console.error('[createHighlight] network error:', err)
+      toast.error('Сетевая ошибка')
+    } finally {
+      setIsCreatingHighlight(false)
+    }
+  }
+
+  const handleRateChapter = async (rating: number) => {
+    if (!user) {
+      toast.error('Войдите, чтобы оценивать главы')
+      return
+    }
+
+    try {
+      // Assuming we add this API soon
+      const res = await fetch('/api/chapters/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookId: book.id,
+          chapterIndex: currentChapter,
+          rating
+        })
+      })
+
+      if (res.ok) {
+        setChapterRatings({ ...chapterRatings, [currentChapter]: rating })
+        toast.success('Оценка сохранена')
+      }
+    } catch (err) {
+      toast.error('Ошибка при оценке')
+    }
+  }
 
   const handleAddToCart = () => {
     if (!book.price) return
@@ -130,7 +257,7 @@ export function BookReader({ book }: { book: BookWithCharacters }) {
                 <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
                   <div className="flex justify-between items-center mb-6 pb-6 border-b border-slate-700">
                     <h2 className="text-xl font-bold text-white">Читать онлайн</h2>
-                    {isComicMode && (
+                    {isComicMode && isAuthenticated && (
                       <Button
                         onClick={() => setFullscreen(true)}
                         variant="outline"
@@ -141,8 +268,38 @@ export function BookReader({ book }: { book: BookWithCharacters }) {
                     )}
                   </div>
 
+                  {/* Auth gate — только для залогиненных */}
+                  {isAuthenticated === null && (
+                    <div className="py-16 text-center text-slate-400 text-sm animate-pulse">
+                      Загрузка...
+                    </div>
+                  )}
+
+                  {isAuthenticated === false && (
+                    <div className="py-16 flex flex-col items-center gap-6 text-center">
+                      <div className="w-16 h-16 rounded-full bg-slate-700 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+                          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-white font-bold text-lg mb-2">Войдите, чтобы читать</p>
+                        <p className="text-slate-400 text-sm max-w-xs">
+                          Для доступа к содержимому необходимо войти в аккаунт
+                        </p>
+                      </div>
+                      <Link
+                        href={`/login?redirect=/books/${book.slug}`}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-lg transition-colors"
+                      >
+                        Войти в аккаунт
+                      </Link>
+                    </div>
+                  )}
+
                   {/* Режим комикса — картинки */}
-                  {isComicMode && (
+                  {isAuthenticated && isComicMode && (
                     <div>
                       <div className="bg-black rounded-lg mb-6 flex items-center justify-center min-h-96">
                         {pages[currentPage] ? (
@@ -178,7 +335,7 @@ export function BookReader({ book }: { book: BookWithCharacters }) {
                   )}
 
                   {/* Режим книги — главы с markdown */}
-                  {isBookMode && (
+                  {isAuthenticated && isBookMode && (
                     <div className="grid md:grid-cols-4 gap-6">
                       {/* Оглавление */}
                       <nav className="md:col-span-1">
@@ -206,15 +363,201 @@ export function BookReader({ book }: { book: BookWithCharacters }) {
                       </nav>
 
                       {/* Содержимое главы */}
-                      <div className="md:col-span-3">
-                        <h3 className="text-lg font-bold text-white mb-6 pb-4 border-b border-slate-700">
-                          {chapters[currentChapter]?.title}
-                        </h3>
+                      <div className="md:col-span-3 relative">
+                        <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-700">
+                          <h3 className="text-lg font-bold text-white">
+                            {chapters[currentChapter]?.title}
+                          </h3>
+                          <div className="flex gap-2">
+                            {(isAdmin || isEditor) && (
+                              <span className="text-[10px] uppercase tracking-wider bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded border border-blue-800">
+                                Режим редактора
+                              </span>
+                            )}
+                            {isAuthor && (
+                              <span className="text-[10px] uppercase tracking-wider bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded border border-orange-800">
+                                Режим автора
+                              </span>
+                            )}
+                          </div>
+                        </div>
 
-                        <MarkdownRenderer
-                          content={chapters[currentChapter]?.content}
-                          className="mb-8"
-                        />
+                        <div 
+                          ref={contentRef}
+                          onMouseUp={(e) => handleMouseUp(e)}
+                          className="relative"
+                        >
+                          <MarkdownRenderer
+                            content={chapters[currentChapter]?.content}
+                            className="mb-12"
+                          />
+
+                          {/* Floating Selection Menu */}
+                          {selection && (
+                            <div 
+                              ref={floatingMenuRef}
+                              onMouseDown={(e) => {
+                                // Не сбрасываем выделение при кликах внутри меню,
+                                // но разрешаем фокус на textarea
+                                if ((e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                                  e.preventDefault()
+                                }
+                              }}
+                              className="fixed z-[100] bg-slate-900 border border-slate-700 rounded-lg shadow-2xl p-2 flex flex-col gap-2 min-w-[200px]"
+                              style={{ 
+                                top: Math.max(10, selection.rect.top - 120), 
+                                left: Math.max(10, selection.rect.left + (selection.rect.width / 2) - 100) 
+                              }}
+                            >
+                              <div className="text-[10px] text-slate-500 uppercase px-1">Выделено</div>
+                              <div className="text-xs text-slate-300 bg-slate-800 p-2 rounded line-clamp-2 italic">
+                                "{selection.text}"
+                              </div>
+                              
+                              {(isAdmin || isEditor) && (
+                                <div className="space-y-2 mt-1">
+                                  <textarea
+                                    value={comment}
+                                    onChange={(e) => setComment(e.target.value)}
+                                    placeholder="Ваш комментарий редактора..."
+                                    className="w-full text-xs bg-slate-950 border border-slate-700 rounded p-2 text-white focus:outline-none focus:border-purple-500"
+                                    rows={2}
+                                  />
+                                  <Button 
+                                    size="sm" 
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-[10px] h-7"
+                                    onClick={() => createHighlight('editorial_comment')}
+                                    disabled={isCreatingHighlight}
+                                  >
+                                    Оставить правку
+                                  </Button>
+                                </div>
+                              )}
+
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="w-full text-[10px] h-7"
+                                onClick={() => createHighlight('quote')}
+                                disabled={isCreatingHighlight}
+                              >
+                                Создать цитату
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Chapter Rating Widget */}
+                        <div className="mt-12 pt-8 border-t border-slate-800 text-center">
+                          <p className="text-sm text-slate-400 mb-4">Как вам эта глава?</p>
+                          <div className="flex justify-center gap-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                onClick={() => handleRateChapter(star)}
+                                className={`text-2xl transition-transform hover:scale-110 ${
+                                  (chapterRatings[currentChapter] || 0) >= star ? 'text-yellow-400' : 'text-slate-700'
+                                }`}
+                              >
+                                ★
+                              </button>
+                            ))}
+                          </div>
+                          {chapterRatings[currentChapter] && (
+                            <p className="text-xs text-slate-500 mt-2 italic">Оценка сохранена. Она поможет автору сделать книгу лучше.</p>
+                          )}
+                        </div>
+
+                        {/* Annotations & Comments Sidebar/Overlay */}
+                        <div className="mt-12 space-y-6">
+                          <h4 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                            Активность читателей и редакторов
+                          </h4>
+                          
+                          <div className="space-y-4">
+                            {highlights
+                              .filter(h => h.chapter_index === currentChapter)
+                              .map((h) => {
+                                const isInternal = h.type === 'editorial_comment' || h.type === 'author_note';
+                                if (isInternal && !isAdmin && !isEditor && !isAuthor) return null;
+
+                                return (
+                                  <div 
+                                    key={h.id} 
+                                    className={`p-4 rounded-lg border ${
+                                      isInternal 
+                                        ? 'bg-blue-900/10 border-blue-900/30' 
+                                        : 'bg-slate-800/50 border-slate-700'
+                                    }`}
+                                  >
+                                    <div className="flex justify-between items-start mb-2">
+                                      <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
+                                        isInternal ? 'bg-blue-900/50 text-blue-300' : 'bg-purple-900/50 text-purple-300'
+                                      }`}>
+                                        {h.type === 'editorial_comment' ? 'Правка редактора' : 'Цитата'}
+                                      </span>
+                                      <span className="text-[10px] text-slate-500">
+                                        {new Date(h.created_at).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-slate-300 italic border-l-2 border-slate-700 pl-3 mb-2">
+                                      "{h.text_content}"
+                                    </p>
+                                    {h.comment && (
+                                      <p className="text-sm text-white bg-slate-900/50 p-2 rounded border border-slate-800">
+                                        {h.comment}
+                                      </p>
+                                    )}
+                                    {isInternal && (isAuthor || isAdmin) && h.status === 'pending' && (
+                                      <div className="mt-3 flex gap-2">
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline" 
+                                          className="h-6 text-[10px] bg-green-900/20 text-green-400 border-green-900/30 hover:bg-green-900/40"
+                                          onClick={() => {
+                                            fetch(`/api/highlights/${h.id}`, {
+                                              method: 'PATCH',
+                                              body: JSON.stringify({ status: 'resolved' })
+                                            }).then(() => {
+                                              setHighlights(highlights.map(item => item.id === h.id ? {...item, status: 'resolved'} : item))
+                                              toast.success('Правка решена')
+                                            })
+                                          }}
+                                        >
+                                          Решено
+                                        </Button>
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline" 
+                                          className="h-6 text-[10px] bg-slate-800 text-slate-400 border-slate-700"
+                                          onClick={() => {
+                                            fetch(`/api/highlights/${h.id}`, {
+                                              method: 'PATCH',
+                                              body: JSON.stringify({ status: 'ignored' })
+                                            }).then(() => {
+                                              setHighlights(highlights.map(item => item.id === h.id ? {...item, status: 'ignored'} : item))
+                                              toast.info('Проигнорировано')
+                                            })
+                                          }}
+                                        >
+                                          Игнорировать
+                                        </Button>
+                                      </div>
+                                    )}
+                                    {h.status !== 'pending' && h.type === 'editorial_comment' && (
+                                      <div className="mt-2 text-[10px] italic text-slate-500">
+                                        Статус: {h.status === 'resolved' ? 'Решено' : 'Проигнорировано'}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            {highlights.filter(h => h.chapter_index === currentChapter).length === 0 && (
+                              <p className="text-xs text-slate-500 italic">Пока нет отметок для этой главы.</p>
+                            )}
+                          </div>
+                        </div>
 
                         {/* Навигация по главам */}
                         <div className="flex items-center justify-between pt-6 border-t border-slate-700">
@@ -241,7 +584,7 @@ export function BookReader({ book }: { book: BookWithCharacters }) {
                   )}
 
                   {/* Нет контента — ссылки на внешние площадки */}
-                  {!isComicMode && !isBookMode && (
+                  {isAuthenticated && !isComicMode && !isBookMode && (
                     <div className="text-center py-12">
                       {book.description && (
                         <p className="text-slate-300 text-base mb-8 max-w-xl mx-auto leading-relaxed">

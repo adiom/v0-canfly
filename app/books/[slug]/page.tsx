@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { fetchBookBySlug } from '@/lib/server/books'
 import { generateBookSchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
 import { BookReader } from '@/components/book-reader'
+import { fetchHighlights } from '@/lib/server/highlights'
+import { getCurrentUserFromCookie, getUserRoles } from '@/lib/server/users'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
 
@@ -59,7 +61,17 @@ export default async function BookPage({ params }: BookPageProps) {
     notFound()
   }
 
+  const user = await getCurrentUserFromCookie()
+  const roles = user ? await getUserRoles(user.id) : []
+  const isTeam = roles.some(r => ['admin', 'editor', 'author'].includes(r))
+
+  const initialHighlights = await fetchHighlights({
+    bookId: book.id,
+    includeInternal: isTeam
+  })
+
   const bookSchema = generateBookSchema(book, BASE_URL)
+  // ... rest of the code
   const breadcrumbSchema = generateBreadcrumbSchema(
     [
       { label: 'Главная', url: BASE_URL },
@@ -79,7 +91,7 @@ export default async function BookPage({ params }: BookPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
-      <BookReader book={book} />
+      <BookReader book={book} initialHighlights={initialHighlights} />
     </>
   )
 }

@@ -130,6 +130,44 @@ export default async function ProfilePage() {
             </section>
 
             <section>
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="text-2xl font-black uppercase">Мои цитаты</h2>
+                <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#9db5c8]">
+                  {summary.highlights.length}
+                </span>
+              </div>
+              <div className="space-y-4">
+                {summary.highlights.map((highlight) => (
+                  <div
+                    key={highlight.id}
+                    className="border border-[#f4efe5]/10 bg-[#1b1c19] p-4 transition-colors hover:border-[#f6d6a8]/45"
+                  >
+                    <p className="text-sm italic leading-6 text-[#ded7cc]">
+                      "{highlight.text_content}"
+                    </p>
+                    <div className="mt-3 flex items-center justify-between">
+                      <Link
+                        href={`/highlight/${highlight.id}`}
+                        className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#f6d6a8] hover:underline"
+                      >
+                        Поделиться
+                      </Link>
+                      <span className="text-[10px] uppercase tracking-[0.18em] text-[#9db5c8]">
+                        {new Date(highlight.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
+                {summary.highlights.length === 0 ? (
+                  <p className="border border-[#f4efe5]/10 bg-[#1b1c19] p-4 text-sm text-[#ded7cc]">
+                    Цитат пока нет. Выделите текст в читалке, чтобы сохранить цитату.
+                  </p>
+                ) : null}
+              </div>
+            </section>
+
+            <section>
               <h2 className="mb-5 text-2xl font-black uppercase">Диалоги</h2>
               <div className="space-y-3">
                 {summary.conversations.map((conversation) => (

@@ -169,6 +169,45 @@ export interface CartItem {
   image: string | null;
 }
 
+export type HighlightType = 'quote' | 'editorial_comment' | 'author_note';
+export type HighlightVisibility = 'public' | 'internal' | 'private';
+export type HighlightStatus = 'pending' | 'resolved' | 'ignored';
+
+export interface Highlight {
+  id: string;
+  book_id: string;
+  user_id: string;
+  chapter_index: number;
+  text_content: string;
+  comment: string | null;
+  type: HighlightType;
+  visibility: HighlightVisibility;
+  status: HighlightStatus;
+  range_data: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChapterRating {
+  id: string;
+  book_id: string;
+  chapter_index: number;
+  user_id: string;
+  rating: number;
+  created_at: string;
+}
+
+export interface BookReview {
+  id: string;
+  book_id: string;
+  user_id: string;
+  rating: number;
+  content: string | null;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface HomepageSlide {
   id: string;
   title: string;

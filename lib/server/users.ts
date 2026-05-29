@@ -10,6 +10,7 @@ import {
   UserRole,
 } from '@/lib/types'
 import { hashPassword, USER_SESSION_COOKIE, verifyUserToken } from '@/lib/user-auth'
+import { fetchHighlights } from './highlights'
 
 export const READER_PROFILE_COOKIE = 'canfly_reader_id'
 
@@ -288,7 +289,7 @@ export async function addCharacterMessage(
 }
 
 export async function fetchReaderProfileSummary(userId: string) {
-  const [roles, friendships, conversations] = await Promise.all([
+  const [roles, friendships, conversations, highlights] = await Promise.all([
     getUserRoles(userId),
     dbQuery<{
       id: string
@@ -349,7 +350,8 @@ export async function fetchReaderProfileSummary(userId: string) {
       `,
       [userId],
     ),
+    fetchHighlights({ userId }),
   ])
 
-  return { roles, friendships, conversations }
+  return { roles, friendships, conversations, highlights }
 }

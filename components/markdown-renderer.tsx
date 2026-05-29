@@ -1,8 +1,11 @@
 'use client'
 
+import { Highlight } from '@/lib/types'
+
 interface MarkdownRendererProps {
   content: string | null | undefined
   className?: string
+  highlights?: Highlight[]
 }
 
 /**
