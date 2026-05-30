@@ -25,9 +25,30 @@ function isLocalDatabaseUrl(databaseUrl: string) {
   }
 }
 
+/**
+ * Normalize sslmode in connection string to avoid pg v8 deprecation warning.
+ * `sslmode=require` is treated as an alias for `verify-full` in pg v8,
+ * but will change semantics in pg v9. Replace it explicitly.
+ */
+function normalizeConnectionString(connectionString: string): string {
+  if (!connectionString.includes('sslmode=')) return connectionString
+
+  const url = new URL(connectionString)
+  const params = new URLSearchParams(url.search)
+
+  const sslmode = params.get('sslmode')
+  if (sslmode === 'require' || sslmode === 'prefer' || sslmode === 'verify-ca') {
+    params.set('sslmode', 'verify-full')
+    url.search = params.toString()
+    return url.toString()
+  }
+
+  return connectionString
+}
+
 export function getPool() {
   if (!cachedPool) {
-    const connectionString = getDatabaseUrl()
+    const connectionString = normalizeConnectionString(getDatabaseUrl())
     const isLocal = isLocalDatabaseUrl(connectionString)
 
     cachedPool = new Pool({

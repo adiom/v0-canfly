@@ -90,9 +90,15 @@ export function HomeHeroSlider({ slides }: HomeHeroSliderProps) {
 
   return (
     <section className="relative overflow-hidden border-b border-[#f4efe5]/10 bg-[#111210]">
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(244,239,229,0.035)_1px,transparent_1px),linear-gradient(180deg,rgba(244,239,229,0.025)_1px,transparent_1px)] bg-[size:64px_64px]" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(244,239,229,0.035)_1px,transparent_1px),linear-gradient(180deg,rgba(244,239,229,0.025)_1px,transparent_1px)] bg-[size:64px_64px] pointer-events-none" />
       <div
-        className="absolute inset-0 transition-colors duration-500"
+        className="absolute inset-0 transition-colors duration-500 pointer-events-none md:hidden"
+        style={{
+          background: `radial-gradient(circle at 50% 15%, ${currentTheme.wash}, transparent 34%), linear-gradient(180deg, rgba(17,18,16,0.18), #111210 92%)`,
+        }}
+      />
+      <div
+        className="absolute inset-0 transition-colors duration-500 pointer-events-none hidden md:block"
         style={{
           background: `radial-gradient(circle at 75% 22%, ${currentTheme.wash}, transparent 34%), linear-gradient(180deg, rgba(17,18,16,0.18), #111210 92%)`,
         }}
@@ -102,7 +108,6 @@ export function HomeHeroSlider({ slides }: HomeHeroSliderProps) {
         <CarouselContent className="ml-0">
           {slides.map((slide, index) => {
             const theme = themeStyles[slide.theme]
-            const imageUrl = slide.background_image || slide.mobile_image
             const asideLabel = slide.aside_label?.trim() || 'Дополнения'
             const asideNumber =
               slide.aside_number?.trim() || String(index + 1).padStart(2, '0')
@@ -111,21 +116,29 @@ export function HomeHeroSlider({ slides }: HomeHeroSliderProps) {
             return (
               <CarouselItem key={slide.id} className="pl-0">
                 <article className="relative min-h-[calc(100vh-108px)] overflow-hidden md:min-h-[680px]">
-                  {imageUrl ? (
-                    <div
-                      className="absolute inset-0 bg-cover bg-center opacity-[0.58]"
-                      style={{ backgroundImage: `url(${imageUrl})` }}
-                    />
+                  {slide.background_image || slide.mobile_image ? (
+                    <>
+                      {slide.mobile_image ? (
+                        <div
+                          className="absolute inset-0 bg-cover bg-center opacity-[0.58] pointer-events-none md:hidden"
+                          style={{ backgroundImage: `url(${slide.mobile_image})` }}
+                        />
+                      ) : null}
+                      <div
+                        className="absolute inset-0 bg-cover bg-center opacity-[0.58] pointer-events-none hidden md:block"
+                        style={{ backgroundImage: `url(${slide.background_image})` }}
+                      />
+                    </>
                   ) : (
                     <SlideAtmosphere theme={slide.theme} />
                   )}
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,#111210_0%,rgba(17,18,16,0.92)_34%,rgba(17,18,16,0.58)_62%,rgba(17,18,16,0.82)_100%)]" />
-                  <div className="absolute inset-x-0 bottom-0 h-44 bg-[linear-gradient(180deg,transparent,#111210)]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,#111210_0%,rgba(17,18,16,0.92)_34%,rgba(17,18,16,0.58)_62%,rgba(17,18,16,0.82)_100%)] pointer-events-none" />
+                  <div className="absolute inset-x-0 bottom-0 h-44 bg-[linear-gradient(180deg,transparent,#111210)] pointer-events-none" />
 
-                  <div className="relative mx-auto grid min-h-[calc(100vh-108px)] max-w-7xl items-center px-4 py-16 md:min-h-[680px] md:px-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+                  <div className="relative mx-auto grid min-h-[calc(100vh-108px)] max-w-7xl items-center px-4 py-10 md:min-h-[680px] md:px-8 md:py-16 lg:grid-cols-[minmax(0,1fr)_360px]">
                     <div className="max-w-4xl">
                       <p
-                        className="mb-5 inline-flex border-l px-3 py-2 text-xs font-semibold uppercase tracking-[0.24em]"
+                        className="mb-4 inline-flex border-l px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.24em] sm:mb-5 sm:px-3 sm:py-2 sm:text-xs"
                         style={{
                           borderColor: theme.accent,
                           backgroundColor: `${theme.accent}14`,
@@ -134,11 +147,11 @@ export function HomeHeroSlider({ slides }: HomeHeroSliderProps) {
                       >
                         {slide.eyebrow || theme.label}
                       </p>
-                      <h1 className="max-w-4xl text-5xl font-black uppercase leading-[0.88] tracking-normal text-[#fff8ea] text-balance md:text-6xl lg:text-8xl">
+                      <h1 className="max-w-4xl text-4xl font-black uppercase leading-[0.88] tracking-normal text-[#fff8ea] text-balance sm:text-5xl md:text-6xl lg:text-8xl">
                         {slide.title}
                       </h1>
                       {slide.description ? (
-                        <p className="mt-7 max-w-2xl text-lg leading-8 text-[#ddd5c8] md:text-xl">
+                        <p className="mt-7 max-w-2xl text-base leading-7 text-[#ddd5c8] md:text-lg lg:text-xl">
                           {slide.description}
                         </p>
                       ) : null}
@@ -188,7 +201,7 @@ export function HomeHeroSlider({ slides }: HomeHeroSliderProps) {
                   key={item.id}
                   type="button"
                   onClick={() => api?.scrollTo(index)}
-                  className={`h-12 min-w-14 border-b-2 px-3 text-left text-sm font-black transition-colors ${
+                  className={`h-12 min-w-14 cursor-pointer touch-manipulation border-b-2 px-3 text-left text-sm font-black transition-colors ${
                     selectedIndex === index
                       ? 'border-[#f6d6a8] text-[#f6d6a8]'
                       : 'border-transparent text-[#8f877c] hover:text-[#f4efe5]'
@@ -203,7 +216,7 @@ export function HomeHeroSlider({ slides }: HomeHeroSliderProps) {
               <button
                 type="button"
                 onClick={() => api?.scrollPrev()}
-                className="flex h-10 w-10 items-center justify-center rounded-sm border border-[#f4efe5]/14 text-[#f4efe5] hover:bg-[#f4efe5]/8"
+                className="flex h-10 w-10 cursor-pointer touch-manipulation items-center justify-center rounded-sm border border-[#f4efe5]/14 text-[#f4efe5] hover:bg-[#f4efe5]/8"
                 aria-label="Предыдущий слайд"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -211,7 +224,7 @@ export function HomeHeroSlider({ slides }: HomeHeroSliderProps) {
               <button
                 type="button"
                 onClick={() => api?.scrollNext()}
-                className="flex h-10 w-10 items-center justify-center rounded-sm border border-[#f4efe5]/14 text-[#f4efe5] hover:bg-[#f4efe5]/8"
+                className="flex h-10 w-10 cursor-pointer touch-manipulation items-center justify-center rounded-sm border border-[#f4efe5]/14 text-[#f4efe5] hover:bg-[#f4efe5]/8"
                 aria-label="Следующий слайд"
               >
                 <ChevronRight className="h-5 w-5" />
@@ -227,21 +240,21 @@ export function HomeHeroSlider({ slides }: HomeHeroSliderProps) {
 function SlideAtmosphere({ theme }: { theme: HomepageSlide['theme'] }) {
   if (theme === 'night-city') {
     return (
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-[#14191d]" />
-        <div className="absolute left-[58%] top-20 h-[520px] w-[320px] border border-[#9db5c8]/20 bg-[#9db5c8]/8" />
-        <div className="absolute bottom-24 right-16 h-3 w-80 bg-[#9db5c8]/24" />
-        <div className="absolute bottom-32 right-28 h-24 w-44 border border-[#f4efe5]/12 bg-[#f4efe5]/8" />
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[#14191d] pointer-events-none" />
+        <div className="absolute left-[58%] top-20 h-[520px] w-[320px] border border-[#9db5c8]/20 bg-[#9db5c8]/8 pointer-events-none" />
+        <div className="absolute bottom-24 right-16 h-3 w-80 bg-[#9db5c8]/24 pointer-events-none" />
+        <div className="absolute bottom-32 right-28 h-24 w-44 border border-[#f4efe5]/12 bg-[#f4efe5]/8 pointer-events-none" />
       </div>
     )
   }
 
   if (theme === 'pvz') {
     return (
-      <div className="absolute inset-0 bg-[#171613]">
-        <div className="absolute right-20 top-20 grid grid-cols-4 gap-3 opacity-80">
+      <div className="absolute inset-0 pointer-events-none bg-[#171613]">
+        <div className="absolute right-20 top-20 grid grid-cols-4 gap-3 opacity-80 pointer-events-none">
           {Array.from({ length: 24 }).map((_, index) => (
-            <span key={index} className="h-20 w-24 border border-[#d7c6ad]/18 bg-[#d7c6ad]/10" />
+            <span key={index} className="h-20 w-24 border border-[#d7c6ad]/18 bg-[#d7c6ad]/10 pointer-events-none" />
           ))}
         </div>
       </div>
@@ -250,27 +263,27 @@ function SlideAtmosphere({ theme }: { theme: HomepageSlide['theme'] }) {
 
   if (theme === 'volga') {
     return (
-      <div className="absolute inset-0 bg-[#151a15]">
-        <div className="absolute bottom-36 right-0 h-24 w-[58%] border-y border-[#b9c7b3]/16 bg-[#b9c7b3]/10" />
-        <div className="absolute right-20 top-24 h-72 w-72 border border-[#b9c7b3]/20" />
+      <div className="absolute inset-0 pointer-events-none bg-[#151a15]">
+        <div className="absolute bottom-36 right-0 h-24 w-[58%] border-y border-[#b9c7b3]/16 bg-[#b9c7b3]/10 pointer-events-none" />
+        <div className="absolute right-20 top-24 h-72 w-72 border border-[#b9c7b3]/20 pointer-events-none" />
       </div>
     )
   }
 
   if (theme === 'dreams') {
     return (
-      <div className="absolute inset-0 bg-[#17141d]">
-        <div className="absolute right-24 top-24 h-72 w-72 rounded-full border border-[#c7bddf]/20 bg-[#c7bddf]/8" />
-        <div className="absolute bottom-24 right-40 h-44 w-28 border border-[#c7bddf]/18 bg-[#c7bddf]/10" />
+      <div className="absolute inset-0 pointer-events-none bg-[#17141d]">
+        <div className="absolute right-24 top-24 h-72 w-72 rounded-full border border-[#c7bddf]/20 bg-[#c7bddf]/8 pointer-events-none" />
+        <div className="absolute bottom-24 right-40 h-44 w-28 border border-[#c7bddf]/18 bg-[#c7bddf]/10 pointer-events-none" />
       </div>
     )
   }
 
   return (
-    <div className="absolute inset-0 bg-[#171411]">
-      <div className="absolute right-20 top-16 h-[480px] w-[360px] border border-[#f6d6a8]/18 bg-[#f6d6a8]/10" />
-      <div className="absolute bottom-24 right-32 h-28 w-64 border border-[#f6d6a8]/20 bg-[#f6d6a8]/12" />
-      <div className="absolute right-44 top-48 h-80 w-px bg-[#f6d6a8]/35" />
+    <div className="absolute inset-0 pointer-events-none bg-[#171411]">
+      <div className="absolute right-20 top-16 h-[480px] w-[360px] border border-[#f6d6a8]/18 bg-[#f6d6a8]/10 pointer-events-none" />
+      <div className="absolute bottom-24 right-32 h-28 w-64 border border-[#f6d6a8]/20 bg-[#f6d6a8]/12 pointer-events-none" />
+      <div className="absolute right-44 top-48 h-80 w-px bg-[#f6d6a8]/35 pointer-events-none" />
     </div>
   )
 }

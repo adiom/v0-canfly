@@ -8,6 +8,7 @@ import {
 } from '@/lib/homepage-slide-store'
 import { fetchIssueBooks, fetchNewsPosts } from '@/lib/server/books'
 import { HomepageSlide } from '@/lib/types'
+import { MobileNav } from '@/components/mobile-nav'
 import { SearchDialog } from '@/components/search/search-dialog'
 
 export const dynamic = 'force-dynamic'
@@ -69,7 +70,10 @@ export default async function Home() {
             ))}
           </nav>
 
-          <SearchDialog />
+          <div className="flex items-center gap-2">
+            <MobileNav items={navItems} />
+            <SearchDialog />
+          </div>
         </div>
       </header>
 
@@ -106,7 +110,7 @@ export default async function Home() {
               <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-[#d52525]">
                 новые выпуски
               </p>
-              <h2 className="text-3xl font-black uppercase leading-none md:text-5xl">Свежие фрагменты</h2>
+              <h2 className="text-2xl font-black uppercase leading-none sm:text-3xl md:text-5xl">Свежие фрагменты</h2>
             </div>
             <Link href="/books" className="hidden text-sm font-black uppercase text-[#d52525] hover:text-[#a81919] sm:block">
               все книги
@@ -116,10 +120,10 @@ export default async function Home() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {issues.map((issue, index) => (
               <Link key={issue.id} href={`/books/${issue.slug}`} className="group border border-[#171713]/12 bg-white">
-                <div
-                  className="relative aspect-[3/4] overflow-hidden"
-                  style={{ backgroundColor: issue.tone ?? '#e8e2da' }}
-                >
+                  <div
+                    className="relative aspect-[4/5] overflow-hidden md:aspect-[3/4]"
+                    style={{ backgroundColor: issue.tone ?? '#e8e2da' }}
+                  >
                   <div className="absolute inset-5 border border-[#171713]/16" />
                   <div className="absolute bottom-5 left-5 right-5">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-[#171713]/60">
@@ -130,8 +134,8 @@ export default async function Home() {
                     </p>
                   </div>
                 </div>
-                <div className="p-4">
-                  <h3 className="min-h-14 text-lg font-black leading-tight">{issue.title}</h3>
+                <div className="p-3 sm:p-4">
+                  <h3 className="min-h-12 text-base font-black leading-tight sm:min-h-14 sm:text-lg">{issue.title}</h3>
                   <p className="mt-3 text-sm leading-6 text-[#5a534a]">{issue.description}</p>
                 </div>
               </Link>
@@ -146,7 +150,7 @@ export default async function Home() {
             <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-[#d52525]">
               canfly dispatch
             </p>
-            <h2 className="text-3xl font-black uppercase leading-none text-[#fff8ea] md:text-5xl">
+            <h2 className="text-2xl font-black uppercase leading-none text-[#fff8ea] sm:text-3xl md:text-5xl">
               Новости, заметки, маршруты
             </h2>
           </div>
@@ -170,33 +174,33 @@ export default async function Home() {
             <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-[#d52525]">
               explore canfly
             </p>
-            <h2 className="text-3xl font-black uppercase leading-none text-[#fff8ea] md:text-5xl">
+            <h2 className="text-2xl font-black uppercase leading-none text-[#fff8ea] sm:text-3xl md:text-5xl">
               Входы во вселенную
             </h2>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            <Link href="/books" className="group border border-[#f4efe5]/10 bg-[#111210] p-6 hover:border-[#f6d6a8]/45">
-              <BookOpen className="mb-10 h-7 w-7 text-[#f6d6a8]" />
-              <h3 className="text-2xl font-black uppercase text-[#fff8ea]">Книги</h3>
-              <p className="mt-4 leading-7 text-[#c9c1b4]">Романы, повести и циклы как самостоятельные точки входа.</p>
+            <Link href="/books" className="group border border-[#f4efe5]/10 bg-[#111210] p-4 hover:border-[#f6d6a8]/45 sm:p-6">
+              <BookOpen className="mb-8 h-7 w-7 text-[#f6d6a8] sm:mb-10" />
+              <h3 className="text-xl font-black uppercase text-[#fff8ea] sm:text-2xl">Книги</h3>
+              <p className="mt-3 leading-7 text-[#c9c1b4] sm:mt-4">Романы, повести и циклы как самостоятельные точки входа.</p>
             </Link>
-            <Link href="/characters" className="group border border-[#f4efe5]/10 bg-[#111210] p-6 hover:border-[#9db5c8]/45">
-              <UserRound className="mb-10 h-7 w-7 text-[#9db5c8]" />
-              <h3 className="text-2xl font-black uppercase text-[#fff8ea]">Персонажи</h3>
-              <p className="mt-4 leading-7 text-[#c9c1b4]">Люди функции: швеи, инженеры, операторы, сотрудники ПВЗ.</p>
+            <Link href="/characters" className="group border border-[#f4efe5]/10 bg-[#111210] p-4 hover:border-[#9db5c8]/45 sm:p-6">
+              <UserRound className="mb-8 h-7 w-7 text-[#9db5c8] sm:mb-10" />
+              <h3 className="text-xl font-black uppercase text-[#fff8ea] sm:text-2xl">Персонажи</h3>
+              <p className="mt-3 leading-7 text-[#c9c1b4] sm:mt-4">Люди функции: швеи, инженеры, операторы, сотрудники ПВЗ.</p>
             </Link>
-            <Link href="/markdown" className="group border border-[#f4efe5]/10 bg-[#111210] p-6 hover:border-[#d7c6ad]/45">
-              <Boxes className="mb-10 h-7 w-7 text-[#d7c6ad]" />
-              <h3 className="text-2xl font-black uppercase text-[#fff8ea]">Архив</h3>
-              <p className="mt-4 leading-7 text-[#c9c1b4]">Старая главная и большой markdown-путеводитель по системе мира.</p>
+            <Link href="/markdown" className="group border border-[#f4efe5]/10 bg-[#111210] p-4 hover:border-[#d7c6ad]/45 sm:p-6">
+              <Boxes className="mb-8 h-7 w-7 text-[#d7c6ad] sm:mb-10" />
+              <h3 className="text-xl font-black uppercase text-[#fff8ea] sm:text-2xl">Архив</h3>
+              <p className="mt-3 leading-7 text-[#c9c1b4] sm:mt-4">Старая главная и большой markdown-путеводитель по системе мира.</p>
             </Link>
           </div>
         </div>
       </section>
 
       <footer className="border-t border-[#f4efe5]/10 bg-[#0c0d0c] px-4 py-8 md:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 text-sm text-[#8f877c] md:flex-row md:items-center">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 text-sm text-[#8f877c] md:flex-row md:items-center md:gap-4">
           <p>© 2005-2026 canfly. Литературная вселенная Адиома Тимура.</p>
           <div className="flex flex-wrap gap-4">
             <span className="inline-flex items-center gap-2">

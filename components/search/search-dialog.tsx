@@ -93,7 +93,7 @@ export function SearchDialog() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex h-10 w-10 items-center justify-center rounded-sm border border-[#f4efe5]/12 text-[#ded7cc] transition-colors hover:bg-[#f4efe5]/8"
+        className="flex h-10 w-10 cursor-pointer touch-manipulation items-center justify-center rounded-sm border border-[#f4efe5]/12 text-[#ded7cc] transition-colors hover:bg-[#f4efe5]/8"
         aria-label="Поиск (Cmd+K)"
       >
         <Search className="h-5 w-5" />
