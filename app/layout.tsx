@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { CartProvider } from '@/lib/cart-context'
 import { YandexMetricaProvider, standardYMInitParameters } from '@artginzburg/next-ym'
 import { generateOrganizationSchema } from '@/lib/seo/schema'
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -46,6 +47,7 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
+        <SpeedInsights/>
         <YandexMetricaProvider
           tagID={42420764}
           initParameters={standardYMInitParameters}
