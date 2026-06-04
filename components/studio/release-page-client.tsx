@@ -7,7 +7,6 @@ import type { Release, Edition } from '@/lib/releases-types'
 import { updateReleaseStatusAction, deleteReleaseAction } from '@/lib/actions/studio'
 import { ReleaseForm } from '@/components/studio/release-form'
 import { EditionCard } from '@/components/studio/edition-card'
-import { EditionFormDialog } from '@/components/studio/edition-form'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -22,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { ArrowLeft, Globe, Archive, Trash2 } from 'lucide-react'
+import { ArrowLeft, Globe, Archive, Trash2, Plus } from 'lucide-react'
 import Link from 'next/link'
 
 const statusLabels: Record<string, string> = {
@@ -81,7 +80,12 @@ export function ReleasePageClient({ release, editions }: { release: Release; edi
         <TabsContent value="editions" className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Издания</h2>
-            <EditionFormDialog releaseId={release.id} />
+            <Link href={`/studio/editions/new?releaseId=${release.id}`}>
+              <Button size="sm">
+                <Plus className="mr-2 h-4 w-4" />
+                Новое издание
+              </Button>
+            </Link>
           </div>
           {editions.length === 0 ? (
             <div className="rounded-lg border border-dashed py-12 text-center text-muted-foreground">

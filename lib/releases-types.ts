@@ -1,6 +1,6 @@
 export type ReleaseStatus = 'draft' | 'published' | 'archived'
 export type EditionStatus = 'draft' | 'published' | 'archived'
-export type EditionFormat = 'book' | 'comic' | 'audiobook' | 'album' | 'magazine'
+export type EditionFormat = 'book' | 'comic' | 'audiobook' | 'audiorelease' | 'album' | 'magazine'
 export type MediaType = 'trailer' | 'podcast' | 'review' | 'other'
 export type CollaboratorRole = 'owner' | 'editor' | 'viewer'
 export type ChapterStatus = 'draft' | 'published'

@@ -4,12 +4,13 @@ import Link from 'next/link'
 import type { Edition } from '@/lib/releases-types'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { BookOpen, Headphones, Image, Music, Newspaper } from 'lucide-react'
+import { BookOpen, Headphones, Image, Music, Newspaper, Radio } from 'lucide-react'
 
 const formatIcons: Record<string, React.ElementType> = {
   book: BookOpen,
   comic: Image,
   audiobook: Headphones,
+  audiorelease: Radio,
   album: Music,
   magazine: Newspaper,
 }
@@ -18,6 +19,7 @@ const formatLabels: Record<string, string> = {
   book: 'Книга',
   comic: 'Комикс',
   audiobook: 'Аудиокнига',
+  audiorelease: 'Аудиорелиз',
   album: 'Альбом',
   magazine: 'Журнал',
 }

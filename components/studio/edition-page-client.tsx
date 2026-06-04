@@ -10,6 +10,7 @@ import { ChapterList } from '@/components/studio/chapter-list'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,26 +22,39 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Settings } from 'lucide-react'
 
 const formatLabels: Record<string, string> = {
   book: 'Книга', comic: 'Комикс', audiobook: 'Аудиокнига',
-  album: 'Альбом', magazine: 'Журнал',
+  audiorelease: 'Аудиорелиз', album: 'Альбом', magazine: 'Журнал',
+}
+
+const chapterLabels: Record<string, string> = {
+  book: 'Главы', comic: 'Главы', audiobook: 'Треки',
+  audiorelease: 'Треки', album: 'Треки', magazine: 'Статьи',
+}
+
+const addLabels: Record<string, string> = {
+  book: 'Добавить главу', comic: 'Добавить главу', audiobook: 'Добавить трек',
+  audiorelease: 'Добавить трек', album: 'Добавить трек', magazine: 'Добавить статью',
 }
 
 export function EditionPageClient({ edition, chapters }: { edition: Edition; chapters: Chapter[] }) {
   const router = useRouter()
   const [creating, setCreating] = useState(false)
 
+  const chapterLabel = chapterLabels[edition.format] ?? 'Главы'
+  const addLabel = addLabels[edition.format] ?? 'Добавить главу'
+
   async function handleAddChapter() {
     setCreating(true)
     try {
       const formData = new FormData()
       formData.set('edition_id', edition.id)
-      formData.set('title', `Глава ${chapters.length + 1}`)
+      formData.set('title', `${chapterLabel === 'Треки' ? 'Трек' : chapterLabel === 'Статьи' ? 'Статья' : 'Глава'} ${chapters.length + 1}`)
       await createChapterAction(formData)
     } catch {
-      toast.error('Ошибка создания главы')
+      toast.error('Ошибка создания')
       setCreating(false)
     }
   }
@@ -68,49 +82,73 @@ export function EditionPageClient({ edition, chapters }: { edition: Edition; cha
         <Badge variant="secondary">{edition.status}</Badge>
       </div>
 
-      <div className="space-y-6">
-        <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0">
-            <CardTitle>Главы</CardTitle>
-            <Button size="sm" onClick={handleAddChapter} disabled={creating}>
-              <Plus className="mr-2 h-4 w-4" />
-              {creating ? 'Создаю...' : 'Добавить главу'}
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {chapters.length === 0 ? (
-              <div className="rounded-lg border border-dashed py-12 text-center text-muted-foreground">
-                Нет глав. Нажмите &laquo;Добавить главу&raquo;, чтобы начать.
-              </div>
-            ) : (
-              <ChapterList chapters={chapters} editionId={edition.id} />
-            )}
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="chapters" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="chapters">{chapterLabel} ({chapters.length})</TabsTrigger>
+          <TabsTrigger value="settings">Настройки</TabsTrigger>
+        </TabsList>
 
-        <div className="flex justify-end">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Удалить издание
+        <TabsContent value="chapters" className="space-y-6">
+          <Card>
+            <CardHeader className="flex-row items-center justify-between space-y-0">
+              <CardTitle>{chapterLabel}</CardTitle>
+              <Button size="sm" onClick={handleAddChapter} disabled={creating}>
+                <Plus className="mr-2 h-4 w-4" />
+                {creating ? 'Создаю...' : addLabel}
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Удалить издание?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Все главы этого издания будут удалены. Это действие необратимо.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Отмена</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteEdition}>Удалить</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
+            </CardHeader>
+            <CardContent>
+              {chapters.length === 0 ? (
+                <div className="rounded-lg border border-dashed py-12 text-center text-muted-foreground">
+                  Нет {chapterLabel.toLowerCase()}. Нажмите &laquo;{addLabel}&raquo;, чтобы начать.
+                </div>
+              ) : (
+                <ChapterList chapters={chapters} editionId={edition.id} />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-4">
+          <Card>
+            <CardContent className="flex items-center justify-between pt-6">
+              <div>
+                <p className="font-medium">Настройки издания</p>
+                <p className="text-sm text-muted-foreground">Slug, платформа, обложка, персонажи, серия</p>
+              </div>
+              <Link href={`/studio/editions/${edition.id}/setup`}>
+                <Button variant="outline">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Открыть настройки
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Удалить издание
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Удалить издание?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Все {chapterLabel.toLowerCase()} этого издания будут удалены. Это действие необратимо.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Отмена</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteEdition}>Удалить</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

@@ -8,7 +8,7 @@ import * as editionsDb from '@/lib/server/editions'
 import * as chaptersDb from '@/lib/server/chapters'
 import * as seriesDb from '@/lib/server/series'
 import { dbQuery, dbQueryOne } from '@/lib/db'
-import type { ReleaseCollaborator } from '@/lib/releases-types'
+import type { ReleaseCollaborator, ReleaseCharacterRole } from '@/lib/releases-types'
 
 async function requireAuth() {
   const session = await requireStudioSession()
@@ -116,7 +116,7 @@ export async function createEditionAction(formData: FormData) {
 
   const releaseId = formData.get('release_id') as string
   revalidatePath(`/studio/releases/${releaseId}`)
-  if (edition) redirect(`/studio/editions/${edition.id}`)
+  if (edition) redirect(`/studio/editions/${edition.id}/setup`)
 }
 
 export async function updateEditionAction(id: string, formData: FormData) {
@@ -271,4 +271,90 @@ export async function getReleaseCollaborators(releaseId: string) {
     `SELECT release_id, user_id, role FROM release_collaborators WHERE release_id = $1`,
     [releaseId],
   )
+}
+
+// === Edition Setup ===
+
+export async function getEditionSetupData(editionId: string) {
+  await requireAuth()
+  const edition = await editionsDb.fetchEditionById(editionId)
+  if (!edition) return null
+
+  const release = await releasesDb.fetchReleaseById(edition.release_id)
+  const characters = await dbQuery<{ id: string; name: string; slug: string; avatar: string | null }>(
+    'SELECT id, name, slug, avatar FROM characters ORDER BY name ASC',
+  )
+  const series = await seriesDb.fetchAllSeries()
+
+  const releaseCharacters = release
+    ? await releasesDb.fetchReleaseCharacters(release.id)
+    : []
+  const releaseSeriesLinks = release
+    ? await releasesDb.fetchReleaseSeries(release.id)
+    : []
+
+  return {
+    edition,
+    release,
+    characters,
+    series,
+    releaseCharacters,
+    releaseSeriesLinks,
+  }
+}
+
+export async function updateEditionSetupAction(
+  editionId: string,
+  data: {
+    slug?: string
+    platform?: string | null
+    external_url?: string | null
+    cover_image?: string | null
+    annotation?: string | null
+    character_ids?: { character_id: string; role: string }[]
+    series_links?: { series_id: string; phase_number: number | null }[]
+  },
+) {
+  await requireAuth()
+  const edition = await editionsDb.fetchEditionById(editionId)
+  if (!edition) return null
+
+  await editionsDb.updateEdition(editionId, {
+    format: edition.format,
+    platform: data.platform ?? edition.platform,
+    external_url: data.external_url ?? edition.external_url,
+    slug: data.slug ?? edition.slug,
+    status: edition.status,
+  })
+
+  if (data.cover_image !== undefined || data.annotation !== undefined) {
+    const release = await releasesDb.fetchReleaseById(edition.release_id)
+    if (release) {
+      await releasesDb.updateRelease(release.id, {
+        title: release.title,
+        slug: release.slug,
+        description: release.description,
+        cover_image: data.cover_image ?? release.cover_image,
+        genre: release.genre,
+        release_date: release.release_date,
+        isbn: release.isbn,
+        authors: release.authors,
+        annotation: data.annotation ?? release.annotation,
+        editor_notes: release.editor_notes,
+        status: release.status,
+      })
+    }
+  }
+
+  if (data.character_ids) {
+    await releasesDb.setReleaseCharacters(edition.release_id, data.character_ids as { character_id: string; role: ReleaseCharacterRole }[])
+  }
+
+  if (data.series_links) {
+    await releasesDb.setReleaseSeries(edition.release_id, data.series_links)
+  }
+
+  revalidatePath(`/studio/editions/${editionId}`)
+  revalidatePath(`/studio/editions/${editionId}/setup`)
+  revalidatePath(`/studio/releases/${edition.release_id}`)
 }
