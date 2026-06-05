@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import type { Release } from '@/lib/releases-types'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { BookOpen, Eye } from 'lucide-react'
+import { BookOpen, Eye, ExternalLink } from 'lucide-react'
 
 const statusLabels: Record<string, string> = {
   draft: 'Черновик',
@@ -20,9 +21,9 @@ const statusVariants: Record<string, 'default' | 'secondary' | 'outline'> = {
 
 export function ReleaseCard({ release }: { release: Release }) {
   return (
-    <Link href={`/studio/releases/${release.id}`}>
-      <Card className="group transition-colors hover:border-primary/50">
-        <CardContent className="flex gap-4 p-4">
+    <Card className="group transition-colors hover:border-primary/50">
+      <CardContent className="flex gap-4 p-4">
+        <Link href={`/studio/releases/${release.id}`} className="flex gap-4 flex-1 min-w-0">
           {release.cover_image ? (
             <img
               src={release.cover_image}
@@ -34,7 +35,7 @@ export function ReleaseCard({ release }: { release: Release }) {
               <BookOpen className="h-6 w-6 text-muted-foreground" />
             </div>
           )}
-          <div className="flex flex-1 flex-col justify-between">
+          <div className="flex flex-1 flex-col justify-between min-w-0">
             <div>
               <h3 className="font-semibold group-hover:text-primary">{release.title}</h3>
               {release.genre && (
@@ -51,8 +52,14 @@ export function ReleaseCard({ release }: { release: Release }) {
               </span>
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </Link>
+        </Link>
+        <Link href={`/release/${release.slug}`} target="_blank">
+          <Button variant="outline" size="sm" className="shrink-0">
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Перейти
+          </Button>
+        </Link>
+      </CardContent>
+    </Card>
   )
 }
