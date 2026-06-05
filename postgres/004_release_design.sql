@@ -1,0 +1,1 @@
+ALTER TABLE public.releases ADD COLUMN IF NOT EXISTS design_config JSONB NOT NULL DEFAULT '{}'::jsonb;

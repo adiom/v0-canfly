@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { isRedirectError } from 'next/dist/client/components/redirect'
 import { toast } from 'sonner'
 import type { Release } from '@/lib/releases-types'
 import { generateSlug } from '@/lib/slug-utils'
@@ -69,7 +70,8 @@ export function ReleaseForm({ release }: ReleaseFormProps) {
       } else {
         await createReleaseAction(formData)
       }
-    } catch {
+    } catch (error) {
+      if (isRedirectError(error)) throw error
       toast.error('Ошибка сохранения')
     } finally {
       setSaving(false)

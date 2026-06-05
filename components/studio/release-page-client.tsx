@@ -2,11 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { isRedirectError } from 'next/dist/client/components/redirect'
 import { toast } from 'sonner'
 import type { Release, Edition } from '@/lib/releases-types'
 import { updateReleaseStatusAction, deleteReleaseAction } from '@/lib/actions/studio'
 import { ReleaseForm } from '@/components/studio/release-form'
 import { EditionCard } from '@/components/studio/edition-card'
+import { ReleaseDesignForm } from '@/components/studio/release-design-form'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -21,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { ArrowLeft, Globe, Archive, Trash2, Plus } from 'lucide-react'
+import { ArrowLeft, Globe, Archive, Trash2, Plus, Palette } from 'lucide-react'
 import Link from 'next/link'
 
 const statusLabels: Record<string, string> = {
@@ -39,7 +41,8 @@ export function ReleasePageClient({ release, editions }: { release: Release; edi
       await updateReleaseStatusAction(release.id, status)
       toast.success(`Статус: ${statusLabels[status]}`)
       router.refresh()
-    } catch {
+    } catch (error) {
+      if (isRedirectError(error)) throw error
       toast.error('Ошибка смены статуса')
     }
   }
@@ -48,7 +51,8 @@ export function ReleasePageClient({ release, editions }: { release: Release; edi
     setDeleting(true)
     try {
       await deleteReleaseAction(release.id)
-    } catch {
+    } catch (error) {
+      if (isRedirectError(error)) throw error
       toast.error('Ошибка удаления')
       setDeleting(false)
     }
@@ -70,6 +74,7 @@ export function ReleasePageClient({ release, editions }: { release: Release; edi
         <TabsList>
           <TabsTrigger value="general">Общее</TabsTrigger>
           <TabsTrigger value="editions">Издания ({editions.length})</TabsTrigger>
+          <TabsTrigger value="design"><Palette className="h-4 w-4" /> Дизайн</TabsTrigger>
           <TabsTrigger value="settings">Настройки</TabsTrigger>
         </TabsList>
 
@@ -98,6 +103,10 @@ export function ReleasePageClient({ release, editions }: { release: Release; edi
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="design">
+          <ReleaseDesignForm release={release} />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">

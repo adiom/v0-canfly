@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { isRedirectError } from 'next/dist/client/components/redirect'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import type { Edition, Chapter } from '@/lib/releases-types'
-import { createChapterAction, deleteEditionAction } from '@/lib/actions/studio'
+import { createChapterAction, deleteEditionAction, updateEditionStatusAction } from '@/lib/actions/studio'
 import { ChapterList } from '@/components/studio/chapter-list'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -22,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { ArrowLeft, Plus, Trash2, Settings } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Settings, Globe, Archive } from 'lucide-react'
 
 const formatLabels: Record<string, string> = {
   book: 'Книга', comic: 'Комикс', audiobook: 'Аудиокнига',
@@ -39,6 +40,12 @@ const addLabels: Record<string, string> = {
   audiorelease: 'Добавить трек', album: 'Добавить трек', magazine: 'Добавить статью',
 }
 
+const statusLabels: Record<string, string> = {
+  draft: 'Черновик',
+  published: 'Опубликован',
+  archived: 'Архив',
+}
+
 export function EditionPageClient({ edition, chapters }: { edition: Edition; chapters: Chapter[] }) {
   const router = useRouter()
   const [creating, setCreating] = useState(false)
@@ -53,7 +60,8 @@ export function EditionPageClient({ edition, chapters }: { edition: Edition; cha
       formData.set('edition_id', edition.id)
       formData.set('title', `${chapterLabel === 'Треки' ? 'Трек' : chapterLabel === 'Статьи' ? 'Статья' : 'Глава'} ${chapters.length + 1}`)
       await createChapterAction(formData)
-    } catch {
+    } catch (error) {
+      if (isRedirectError(error)) throw error
       toast.error('Ошибка создания')
       setCreating(false)
     }
@@ -62,8 +70,20 @@ export function EditionPageClient({ edition, chapters }: { edition: Edition; cha
   async function handleDeleteEdition() {
     try {
       await deleteEditionAction(edition.id, edition.release_id)
-    } catch {
+    } catch (error) {
+      if (isRedirectError(error)) throw error
       toast.error('Ошибка удаления')
+    }
+  }
+
+  async function handleStatusChange(status: string) {
+    try {
+      await updateEditionStatusAction(edition.id, status)
+      toast.success(`Статус: ${statusLabels[status]}`)
+      router.refresh()
+    } catch (error) {
+      if (isRedirectError(error)) throw error
+      toast.error('Ошибка смены статуса')
     }
   }
 
@@ -79,7 +99,7 @@ export function EditionPageClient({ edition, chapters }: { edition: Edition; cha
           <h1 className="text-2xl font-bold">{formatLabels[edition.format]}</h1>
           {edition.platform && <p className="text-muted-foreground">{edition.platform}</p>}
         </div>
-        <Badge variant="secondary">{edition.status}</Badge>
+        <Badge variant="secondary">{statusLabels[edition.status] ?? edition.status}</Badge>
       </div>
 
       <Tabs defaultValue="chapters" className="space-y-6">
@@ -125,7 +145,30 @@ export function EditionPageClient({ edition, chapters }: { edition: Edition; cha
             </CardContent>
           </Card>
 
-          <div className="flex justify-end">
+          <div className="space-y-3">
+            <h3 className="font-semibold">Статус издания</h3>
+            <div className="flex gap-2">
+              {edition.status !== 'published' && (
+                <Button variant="default" onClick={() => handleStatusChange('published')}>
+                  <Globe className="mr-2 h-4 w-4" />
+                  Опубликовать
+                </Button>
+              )}
+              {edition.status !== 'archived' && (
+                <Button variant="outline" onClick={() => handleStatusChange('archived')}>
+                  <Archive className="mr-2 h-4 w-4" />
+                  В архив
+                </Button>
+              )}
+              {edition.status !== 'draft' && (
+                <Button variant="outline" onClick={() => handleStatusChange('draft')}>
+                  Вернуть в черновик
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end border-t pt-4">
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm">

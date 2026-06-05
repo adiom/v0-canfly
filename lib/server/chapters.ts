@@ -22,6 +22,15 @@ export async function fetchChaptersByEdition(editionId: string) {
   )
 }
 
+export async function fetchPublishedChaptersByEdition(editionId: string) {
+  return dbQuery<Chapter>(
+    `SELECT ${chapterColumns} FROM chapters
+     WHERE edition_id = $1 AND status = 'published'
+     ORDER BY chapter_index ASC`,
+    [editionId],
+  )
+}
+
 export async function fetchChapterById(id: string) {
   return dbQueryOne<Chapter>(
     `SELECT ${chapterColumns} FROM chapters WHERE id = $1 LIMIT 1`,

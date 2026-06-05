@@ -9,7 +9,7 @@ import type {
 const releaseColumns = `
   id, title, slug, description, cover_image, genre,
   release_date, isbn, authors, annotation, editor_notes,
-  view_count, status, created_at, updated_at
+  view_count, status, design_config, created_at, updated_at
 `
 
 export async function fetchReleases(options: { status?: string; limit?: number; offset?: number } = {}) {
@@ -101,6 +101,13 @@ export async function updateReleaseStatus(id: string, status: string) {
   return dbQueryOne<Release>(
     `UPDATE releases SET status = $2::release_status WHERE id = $1 RETURNING ${releaseColumns}`,
     [id, status],
+  )
+}
+
+export async function updateReleaseDesign(id: string, config: Record<string, unknown>) {
+  return dbQueryOne<Release>(
+    `UPDATE releases SET design_config = $2::jsonb WHERE id = $1 RETURNING ${releaseColumns}`,
+    [id, JSON.stringify(config)],
   )
 }
 

@@ -6,6 +6,21 @@ export type CollaboratorRole = 'owner' | 'editor' | 'viewer'
 export type ChapterStatus = 'draft' | 'published'
 export type ReleaseCharacterRole = 'main' | 'supporting' | 'cameo'
 export type CommentStatus = 'pending' | 'approved' | 'spam'
+export type HeroStyle = 'full' | 'centered' | 'minimal'
+export type HeroOverlay = 'dark' | 'gradient' | 'none'
+export type ReleaseLayout = 'wide' | 'narrow' | 'sidebar'
+
+export interface ReleaseDesignConfig {
+  accent_color?: string
+  bg_color?: string
+  text_color?: string
+  hero_style?: HeroStyle
+  hero_overlay?: HeroOverlay
+  layout?: ReleaseLayout
+  show_toc?: boolean
+  show_characters?: boolean
+  show_series?: boolean
+}
 
 export interface ReleaseAuthor {
   name: string
@@ -26,6 +41,7 @@ export interface Release {
   editor_notes: string | null
   view_count: number
   status: ReleaseStatus
+  design_config: ReleaseDesignConfig
   created_at: string
   updated_at: string
 }

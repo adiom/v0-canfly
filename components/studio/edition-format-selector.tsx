@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
+import { isRedirectError } from 'next/dist/client/components/redirect'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { createEditionAction } from '@/lib/actions/studio'
@@ -35,7 +36,8 @@ export function EditionFormatSelector({ releaseId }: { releaseId: string }) {
       formData.set('format', format)
       formData.set('slug', generateSlug(format))
       await createEditionAction(formData)
-    } catch {
+    } catch (error) {
+      if (isRedirectError(error)) throw error
       toast.error('Ошибка создания издания')
       setCreating(null)
     }

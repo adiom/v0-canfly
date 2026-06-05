@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { isRedirectError } from 'next/dist/client/components/redirect'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import type { Chapter } from '@/lib/releases-types'
@@ -32,7 +33,8 @@ export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; ed
       await publishChapterAction(chapter.id)
       toast.success('Глава опубликована')
       router.refresh()
-    } catch {
+    } catch (error) {
+      if (isRedirectError(error)) throw error
       toast.error('Ошибка публикации')
     }
   }
@@ -40,7 +42,8 @@ export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; ed
   async function handleDelete() {
     try {
       await deleteChapterAction(chapter.id)
-    } catch {
+    } catch (error) {
+      if (isRedirectError(error)) throw error
       toast.error('Ошибка удаления')
     }
   }

@@ -8,7 +8,7 @@ import * as editionsDb from '@/lib/server/editions'
 import * as chaptersDb from '@/lib/server/chapters'
 import * as seriesDb from '@/lib/server/series'
 import { dbQuery, dbQueryOne } from '@/lib/db'
-import type { ReleaseCollaborator, ReleaseCharacterRole } from '@/lib/releases-types'
+import type { ReleaseCollaborator, ReleaseCharacterRole, ReleaseDesignConfig } from '@/lib/releases-types'
 
 async function requireAuth() {
   const session = await requireStudioSession()
@@ -90,6 +90,13 @@ export async function deleteReleaseAction(id: string) {
   redirect('/studio')
 }
 
+export async function updateReleaseDesignAction(id: string, config: ReleaseDesignConfig) {
+  await requireAuth()
+  await releasesDb.updateReleaseDesign(id, config)
+  revalidatePath(`/studio/releases/${id}`)
+  revalidatePath(`/release/${id}`)
+}
+
 // === Editions ===
 
 export async function getEditions(releaseId: string) {
@@ -131,6 +138,16 @@ export async function updateEditionAction(id: string, formData: FormData) {
   })
 
   revalidatePath(`/studio/editions/${id}`)
+}
+
+export async function updateEditionStatusAction(id: string, status: string) {
+  await requireAuth()
+  await editionsDb.updateEditionStatus(id, status)
+  const edition = await editionsDb.fetchEditionById(id)
+  if (edition) {
+    revalidatePath(`/studio/editions/${id}`)
+    revalidatePath(`/studio/releases/${edition.release_id}`)
+  }
 }
 
 export async function deleteEditionAction(id: string, releaseId: string) {
