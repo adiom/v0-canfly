@@ -145,7 +145,7 @@ export function HomepageSlideForm({ slideId }: HomepageSlideFormProps) {
         throw new Error(data.error || 'Не удалось сохранить слайд')
       }
 
-      router.push('/admin')
+router.push('/admin/slider')
       router.refresh()
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Ошибка сохранения')

@@ -12,6 +12,7 @@ export default async function EditHomepageSlidePage({ params }: EditHomepageSlid
     <AdminShell
       title="Редактировать слайд"
       description="Настройте текст, ссылки, тему и порядок показа на главной."
+      backHref="/admin/slider"
     >
       <HomepageSlideForm slideId={id} />
     </AdminShell>

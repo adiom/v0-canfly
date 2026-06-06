@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button'
 interface AdminShellProps {
   title: string
   description?: string
+  backHref?: string
   children: ReactNode
 }
 
-export function AdminShell({ title, description, children }: AdminShellProps) {
+export function AdminShell({ title, description, backHref = '/admin', children }: AdminShellProps) {
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
       <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm">
@@ -24,7 +25,7 @@ export function AdminShell({ title, description, children }: AdminShellProps) {
           >
            Admin
           </Link>
-          <Link href="/admin">
+          <Link href={backHref}>
             <Button variant="outline" size="sm">
               К списку
             </Button>

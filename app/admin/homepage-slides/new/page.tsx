@@ -6,6 +6,7 @@ export default function NewHomepageSlidePage() {
     <AdminShell
       title="Новый слайд"
       description="Добавьте слайд для hero-слайдера на главной странице Canfly."
+      backHref="/admin/slider"
     >
       <HomepageSlideForm />
     </AdminShell>

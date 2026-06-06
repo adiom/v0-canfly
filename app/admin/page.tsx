@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { AdminUserProfile, Book, Order, Character, HomepageSlide, NewsPost, UserRole } from '@/lib/types';
+import { AdminUserProfile, Book, Order, Character, NewsPost, UserRole } from '@/lib/types';
 import Link from 'next/link';
 
 const userRoles: UserRole[] = ['reader', 'author', 'editor', 'admin'];
@@ -14,10 +14,9 @@ export default function AdminPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
-  const [slides, setSlides] = useState<HomepageSlide[]>([]);
   const [newsPosts, setNewsPosts] = useState<NewsPost[]>([]);
   const [users, setUsers] = useState<AdminUserProfile[]>([]);
-  const [activeTab, setActiveTab] = useState<'books' | 'characters' | 'slides' | 'news' | 'orders' | 'users'>('books');
+  const [activeTab, setActiveTab] = useState<'books' | 'characters' | 'news' | 'orders' | 'users'>('books');
   const [error, setError] = useState('');
   const [newUser, setNewUser] = useState({ login: '', password: '', display_name: '' });
   const [passwordDrafts, setPasswordDrafts] = useState<Record<string, string>>({});
@@ -25,11 +24,10 @@ export default function AdminPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [booksRes, ordersRes, charsRes, slidesRes, newsRes, usersRes] = await Promise.all([
+        const [booksRes, ordersRes, charsRes, newsRes, usersRes] = await Promise.all([
           fetch('/api/admin/books'),
           fetch('/api/admin/orders'),
           fetch('/api/admin/characters'),
-          fetch('/api/admin/homepage-slides'),
           fetch('/api/admin/news'),
           fetch('/api/admin/users'),
         ]);
@@ -38,7 +36,6 @@ export default function AdminPage() {
           booksRes.status === 401 ||
           charsRes.status === 401 ||
           ordersRes.status === 401 ||
-          slidesRes.status === 401 ||
           newsRes.status === 401 ||
           usersRes.status === 401
         ) {
@@ -58,14 +55,6 @@ export default function AdminPage() {
           setCharacters(data);
         } else {
           setError('Не удалось загрузить персонажей');
-        }
-
-        if (slidesRes.ok) {
-          const data = await slidesRes.json();
-          setSlides(data);
-        } else {
-          const data = await slidesRes.json().catch(() => ({}));
-          setError(data.error || 'Не удалось загрузить слайды');
         }
 
         if (ordersRes.ok) {
@@ -138,24 +127,6 @@ export default function AdminPage() {
     }
 
     setCharacters((current) => current.filter((item) => item.id !== character.id));
-  };
-
-  const deleteSlide = async (slide: HomepageSlide) => {
-    if (!window.confirm(`Удалить слайд "${slide.title}"?`)) return;
-
-    const response = await fetch(`/api/admin/homepage-slides/${slide.id}`, { method: 'DELETE' });
-
-    if (response.status === 401) {
-      router.push('/admin/login');
-      return;
-    }
-
-    if (!response.ok) {
-      setError('Не удалось удалить слайд');
-      return;
-    }
-
-    setSlides((current) => current.filter((item) => item.id !== slide.id));
   };
 
   const deleteNews = async (post: NewsPost) => {
@@ -328,16 +299,6 @@ export default function AdminPage() {
             Персонажи ({characters.length})
           </button>
           <button
-            onClick={() => setActiveTab('slides')}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === 'slides'
-                ? 'text-purple-400 border-b-2 border-purple-400'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Слайдер ({slides.length})
-          </button>
-          <button
             onClick={() => setActiveTab('news')}
             className={`px-4 py-2 font-medium transition-colors ${
               activeTab === 'news'
@@ -443,69 +404,6 @@ export default function AdminPage() {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* Homepage Slider Tab */}
-        {activeTab === 'slides' && (
-          <div>
-            <div className="mb-6 flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold text-white">Hero-слайдер главной</h2>
-                <p className="mt-1 text-sm text-slate-400">
-                  Эти слайды показываются в верхнем блоке сайта.
-                </p>
-              </div>
-              <Link href="/admin/homepage-slides/new">
-                <Button className="bg-purple-600 hover:bg-purple-700">
-                  Добавить слайд
-                </Button>
-              </Link>
-            </div>
-
-            <div className="space-y-4">
-              {slides.length > 0 ? (
-                slides.map((slide) => (
-                  <div key={slide.id} className="bg-slate-800 border border-slate-700 rounded-lg p-6 flex justify-between items-center gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg font-bold text-white">{slide.title}</h3>
-                        <span className={`rounded-full px-2 py-1 text-xs ${
-                          slide.is_active
-                            ? 'bg-green-900/50 text-green-200'
-                            : 'bg-slate-700 text-slate-300'
-                        }`}>
-                          {slide.is_active ? 'активен' : 'скрыт'}
-                        </span>
-                        <span className="rounded-full bg-slate-950 px-2 py-1 text-xs text-slate-400">
-                          #{slide.display_order}
-                        </span>
-                      </div>
-                      <p className="text-slate-400 text-sm line-clamp-1">
-                        {slide.eyebrow || slide.theme} • {slide.description || 'Описание не указано'}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 gap-2">
-                      <Link href={`/admin/homepage-slides/${slide.id}/edit`}>
-                        <Button variant="outline" size="sm">Редактировать</Button>
-                      </Link>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-400 hover:text-red-300"
-                        onClick={() => deleteSlide(slide)}
-                      >
-                        Удалить
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-12 text-slate-400">
-                  Слайды пока не добавлены
-                </div>
-              )}
             </div>
           </div>
         )}
