@@ -10,7 +10,7 @@ import {
   UserRole,
 } from '@/lib/types'
 import { hashPassword, USER_SESSION_COOKIE, verifyUserToken } from '@/lib/user-auth'
-import { fetchHighlights } from './highlights'
+import { fetchUserHighlights } from './chapter-highlights'
 
 export const READER_PROFILE_COOKIE = 'canfly_reader_id'
 
@@ -350,7 +350,7 @@ export async function fetchReaderProfileSummary(userId: string) {
       `,
       [userId],
     ),
-    fetchHighlights({ userId, includeBookInfo: true }),
+    fetchUserHighlights(userId, 50),
   ])
 
   return { roles, friendships, conversations, highlights }

@@ -119,6 +119,7 @@ export async function createEditionAction(formData: FormData) {
     external_url: formData.get('external_url') || null,
     slug: formData.get('slug'),
     status: 'draft',
+    is_primary: formData.get('is_primary') === 'true',
   })
 
   const releaseId = formData.get('release_id') as string
@@ -135,6 +136,7 @@ export async function updateEditionAction(id: string, formData: FormData) {
     external_url: formData.get('external_url') || null,
     slug: formData.get('slug'),
     status: formData.get('status') || 'draft',
+    is_primary: formData.get('is_primary') === 'true',
   })
 
   revalidatePath(`/studio/editions/${id}`)

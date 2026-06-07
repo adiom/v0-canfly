@@ -63,6 +63,7 @@ export interface Edition {
   external_url: string | null
   slug: string
   status: EditionStatus
+  is_primary: boolean
   created_at: string
   updated_at: string
 }
@@ -72,6 +73,8 @@ export interface Chapter {
   edition_id: string
   title: string
   content: string | null
+  audio_url: string | null
+  duration_seconds: number | null
   chapter_index: number
   status: ChapterStatus
   word_count: number
@@ -142,4 +145,55 @@ export interface ChapterVersion {
   content: string
   version_number: number
   created_at: string
+}
+
+// === Chapter Highlights ===
+
+export interface ChapterHighlight {
+  id: string
+  chapter_id: string
+  user_id: string
+  text_content: string
+  paragraph_index: number | null
+  context_before: string | null
+  context_after: string | null
+  note: string | null
+  is_public: boolean
+  likes_count: number
+  created_at: string
+  // Joins
+  user_name?: string | null
+  user_avatar?: string | null
+  is_liked_by_me?: boolean
+}
+
+export interface ChapterHighlightInput {
+  chapter_id: string
+  text_content: string
+  paragraph_index?: number | null
+  context_before?: string | null
+  context_after?: string | null
+  note?: string | null
+  is_public: boolean
+}
+
+// === Editorial Notes (только для Studio) ===
+
+export type EditorialNoteStatus = 'open' | 'resolved' | 'ignored'
+
+export interface ChapterEditorialNote {
+  id: string
+  chapter_id: string
+  author_id: string
+  text_content: string
+  paragraph_index: number | null
+  context_before: string | null
+  context_after: string | null
+  note: string
+  status: EditorialNoteStatus
+  created_at: string
+  resolved_at: string | null
+  // Joins
+  author_name?: string | null
+  author_avatar?: string | null
 }

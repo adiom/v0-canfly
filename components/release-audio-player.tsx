@@ -1,0 +1,373 @@
+'use client'
+
+import { useState, useEffect, useRef, useCallback } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { ArrowLeft, Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, List, X } from 'lucide-react'
+import type { Release, Edition, Chapter } from '@/lib/releases-types'
+import { formatDuration, formatTotalDuration } from '@/lib/utils/editions'
+
+interface ReleaseAudioPlayerProps {
+  release: Release
+  edition: Edition
+  chapters: Chapter[]
+}
+
+export function ReleaseAudioPlayer({ release, edition, chapters }: ReleaseAudioPlayerProps) {
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const progressRef = useRef<HTMLDivElement>(null)
+
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [volume, setVolume] = useState(1)
+  const [isMuted, setIsMuted] = useState(false)
+  const [showTracklist, setShowTracklist] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const currentTrack = chapters[currentIndex]
+  const accent = release.design_config?.accent_color ?? '#d52525'
+
+  const totalDuration = chapters.reduce((sum, ch) => sum + (ch.duration_seconds ?? 0), 0)
+
+  // Загружаем новый трек при смене индекса
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio || !currentTrack?.audio_url) return
+    const wasPlaying = isPlaying
+    audio.src = currentTrack.audio_url
+    audio.load()
+    if (wasPlaying) audio.play().catch(() => setIsPlaying(false))
+  }, [currentIndex])
+
+  // Синхронизируем громкость и mute
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.volume = isMuted ? 0 : volume
+  }, [volume, isMuted])
+
+  // Клавиатура
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return
+      if (e.code === 'Space') { e.preventDefault(); togglePlay() }
+      if (e.code === 'ArrowLeft') seek(-10)
+      if (e.code === 'ArrowRight') seek(10)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [isPlaying])
+
+  const togglePlay = useCallback(() => {
+    const audio = audioRef.current
+    if (!audio || !currentTrack?.audio_url) return
+    if (isPlaying) {
+      audio.pause()
+      setIsPlaying(false)
+    } else {
+      audio.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false))
+    }
+  }, [isPlaying, currentTrack])
+
+  const seek = (delta: number) => {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.currentTime = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + delta))
+  }
+
+  const goToTrack = (index: number) => {
+    setCurrentIndex(index)
+    setCurrentTime(0)
+    setShowTracklist(false)
+  }
+
+  const prevTrack = () => {
+    if (currentTime > 3) {
+      audioRef.current && (audioRef.current.currentTime = 0)
+      return
+    }
+    if (currentIndex > 0) goToTrack(currentIndex - 1)
+  }
+
+  const nextTrack = useCallback(() => {
+    if (currentIndex < chapters.length - 1) goToTrack(currentIndex + 1)
+    else setIsPlaying(false)
+  }, [currentIndex, chapters.length])
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const bar = progressRef.current
+    const audio = audioRef.current
+    if (!bar || !audio || !audio.duration) return
+    const rect = bar.getBoundingClientRect()
+    const ratio = (e.clientX - rect.left) / rect.width
+    audio.currentTime = ratio * audio.duration
+  }
+
+  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
+
+  return (
+    <div className="min-h-screen bg-cf-bg text-cf-text-1 flex flex-col">
+      {/* header */}
+      <header className="sticky top-0 z-40 border-b border-cf-text-1/10 bg-cf-bg/92 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 md:px-8">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="flex h-8 w-14 items-center justify-center bg-[#d52525] text-sm font-black uppercase tracking-[-0.04em] text-white">
+              canfly
+            </span>
+          </Link>
+          <button
+            onClick={() => setShowTracklist(!showTracklist)}
+            className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-cf-text-2 hover:text-cf-text-heading transition-colors"
+            aria-label="Список треков"
+          >
+            <List className="h-4 w-4" />
+            <span className="hidden sm:inline">Треклист</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Скрытый audio элемент */}
+      <audio
+        ref={audioRef}
+        onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
+        onDurationChange={() => setDuration(audioRef.current?.duration ?? 0)}
+        onEnded={nextTrack}
+        onWaiting={() => setIsLoading(true)}
+        onCanPlay={() => setIsLoading(false)}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+      />
+
+      {/* Основной контент */}
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-12 md:py-20">
+        <div className="w-full max-w-sm">
+          {/* Обложка */}
+          <div className="relative mx-auto mb-10 aspect-square w-full max-w-[280px] overflow-hidden rounded-sm shadow-2xl">
+            {release.cover_image ? (
+              <Image
+                src={release.cover_image}
+                alt={release.title}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <div
+                className="h-full w-full"
+                style={{ backgroundColor: `${accent}22` }}
+              >
+                <div className="flex h-full items-center justify-center">
+                  <span className="text-6xl font-black uppercase opacity-20" style={{ color: accent }}>
+                    {release.title[0]}
+                  </span>
+                </div>
+              </div>
+            )}
+            {/* Анимация воспроизведения */}
+            {isPlaying && (
+              <div className="absolute bottom-3 right-3 flex items-end gap-0.5">
+                {[1, 2, 3, 4].map(i => (
+                  <span
+                    key={i}
+                    className="w-1 rounded-full animate-pulse"
+                    style={{
+                      height: `${8 + i * 4}px`,
+                      backgroundColor: accent,
+                      animationDelay: `${i * 0.1}s`,
+                      animationDuration: `${0.6 + i * 0.1}s`,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Мета */}
+          <div className="mb-6 text-center">
+            <p className="mb-1 text-xs font-black uppercase tracking-[0.22em]" style={{ color: accent }}>
+              {release.genre ?? 'Аудио'}
+            </p>
+            <h1 className="text-2xl font-black uppercase leading-none text-cf-text-heading">
+              {release.title}
+            </h1>
+            {release.authors.length > 0 && (
+              <p className="mt-2 text-sm text-cf-text-3">
+                {release.authors.map(a => a.name).join(', ')}
+              </p>
+            )}
+          </div>
+
+          {/* Текущий трек */}
+          <div className="mb-6 text-center">
+            {currentTrack ? (
+              <>
+                <p className="text-xs uppercase tracking-[0.14em] text-cf-text-4">
+                  {currentIndex + 1} / {chapters.length}
+                </p>
+                <p className="mt-1 truncate text-base font-bold text-cf-text-1">
+                  {currentTrack.title}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-cf-text-4">Треки не добавлены</p>
+            )}
+          </div>
+
+          {/* Прогресс-бар */}
+          <div className="mb-3">
+            <div
+              ref={progressRef}
+              className="relative h-1 w-full cursor-pointer rounded-full bg-cf-text-1/12"
+              onClick={handleProgressClick}
+              role="slider"
+              aria-label="Прогресс воспроизведения"
+              aria-valuenow={Math.round(progressPercent)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className="h-full rounded-full transition-[width] duration-100"
+                style={{ width: `${progressPercent}%`, backgroundColor: accent }}
+              />
+              <div
+                className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full shadow"
+                style={{
+                  left: `${progressPercent}%`,
+                  transform: `translate(-50%, -50%)`,
+                  backgroundColor: accent,
+                }}
+              />
+            </div>
+            <div className="mt-1.5 flex justify-between text-[10px] tabular-nums text-cf-text-4">
+              <span>{formatDuration(Math.floor(currentTime))}</span>
+              <span>{duration > 0 ? formatDuration(Math.floor(duration)) : (currentTrack?.duration_seconds ? formatDuration(currentTrack.duration_seconds) : '--:--')}</span>
+            </div>
+          </div>
+
+          {/* Контролы */}
+          <div className="flex items-center justify-between">
+            {/* Mute */}
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              className="p-2 text-cf-text-3 hover:text-cf-text-1 transition-colors"
+              aria-label={isMuted ? 'Включить звук' : 'Выключить звук'}
+            >
+              {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            </button>
+
+            <div className="flex items-center gap-4">
+              {/* Предыдущий */}
+              <button
+                onClick={prevTrack}
+                disabled={currentIndex === 0 && currentTime <= 3}
+                className="p-2 text-cf-text-2 hover:text-cf-text-heading disabled:opacity-30 transition-colors"
+                aria-label="Предыдущий трек"
+              >
+                <SkipBack className="h-6 w-6" />
+              </button>
+
+              {/* Play/Pause */}
+              <button
+                onClick={togglePlay}
+                disabled={!currentTrack?.audio_url}
+                className="flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 disabled:opacity-40"
+                style={{ backgroundColor: accent }}
+                aria-label={isPlaying ? 'Пауза' : 'Воспроизвести'}
+              >
+                {isLoading ? (
+                  <span className="h-5 w-5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                ) : isPlaying ? (
+                  <Pause className="h-6 w-6 text-white" />
+                ) : (
+                  <Play className="h-6 w-6 translate-x-0.5 text-white" />
+                )}
+              </button>
+
+              {/* Следующий */}
+              <button
+                onClick={nextTrack}
+                disabled={currentIndex === chapters.length - 1}
+                className="p-2 text-cf-text-2 hover:text-cf-text-heading disabled:opacity-30 transition-colors"
+                aria-label="Следующий трек"
+              >
+                <SkipForward className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Громкость */}
+            <div className="flex items-center gap-1.5">
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={isMuted ? 0 : volume}
+                onChange={e => { setVolume(Number(e.target.value)); setIsMuted(false) }}
+                className="h-1 w-16 cursor-pointer appearance-none rounded-full bg-cf-text-1/12"
+                aria-label="Громкость"
+              />
+            </div>
+          </div>
+
+          {/* Общая длительность */}
+          {totalDuration > 0 && (
+            <p className="mt-6 text-center text-xs text-cf-text-4">
+              {chapters.length} {chapters.length === 1 ? 'трек' : 'треков'} · {formatTotalDuration(totalDuration)}
+            </p>
+          )}
+        </div>
+      </main>
+
+      {/* Треклист — боковая панель */}
+      {showTracklist && (
+        <div className="fixed inset-0 z-50 flex">
+          <div className="flex-1" onClick={() => setShowTracklist(false)} />
+          <aside className="flex w-full max-w-xs flex-col border-l border-cf-text-1/10 bg-cf-bg shadow-2xl">
+            <div className="flex items-center justify-between border-b border-cf-text-1/10 px-4 py-4">
+              <h2 className="text-sm font-black uppercase tracking-[0.14em] text-cf-text-heading">
+                {release.title}
+              </h2>
+              <button
+                onClick={() => setShowTracklist(false)}
+                className="p-1 text-cf-text-3 hover:text-cf-text-1"
+                aria-label="Закрыть треклист"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {chapters.map((ch, i) => (
+                <button
+                  key={ch.id}
+                  onClick={() => goToTrack(i)}
+                  className={`flex w-full items-center gap-3 border-b border-cf-text-1/6 px-4 py-3 text-left transition-colors hover:bg-cf-text-1/4 ${
+                    i === currentIndex ? 'bg-cf-text-1/6' : ''
+                  }`}
+                >
+                  <span
+                    className="min-w-[24px] text-xs tabular-nums font-black"
+                    style={{ color: i === currentIndex ? accent : undefined }}
+                  >
+                    {i === currentIndex && isPlaying ? '▶' : String(i + 1).padStart(2, '0')}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className={`truncate text-sm font-medium ${i === currentIndex ? 'text-cf-text-heading' : 'text-cf-text-2'}`}>
+                      {ch.title}
+                    </p>
+                    {ch.duration_seconds && (
+                      <p className="text-xs text-cf-text-4">{formatDuration(ch.duration_seconds)}</p>
+                    )}
+                  </div>
+                  {!ch.audio_url && (
+                    <span className="text-[10px] uppercase tracking-wider text-cf-text-4">скоро</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </aside>
+        </div>
+      )}
+    </div>
+  )
+}

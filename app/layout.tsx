@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Script from 'next/script'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { CartProvider } from '@/lib/cart-context'
+import { ThemeProvider } from '@/components/theme-provider'
 import { generateOrganizationSchema } from '@/lib/seo/schema'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -42,17 +43,19 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ru">
+    <html lang="ru" suppressHydrationWarning>
       <body className="font-sans antialiased">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
-        <Analytics />
-        <SpeedInsights/>
-        <CartProvider>
-          {children}
-        </CartProvider>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          <Analytics />
+          <SpeedInsights/>
+          <CartProvider>
+            {children}
+          </CartProvider>
+        </ThemeProvider>
         <Script
           id="yandex-metrica"
           strategy="afterInteractive"

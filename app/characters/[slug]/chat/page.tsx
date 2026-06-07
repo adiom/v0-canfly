@@ -2,6 +2,7 @@ import { fetchCharacterBySlug } from '@/lib/server/characters';
 import Link from 'next/link';
 import { CharacterChat } from '@/components/character-chat';
 import Image from 'next/image';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,9 +24,7 @@ export async function generateMetadata({ params }: ChatPageProps) {
   const data = await getCharacterData(slug);
 
   if (!data?.character) {
-    return {
-      title: 'Персонаж не найден - canfly',
-    };
+    return { title: 'Персонаж не найден - canfly' };
   }
 
   return {
@@ -40,19 +39,19 @@ export default async function CharacterChatPage({ params }: ChatPageProps) {
 
   if (!data?.character) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
-        <header className="border-b border-slate-800 backdrop-blur-sm sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
-            <Link href="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+      <main className="min-h-screen bg-cf-bg text-cf-text-1">
+        <header className="sticky top-0 z-50 border-b border-cf-text-1/10 bg-cf-bg/92 backdrop-blur-xl">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 flex h-14 items-center justify-between">
+            <Link href="/" className="flex h-9 w-16 items-center justify-center bg-cf-accent text-lg font-black uppercase tracking-[-0.04em] text-white">
               canfly
             </Link>
-            <Link href="/characters" className="text-slate-300 hover:text-white">
-              Назад к персонажам
+            <Link href="/characters" className="text-xs font-black uppercase tracking-[0.12em] text-cf-text-2 hover:text-cf-text-heading">
+              ← Персонажи
             </Link>
           </div>
         </header>
         <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-          <p className="text-slate-400">Персонаж не найден</p>
+          <p className="text-cf-text-3">Персонаж не найден</p>
         </div>
       </main>
     );
@@ -61,33 +60,33 @@ export default async function CharacterChatPage({ params }: ChatPageProps) {
   const character = data.character;
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex flex-col">
-      {/* Header */}
-      <header className="border-b border-slate-800 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+    <main className="min-h-screen bg-cf-bg text-cf-text-1 flex flex-col">
+      <header className="sticky top-0 z-50 border-b border-cf-text-1/10 bg-cf-bg/92 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 flex h-14 items-center justify-between">
           <div className="flex items-center gap-4">
             {character.avatar && (
-              <div className="relative w-10 h-10 rounded-full overflow-hidden border border-slate-600">
-                <Image
-                  src={character.avatar}
-                  alt={character.name}
-                  fill
-                  className="object-cover"
-                />
+              <div className="relative w-9 h-9 overflow-hidden border border-cf-text-1/10">
+                <Image src={character.avatar} alt={character.name} fill className="object-cover" />
               </div>
             )}
             <div>
-              <h1 className="text-lg font-bold text-white">{character.name}</h1>
-              <p className="text-xs text-slate-400">Онлайн</p>
+              <h1 className="text-sm font-black uppercase text-cf-text-heading">{character.name}</h1>
+              <p className="text-xs text-cf-text-4 uppercase tracking-[0.12em]">Онлайн</p>
             </div>
           </div>
-          <Link href={`/characters/${character.slug}`} className="text-slate-300 hover:text-white transition-colors text-sm">
-            ← Назад к персонажу
-          </Link>
+
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link
+              href={`/characters/${character.slug}`}
+              className="text-xs font-black uppercase tracking-[0.12em] text-cf-text-2 hover:text-cf-text-heading transition-colors"
+            >
+              ← Профиль
+            </Link>
+          </div>
         </div>
       </header>
 
-      {/* Chat */}
       <section className="flex-1 max-w-4xl w-full mx-auto px-4 py-6 flex flex-col">
         {character.can_receive_messages !== false && character.reply_mode !== 'disabled' ? (
           <CharacterChat
@@ -96,7 +95,7 @@ export default async function CharacterChatPage({ params }: ChatPageProps) {
             characterAvatar={character.avatar || ''}
           />
         ) : (
-          <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-6 text-slate-300">
+          <div className="border border-cf-text-1/10 bg-cf-bg-2 p-6 text-cf-text-caption">
             Сейчас этому персонажу нельзя писать.
           </div>
         )}

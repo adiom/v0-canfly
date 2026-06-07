@@ -1,10 +1,18 @@
 'use client';
 
 import { useCart } from '@/lib/cart-context';
-import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useState } from 'react';
 import Image from 'next/image';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { MobileNav } from '@/components/mobile-nav';
+
+const navItems = [
+  { label: 'Новости', href: '/news' },
+  { label: 'Книги', href: '/books' },
+  { label: 'Персонажи', href: '/characters' },
+  { label: 'Магазин', href: '/shop' },
+]
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart, total } = useCart();
@@ -25,7 +33,7 @@ export default function CartPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!orderForm.customer_name || !orderForm.customer_email || items.length === 0) {
       alert('Пожалуйста, заполните обязательные поля');
       return;
@@ -70,103 +78,104 @@ export default function CartPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
-      {/* Header */}
-      <header className="border-b border-slate-800 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-            Canfly
+    <main className="min-h-screen bg-cf-bg text-cf-text-1">
+      <header className="sticky top-0 z-50 border-b border-cf-text-1/10 bg-cf-bg/92 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 flex h-14 items-center justify-between">
+          <Link href="/" className="flex h-14 items-center gap-3" aria-label="Canfly home">
+            <span className="flex h-9 w-16 items-center justify-center bg-cf-accent text-lg font-black uppercase tracking-[-0.04em] text-white">
+              canfly
+            </span>
           </Link>
-          
-          <nav className="flex gap-6 items-center">
-            <Link href="/characters" className="text-slate-300 hover:text-white transition-colors">
-              Персонажи
-            </Link>
-            <Link href="/shop" className="text-slate-300 hover:text-white transition-colors">
-              Магазин
-            </Link>
-            <Link href="/cart" className="text-purple-400">
+
+          <nav className="hidden h-14 items-center lg:flex">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex h-full items-center border-x border-transparent px-3 text-xs font-black uppercase tracking-[0.12em] text-cf-text-2 transition-colors hover:border-cf-text-1/10 hover:bg-cf-text-1/6 hover:text-cf-text-heading lg:px-4"
+              >
+                {item.label}
+              </Link>
+            ))}
+            <Link
+              href="/cart"
+              className="flex h-full items-center border-x border-cf-text-1/10 bg-cf-text-1/8 px-3 text-xs font-black uppercase tracking-[0.12em] text-cf-text-heading lg:px-4"
+            >
               Корзина
             </Link>
           </nav>
+
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <MobileNav items={[...navItems, { label: 'Корзина', href: '/cart' }]} />
+          </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <section className="max-w-6xl mx-auto px-4 py-16">
-        <h1 className="text-5xl font-bold text-white mb-12">Корзина</h1>
+      <section className="max-w-7xl mx-auto px-4 md:px-8 py-16">
+        <div className="mb-12">
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-cf-accent">оформление</p>
+          <h1 className="text-4xl font-black uppercase leading-none text-cf-text-heading md:text-5xl">Корзина</h1>
+        </div>
 
         {submitted ? (
-          <div className="bg-green-900/30 border border-green-700 rounded-lg p-8 text-center mb-8">
-            <h2 className="text-2xl font-bold text-green-400 mb-2">Спасибо за заказ!</h2>
-            <p className="text-slate-300 mb-6">
+          <div className="border border-cf-text-1/10 bg-cf-bg-2 p-8 text-center mb-12">
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-cf-accent">готово</p>
+            <h2 className="text-2xl font-black uppercase text-cf-text-heading mb-3">Спасибо за заказ!</h2>
+            <p className="text-cf-text-caption mb-6">
               Мы получили вашу заявку. Вскоре с вами свяжется наша команда для подтверждения.
             </p>
-            <Link href="/shop">
-              <Button className="bg-purple-600 hover:bg-purple-700">
-                Вернуться в магазин
-              </Button>
+            <Link
+              href="/shop"
+              className="inline-flex h-12 items-center bg-cf-accent px-6 text-sm font-black uppercase tracking-[0.12em] text-white hover:bg-[#b01e1e]"
+            >
+              Вернуться в магазин
             </Link>
           </div>
         ) : null}
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Cart Items */}
           <div className="lg:col-span-2">
             {items.length > 0 ? (
               <div className="space-y-4 mb-8">
                 {items.map((item) => (
-                  <div key={item.bookId} className="bg-slate-800 border border-slate-700 rounded-lg p-6 flex gap-6">
-                    {/* Image */}
+                  <div key={item.bookId} className="border border-cf-text-1/10 bg-cf-bg-2 p-6 flex gap-6">
                     {item.image ? (
                       <div className="flex-shrink-0 relative w-24 h-32">
-                        <Image
-                          src={item.image}
-                          alt={item.title}
-                          fill
-                          className="object-cover rounded"
-                        />
+                        <Image src={item.image} alt={item.title} fill className="object-cover" />
                       </div>
                     ) : (
-                      <div className="flex-shrink-0 w-24 h-32 bg-slate-700 rounded flex items-center justify-center text-slate-400 text-xs">
+                      <div className="flex-shrink-0 w-24 h-32 bg-cf-bg flex items-center justify-center text-cf-text-4 text-xs">
                         Нет фото
                       </div>
                     )}
 
-                    {/* Info */}
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
-                      <p className="text-purple-300 font-semibold mb-4">
-                        {(item.price / 100).toLocaleString('ru-RU', {
-                          style: 'currency',
-                          currency: 'RUB',
-                        })}
+                      <h3 className="text-lg font-black uppercase text-cf-text-heading mb-2">{item.title}</h3>
+                      <p className="text-cf-warm font-black mb-4">
+                        {(item.price / 100).toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' })}
                       </p>
 
-                      {/* Quantity Controls */}
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => updateQuantity(item.bookId, item.quantity - 1)}
-                          className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded text-sm"
+                          className="border border-cf-text-1/14 text-cf-text-1 px-3 py-1 text-sm hover:bg-cf-text-1/8 transition-colors"
                         >
                           −
                         </button>
-                        <span className="text-white font-semibold w-8 text-center">
-                          {item.quantity}
-                        </span>
+                        <span className="text-cf-text-heading font-black w-8 text-center">{item.quantity}</span>
                         <button
                           onClick={() => updateQuantity(item.bookId, item.quantity + 1)}
-                          className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded text-sm"
+                          className="border border-cf-text-1/14 text-cf-text-1 px-3 py-1 text-sm hover:bg-cf-text-1/8 transition-colors"
                         >
                           +
                         </button>
                       </div>
                     </div>
 
-                    {/* Remove */}
                     <button
                       onClick={() => removeItem(item.bookId)}
-                      className="text-slate-400 hover:text-red-400 transition-colors"
+                      className="text-cf-text-4 hover:text-cf-accent transition-colors"
                     >
                       ✕
                     </button>
@@ -174,140 +183,93 @@ export default function CartPage() {
                 ))}
               </div>
             ) : !submitted ? (
-              <div className="bg-slate-800 border border-slate-700 rounded-lg p-12 text-center mb-8">
-                <p className="text-slate-400 mb-6">Ваша корзина пуста</p>
-                <Link href="/shop">
-                  <Button className="bg-purple-600 hover:bg-purple-700">
-                    Перейти в магазин
-                  </Button>
+              <div className="border border-cf-text-1/10 bg-cf-bg-2 p-12 text-center mb-8">
+                <p className="text-cf-text-3 mb-6">Ваша корзина пуста</p>
+                <Link
+                  href="/shop"
+                  className="inline-flex h-12 items-center bg-cf-accent px-6 text-sm font-black uppercase tracking-[0.12em] text-white hover:bg-[#b01e1e]"
+                >
+                  Перейти в магазин
                 </Link>
               </div>
             ) : null}
 
-            {/* Order Form */}
             {items.length > 0 && !submitted && (
-              <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
-                <h2 className="text-2xl font-bold text-white mb-6">Информация для заказа</h2>
-                
+              <div className="border border-cf-text-1/10 bg-cf-bg-2 p-8">
+                <h2 className="text-2xl font-black uppercase text-cf-text-heading mb-6">Информация для заказа</h2>
+
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-white text-sm font-medium mb-2">
-                      Имя *
-                    </label>
-                    <input
-                      type="text"
-                      name="customer_name"
-                      value={orderForm.customer_name}
-                      onChange={handleInputChange}
-                      className="w-full bg-slate-700 border border-slate-600 rounded px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500"
-                      placeholder="Ваше имя"
-                      required
-                    />
-                  </div>
+                  {[
+                    { label: 'Имя *', name: 'customer_name', type: 'text', placeholder: 'Ваше имя', required: true },
+                    { label: 'Email *', name: 'customer_email', type: 'email', placeholder: 'your@email.com', required: true },
+                    { label: 'Телефон', name: 'customer_phone', type: 'tel', placeholder: '+7 (999) 999-99-99', required: false },
+                    { label: 'Адрес доставки', name: 'customer_address', type: 'text', placeholder: 'Ваш адрес', required: false },
+                  ].map((field) => (
+                    <div key={field.name}>
+                      <label className="block text-cf-text-2 text-xs font-black uppercase tracking-[0.12em] mb-2">{field.label}</label>
+                      <input
+                        type={field.type}
+                        name={field.name}
+                        value={orderForm[field.name as keyof typeof orderForm]}
+                        onChange={handleInputChange}
+                        className="w-full border border-cf-text-1/14 bg-cf-bg px-4 py-2.5 text-cf-text-1 placeholder-cf-text-4 focus:outline-none focus:border-cf-accent/60"
+                        placeholder={field.placeholder}
+                        required={field.required}
+                      />
+                    </div>
+                  ))}
 
                   <div>
-                    <label className="block text-white text-sm font-medium mb-2">
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      name="customer_email"
-                      value={orderForm.customer_email}
-                      onChange={handleInputChange}
-                      className="w-full bg-slate-700 border border-slate-600 rounded px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500"
-                      placeholder="your@email.com"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white text-sm font-medium mb-2">
-                      Телефон
-                    </label>
-                    <input
-                      type="tel"
-                      name="customer_phone"
-                      value={orderForm.customer_phone}
-                      onChange={handleInputChange}
-                      className="w-full bg-slate-700 border border-slate-600 rounded px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500"
-                      placeholder="+7 (999) 999-99-99"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white text-sm font-medium mb-2">
-                      Адрес доставки
-                    </label>
-                    <input
-                      type="text"
-                      name="customer_address"
-                      value={orderForm.customer_address}
-                      onChange={handleInputChange}
-                      className="w-full bg-slate-700 border border-slate-600 rounded px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500"
-                      placeholder="Ваш адрес"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white text-sm font-medium mb-2">
-                      Дополнительные заметки
-                    </label>
+                    <label className="block text-cf-text-2 text-xs font-black uppercase tracking-[0.12em] mb-2">Дополнительные заметки</label>
                     <textarea
                       name="notes"
                       value={orderForm.notes}
                       onChange={handleInputChange}
-                      className="w-full bg-slate-700 border border-slate-600 rounded px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 resize-none"
+                      className="w-full border border-cf-text-1/14 bg-cf-bg px-4 py-2.5 text-cf-text-1 placeholder-cf-text-4 focus:outline-none focus:border-cf-accent/60 resize-none"
                       rows={3}
                       placeholder="Дополнительная информация..."
                     />
                   </div>
 
                   <div className="flex gap-4 pt-4">
-                    <Button
+                    <button
                       type="submit"
                       disabled={loading}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700"
+                      className="flex-1 h-12 bg-cf-accent text-sm font-black uppercase tracking-[0.12em] text-white hover:bg-[#b01e1e] disabled:opacity-50"
                     >
                       {loading ? 'Обработка...' : 'Оформить заказ'}
-                    </Button>
-                    <Button
+                    </button>
+                    <button
                       type="button"
-                      variant="outline"
                       onClick={clearCart}
+                      className="h-12 px-5 border border-cf-text-1/14 text-xs font-black uppercase tracking-[0.12em] text-cf-text-2 hover:bg-cf-text-1/8 transition-colors"
                     >
-                      Очистить корзину
-                    </Button>
+                      Очистить
+                    </button>
                   </div>
                 </form>
               </div>
             )}
           </div>
 
-          {/* Summary */}
           {items.length > 0 && (
             <div className="lg:col-span-1">
-              <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 sticky top-20">
-                <h2 className="text-xl font-bold text-white mb-6">Итого</h2>
-                
-                <div className="space-y-3 mb-6 pb-6 border-b border-slate-700">
+              <div className="border border-cf-text-1/10 bg-cf-bg-2 p-6 sticky top-20">
+                <h2 className="text-xl font-black uppercase text-cf-text-heading mb-6">Итого</h2>
+
+                <div className="space-y-3 mb-6 pb-6 border-b border-cf-text-1/10">
                   {items.map((item) => (
-                    <div key={item.bookId} className="flex justify-between text-slate-300 text-sm">
+                    <div key={item.bookId} className="flex justify-between text-cf-text-caption text-sm">
                       <span>{item.title} × {item.quantity}</span>
                       <span>
-                        {((item.price * item.quantity) / 100).toLocaleString('ru-RU', {
-                          style: 'currency',
-                          currency: 'RUB',
-                        })}
+                        {((item.price * item.quantity) / 100).toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' })}
                       </span>
                     </div>
                   ))}
                 </div>
 
-                <div className="text-2xl font-bold text-white">
-                  {(total / 100).toLocaleString('ru-RU', {
-                    style: 'currency',
-                    currency: 'RUB',
-                  })}
+                <div className="text-2xl font-black text-cf-text-heading">
+                  {(total / 100).toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' })}
                 </div>
               </div>
             </div>
@@ -315,10 +277,9 @@ export default function CartPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800 mt-20 py-8 bg-slate-950/50">
-        <div className="max-w-7xl mx-auto px-4 text-center text-slate-400 text-sm">
-         <p>2026 &copy; Canfly</p>
+      <footer className="border-t border-cf-text-1/10 bg-cf-footer-bg mt-20 py-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 text-center text-cf-text-4 text-sm">
+          <p>© 2005-2026 canfly. Литературная вселенная Адиома Тимура.</p>
         </div>
       </footer>
     </main>

@@ -6,16 +6,25 @@ import {
 import { CharacterCard } from '@/components/character-card';
 import { CharacterGraph } from '@/components/character-graph';
 import { CharacterPostsFeed } from '@/components/character-posts-feed';
-import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { MobileNav } from '@/components/mobile-nav';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Персонажи - canfly | культура твоего сознания',
+  title: 'Персонажи | canfly — культура твоего сознания',
   description: 'Встретьте героев вселенной и откройте их взаимосвязи',
 };
+
+const navItems = [
+  { label: 'Новости', href: '/news' },
+  { label: 'Книги', href: '/books' },
+  { label: 'Персонажи', href: '/characters' },
+  { label: 'Миры', href: '/#worlds' },
+  { label: 'Магазин', href: '/shop' },
+]
 
 async function CharactersContent() {
   try {
@@ -29,10 +38,11 @@ async function CharactersContent() {
         {/* Graph Section */}
         <section className="mb-16">
           <div className="mb-6">
-            <h2 className="text-3xl font-bold text-white mb-2">Карта взаимосвязей</h2>
-            <p className="text-slate-400">Визуализация связей между персонажами вселенной Canfly</p>
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-cf-accent">граф связей</p>
+            <h2 className="text-3xl font-black uppercase text-cf-text-heading mb-2">Карта взаимосвязей</h2>
+            <p className="text-cf-text-caption">Визуализация связей между персонажами вселенной canfly</p>
           </div>
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+          <div className="bg-cf-bg-2 p-6 border border-cf-text-1/10">
             <div className="w-full h-96">
               <CharacterGraph characters={characters} relationships={allRelationships} />
             </div>
@@ -42,10 +52,11 @@ async function CharactersContent() {
         {/* Characters Grid */}
         <section className="mb-16">
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">Профили персонажей</h2>
-            <p className="text-slate-400">Исследуйте героев, их посты и историю</p>
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-cf-accent">профили</p>
+            <h2 className="text-3xl font-black uppercase text-cf-text-heading mb-2">Персонажи</h2>
+            <p className="text-cf-text-caption">Исследуйте героев, их посты и историю</p>
           </div>
-          
+
           {characters.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {characters.map((char) => (
@@ -54,7 +65,7 @@ async function CharactersContent() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-slate-400">Персонажей не найдено</p>
+              <p className="text-cf-text-3">Персонажей не найдено</p>
             </div>
           )}
         </section>
@@ -62,8 +73,9 @@ async function CharactersContent() {
         {/* Posts Feed */}
         <section>
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">Лента активности</h2>
-            <p className="text-slate-400">Что думают персонажи и какие анонсы они делают</p>
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-cf-accent">активность</p>
+            <h2 className="text-3xl font-black uppercase text-cf-text-heading mb-2">Лента</h2>
+            <p className="text-cf-text-caption">Что думают персонажи и какие анонсы они делают</p>
           </div>
           <CharacterPostsFeed />
         </section>
@@ -73,7 +85,7 @@ async function CharactersContent() {
     console.error('Error loading characters:', error);
     return (
       <div className="text-center py-12">
-        <p className="text-slate-400">Ошибка при загрузке персонажей</p>
+        <p className="text-cf-text-3">Ошибка при загрузке персонажей</p>
       </div>
     );
   }
@@ -81,39 +93,51 @@ async function CharactersContent() {
 
 export default function CharactersPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
-      {/* Header */}
-      <header className="border-b border-slate-800 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-            canfly
+    <main className="min-h-screen bg-cf-bg text-cf-text-1">
+      <header className="sticky top-0 z-50 border-b border-cf-text-1/10 bg-cf-bg/92 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 flex h-14 items-center justify-between">
+          <Link href="/" className="flex h-14 items-center gap-3" aria-label="Canfly home">
+            <span className="flex h-9 w-16 items-center justify-center bg-cf-accent text-lg font-black uppercase tracking-[-0.04em] text-white">
+              canfly
+            </span>
           </Link>
-          
-          <nav className="flex gap-6 items-center">
-            <Link href="/characters" className="text-purple-400">
-              Персонажи
-            </Link>
-            <Link href="/shop" className="text-slate-300 hover:text-white transition-colors">
-              Магазин
-            </Link>
-            <Link href="/cart">
-              <Button variant="outline" size="sm">Корзина</Button>
-            </Link>
+
+          <nav className="hidden h-14 items-center lg:flex" aria-label="Главная навигация">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={
+                  item.href === '/characters'
+                    ? 'flex h-full items-center border-x border-cf-text-1/10 bg-cf-text-1/8 px-3 text-xs font-black uppercase tracking-[0.12em] text-cf-text-heading lg:px-4'
+                    : 'flex h-full items-center border-x border-transparent px-3 text-xs font-black uppercase tracking-[0.12em] text-cf-text-2 transition-colors hover:border-cf-text-1/10 hover:bg-cf-text-1/6 hover:text-cf-text-heading lg:px-4'
+                }
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
+
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <MobileNav items={navItems} />
+          </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <section className="max-w-7xl mx-auto px-4 py-16">
-        <Suspense fallback={<div className="text-center text-slate-400">Загрузка персонажей...</div>}>
+      <section className="max-w-7xl mx-auto px-4 md:px-8 py-16">
+        <div className="mb-12">
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-cf-accent">персонажи вселенной</p>
+          <h1 className="text-4xl font-black uppercase leading-none text-cf-text-heading md:text-6xl">Герои canfly</h1>
+        </div>
+        <Suspense fallback={<div className="text-center text-cf-text-3 py-12">Загрузка персонажей...</div>}>
           <CharactersContent />
         </Suspense>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800 mt-20 py-8 bg-slate-950/50">
-        <div className="max-w-7xl mx-auto px-4 text-center text-slate-400 text-sm">
-          <p>&copy; 2024 canfly | культура твоего сознания. Все права защищены.</p>
+      <footer className="border-t border-cf-text-1/10 bg-cf-footer-bg mt-20 py-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 text-center text-cf-text-4 text-sm">
+          <p>© 2005-2026 canfly. Литературная вселенная Адиома Тимура.</p>
         </div>
       </footer>
     </main>

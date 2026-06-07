@@ -12,6 +12,7 @@ import {
 import { HomepageSlide } from '@/lib/types'
 import { MobileNav } from '@/components/mobile-nav'
 import { SearchDialog } from '@/components/search/search-dialog'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,7 +23,7 @@ export const metadata = {
 }
 
 const navItems = [
-  { label: 'Новости', href: '#news' },
+  { label: 'Новости', href: '/news' },
   { label: 'Книги', href: '/books' },
   { label: 'Персонажи', href: '/characters' },
   { label: 'Миры', href: '#worlds' },
@@ -46,14 +47,14 @@ export default async function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#111210] text-[#f4efe5]">
-      <header className="sticky top-0 z-50 border-b border-[#f4efe5]/10 bg-[#111210]/92 backdrop-blur-xl">
+    <main className="min-h-screen bg-cf-bg text-cf-text-1">
+      <header className="sticky top-0 z-50 border-b border-cf-text-1/10 bg-cf-bg/92 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 md:px-8">
           <Link href="/" className="flex h-14 items-center gap-3" aria-label="Canfly home">
             <span className="flex h-9 w-16 items-center justify-center bg-[#d52525] text-lg font-black uppercase tracking-[-0.04em] text-white">
               canfly
             </span>
-            <span className="hidden text-xs font-semibold uppercase tracking-[0.22em] text-[#9f978b] sm:block">
+            <span className="hidden text-xs font-semibold uppercase tracking-[0.22em] text-cf-text-3 sm:block">
               beta
             </span>
           </Link>
@@ -63,7 +64,7 @@ export default async function Home() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex h-full items-center border-x border-transparent px-3 text-xs font-black uppercase tracking-[0.12em] text-[#ded7cc] transition-colors hover:border-[#f4efe5]/10 hover:bg-[#f4efe5]/6 hover:text-white lg:px-4"
+                className="flex h-full items-center border-x border-transparent px-3 text-xs font-black uppercase tracking-[0.12em] text-cf-text-2 transition-colors hover:border-cf-text-1/10 hover:bg-cf-text-1/6 hover:text-cf-text-heading lg:px-4"
               >
                 {item.label}
               </Link>
@@ -71,6 +72,7 @@ export default async function Home() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <MobileNav items={navItems} />
             <SearchDialog />
           </div>
@@ -80,22 +82,22 @@ export default async function Home() {
       {slides.length > 0 ? (
         <HomeHeroSlider slides={slides} />
       ) : (
-        <section className="border-b border-[#f4efe5]/10 bg-[#111210] px-4 py-24 md:px-8">
+        <section className="border-b border-cf-text-1/10 bg-cf-bg px-4 py-24 md:px-8">
           <div className="mx-auto max-w-7xl">
-            <p className="mb-4 text-xs font-black uppercase tracking-[0.22em] text-[#d52525]">
+            <p className="mb-4 text-xs font-black uppercase tracking-[0.22em] text-cf-accent">
               hero-слайдер
             </p>
-            <h1 className="max-w-4xl text-5xl font-black uppercase leading-none text-[#fff8ea] md:text-7xl">
+            <h1 className="max-w-4xl text-5xl font-black uppercase leading-none text-cf-text-heading md:text-7xl">
               {isMigrationMissing ? 'Создайте таблицу слайдера' : 'Добавьте первый слайд в админке'}
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#c9c1b4]">
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-cf-text-caption">
               {isMigrationMissing
                 ? 'Главная страница больше не использует fallback. Выполните SQL из `postgres/schema.sql`, чтобы создать `homepage_slides` в Postgres.'
                 : 'Главная страница читает слайды только из таблицы Postgres `homepage_slides`.'}
             </p>
             <Link
               href="/admin"
-              className="mt-8 inline-flex h-12 items-center rounded-sm bg-[#f6d6a8] px-5 text-sm font-black uppercase text-[#171713]"
+              className="mt-8 inline-flex h-12 items-center rounded-sm bg-cf-warm px-5 text-sm font-black uppercase text-[#171713]"
             >
               Открыть админку
             </Link>
@@ -104,17 +106,17 @@ export default async function Home() {
       )}
 
       <Suspense fallback={
-        <section id="issues" className="border-b border-[#f4efe5]/10 bg-[#f4efe5] px-4 py-12 text-[#171713] md:px-8 md:py-16">
+        <section id="issues" className="border-b border-cf-text-1/10 bg-cf-text-1 px-4 py-12 text-[#171713] md:px-8 md:py-16">
           <div className="mx-auto max-w-7xl">
             <div className="mb-8">
-              <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-[#d52525]">новые выпуски</p>
-              <div className="h-12 w-40 animate-pulse rounded bg-[#d52525]/20" />
+              <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-cf-accent">новые выпуски</p>
+              <div className="h-12 w-40 animate-pulse rounded bg-cf-accent/20" />
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="animate-pulse">
-                  <div className="aspect-[4/5] rounded bg-[#d52525]/20" />
-                  <div className="mt-3 h-6 rounded bg-[#d52525]/20" />
+                  <div className="aspect-[4/5] rounded bg-cf-accent/20" />
+                  <div className="mt-3 h-6 rounded bg-cf-accent/20" />
                 </div>
               ))}
             </div>
@@ -125,11 +127,11 @@ export default async function Home() {
       </Suspense>
 
       <Suspense fallback={
-        <section id="news" className="border-b border-[#f4efe5]/10 bg-[#111210] px-4 py-12 md:px-8 md:py-16">
+        <section id="news" className="border-b border-cf-text-1/10 bg-cf-bg px-4 py-12 md:px-8 md:py-16">
           <div className="mx-auto max-w-7xl">
             <div className="mb-8">
-              <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-[#d52525]">canfly dispatch</p>
-              <div className="h-12 w-60 animate-pulse rounded bg-[#f4efe5]/10" />
+              <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-cf-accent">canfly dispatch</p>
+              <div className="h-12 w-60 animate-pulse rounded bg-cf-text-1/10" />
             </div>
           </div>
         </section>
@@ -137,39 +139,39 @@ export default async function Home() {
         <HomeNewsSection />
       </Suspense>
 
-      <section id="worlds" className="bg-[#1b1c19] px-4 py-12 md:px-8 md:py-16">
+      <section id="worlds" className="bg-cf-bg-2 px-4 py-12 md:px-8 md:py-16">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8">
-            <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-[#d52525]">
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-cf-accent">
               explore canfly
             </p>
-            <h2 className="text-2xl font-black uppercase leading-none text-[#fff8ea] sm:text-3xl md:text-5xl">
+            <h2 className="text-2xl font-black uppercase leading-none text-cf-text-heading sm:text-3xl md:text-5xl">
               Входы во вселенную
             </h2>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            <Link href="/books" className="group border border-[#f4efe5]/10 bg-[#111210] p-4 hover:border-[#f6d6a8]/45 sm:p-6">
-              <BookOpen className="mb-8 h-7 w-7 text-[#f6d6a8] sm:mb-10" />
-              <h3 className="text-xl font-black uppercase text-[#fff8ea] sm:text-2xl">Книги</h3>
-              <p className="mt-3 leading-7 text-[#c9c1b4] sm:mt-4">Романы, повести и циклы как самостоятельные точки входа.</p>
+            <Link href="/books" className="group border border-cf-text-1/10 bg-cf-bg p-4 hover:border-cf-warm/45 sm:p-6">
+              <BookOpen className="mb-8 h-7 w-7 text-cf-warm sm:mb-10" />
+              <h3 className="text-xl font-black uppercase text-cf-text-heading sm:text-2xl">Книги</h3>
+              <p className="mt-3 leading-7 text-cf-text-caption sm:mt-4">Романы, повести и циклы как самостоятельные точки входа.</p>
             </Link>
-            <Link href="/characters" className="group border border-[#f4efe5]/10 bg-[#111210] p-4 hover:border-[#9db5c8]/45 sm:p-6">
-              <UserRound className="mb-8 h-7 w-7 text-[#9db5c8] sm:mb-10" />
-              <h3 className="text-xl font-black uppercase text-[#fff8ea] sm:text-2xl">Персонажи</h3>
-              <p className="mt-3 leading-7 text-[#c9c1b4] sm:mt-4">Люди функции: швеи, инженеры, операторы, сотрудники ПВЗ.</p>
+            <Link href="/characters" className="group border border-cf-text-1/10 bg-cf-bg p-4 hover:border-cf-blue/45 sm:p-6">
+              <UserRound className="mb-8 h-7 w-7 text-cf-blue sm:mb-10" />
+              <h3 className="text-xl font-black uppercase text-cf-text-heading sm:text-2xl">Персонажи</h3>
+              <p className="mt-3 leading-7 text-cf-text-caption sm:mt-4">Люди функции: швеи, инженеры, операторы, сотрудники ПВЗ.</p>
             </Link>
-            <Link href="/markdown" className="group border border-[#f4efe5]/10 bg-[#111210] p-4 hover:border-[#d7c6ad]/45 sm:p-6">
-              <Boxes className="mb-8 h-7 w-7 text-[#d7c6ad] sm:mb-10" />
-              <h3 className="text-xl font-black uppercase text-[#fff8ea] sm:text-2xl">Архив</h3>
-              <p className="mt-3 leading-7 text-[#c9c1b4] sm:mt-4">Старая главная и большой markdown-путеводитель по системе мира.</p>
+            <Link href="/markdown" className="group border border-cf-text-1/10 bg-cf-bg p-4 hover:border-cf-tan/45 sm:p-6">
+              <Boxes className="mb-8 h-7 w-7 text-cf-tan sm:mb-10" />
+              <h3 className="text-xl font-black uppercase text-cf-text-heading sm:text-2xl">Архив</h3>
+              <p className="mt-3 leading-7 text-cf-text-caption sm:mt-4">Старая главная и большой markdown-путеводитель по системе мира.</p>
             </Link>
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-[#f4efe5]/10 bg-[#0c0d0c] px-4 py-8 md:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 text-sm text-[#8f877c] md:flex-row md:items-center md:gap-4">
+      <footer className="border-t border-cf-text-1/10 bg-cf-footer-bg px-4 py-8 md:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 text-sm text-cf-text-4 md:flex-row md:items-center md:gap-4">
           <p>© 2005-2026 canfly. Литературная вселенная Адиома Тимура.</p>
           <div className="flex flex-wrap gap-4">
             <span className="inline-flex items-center gap-2">

@@ -9,6 +9,7 @@ import type { Chapter } from '@/lib/releases-types'
 import { publishChapterAction, deleteChapterAction } from '@/lib/actions/studio'
 import { TelegraphEditor } from '@/components/studio/telegraph-editor'
 import { VersionHistory } from '@/components/studio/version-history'
+import { EditorialNotesPanel } from '@/components/studio/editorial-notes-panel'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -103,13 +104,22 @@ export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; ed
         </div>
       </header>
 
-      <div className="mx-auto max-w-4xl px-6 py-8">
-        <TelegraphEditor
-          chapterId={chapter.id}
-          initialTitle={chapter.title}
-          initialContent={chapter.content}
-          onSaveStatus={setSaveStatus}
-        />
+      <div className="mx-auto max-w-6xl px-6 py-8">
+        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+          <div>
+            <TelegraphEditor
+              chapterId={chapter.id}
+              initialTitle={chapter.title}
+              initialContent={chapter.content}
+              onSaveStatus={setSaveStatus}
+            />
+          </div>
+          <aside className="lg:sticky lg:top-20 lg:self-start">
+            <div className="rounded-lg border bg-card p-4">
+              <EditorialNotesPanel chapterId={chapter.id} />
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   )

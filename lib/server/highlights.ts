@@ -1,222 +1,50 @@
-import { dbQuery, dbQueryOne } from '@/lib/db'
-import { Highlight, HighlightType, HighlightVisibility, HighlightStatus, ChapterRating, BookReview } from '@/lib/types'
+import type { Highlight, ChapterRating, BookReview } from '@/lib/types'
 
-const highlightColumns = `
-  id,
-  book_id,
-  user_id,
-  chapter_index,
-  text_content,
-  comment,
-  type,
-  visibility,
-  status,
-  range_data,
-  created_at,
-  updated_at
-`
+// Старые функции — возвращают пустые массивы, чтобы устаревший BookReader не падал.
+// Новая система — см. lib/server/chapter-highlights.ts
 
-export async function fetchHighlights(options: {
+export async function fetchHighlights(_options: {
   bookId?: string;
   userId?: string;
-  type?: HighlightType;
-  visibility?: HighlightVisibility;
+  type?: string;
+  visibility?: string;
   includeInternal?: boolean;
   includeBookInfo?: boolean;
-} = {}) {
-  const params: any[] = [];
-  
-  const selectColumns = options.includeBookInfo 
-    ? `h.id, h.book_id, h.user_id, h.chapter_index, h.text_content, h.comment, h.type, h.visibility, h.status, h.range_data, h.created_at, h.updated_at, b.slug AS book_slug, b.title AS book_title`
-    : highlightColumns;
-  
-  const fromClause = options.includeBookInfo
-    ? `FROM highlights h LEFT JOIN books b ON b.id = h.book_id`
-    : `FROM highlights`;
-  
-  let query = `SELECT ${selectColumns} ${fromClause} WHERE 1=1`;
-
-  if (options.bookId) {
-    params.push(options.bookId);
-    query += ` AND ${options.includeBookInfo ? 'h.' : ''}book_id = $${params.length}`;
-  }
-
-  if (options.userId) {
-    params.push(options.userId);
-    query += ` AND ${options.includeBookInfo ? 'h.' : ''}user_id = $${params.length}`;
-  }
-
-  if (options.type) {
-    params.push(options.type);
-    query += ` AND ${options.includeBookInfo ? 'h.' : ''}type = $${params.length}`;
-  }
-
-  if (options.visibility) {
-    params.push(options.visibility);
-    query += ` AND ${options.includeBookInfo ? 'h.' : ''}visibility = $${params.length}`;
-  } else if (!options.includeInternal) {
-    query += ` AND ${options.includeBookInfo ? 'h.' : ''}visibility = 'public'`;
-  }
-
-  query += ` ORDER BY ${options.includeBookInfo ? 'h.' : ''}created_at DESC`;
-
-  const results = await dbQuery<Highlight>(query, params);
-  return results.map(row => ({
-    ...row,
-    type: row.type as HighlightType,
-    visibility: row.visibility as HighlightVisibility,
-    status: row.status as HighlightStatus,
-    range_data: typeof row.range_data === 'string' 
-      ? JSON.parse(row.range_data) 
-      : row.range_data || {}
-  }));
+} = {}): Promise<Highlight[]> {
+  return []
 }
 
-export async function fetchHighlightById(id: string) {
-  const result = await dbQueryOne<Highlight>(`SELECT ${highlightColumns} FROM highlights WHERE id = $1 LIMIT 1`, [id]);
-  if (!result) return null;
-  return {
-    ...result,
-    type: result.type as HighlightType,
-    visibility: result.visibility as HighlightVisibility,
-    status: result.status as HighlightStatus,
-    range_data: typeof result.range_data === 'string' 
-      ? JSON.parse(result.range_data) 
-      : result.range_data || {}
-  };
+export async function fetchHighlightById(_id: string): Promise<Highlight | null> {
+  return null
 }
 
-export async function createHighlight(data: Partial<Highlight>) {
-  const result = await dbQueryOne<Highlight>(
-    `
-      INSERT INTO highlights (
-        book_id,
-        user_id,
-        chapter_index,
-        text_content,
-        comment,
-        type,
-        visibility,
-        status,
-        range_data
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING ${highlightColumns}
-    `,
-    [
-      data.book_id,
-      data.user_id,
-      data.chapter_index,
-      data.text_content,
-      data.comment || null,
-      data.type || 'quote',
-      data.visibility || 'public',
-      data.status || 'pending',
-      JSON.stringify(data.range_data || {}),
-    ]
-  );
-  if (!result) return null;
-  return {
-    ...result,
-    type: result.type as HighlightType,
-    visibility: result.visibility as HighlightVisibility,
-    status: result.status as HighlightStatus,
-    range_data: typeof result.range_data === 'string' 
-      ? JSON.parse(result.range_data) 
-      : result.range_data || {}
-  };
+export async function createHighlight(_data: Partial<Highlight>): Promise<Highlight | null> {
+  return null
 }
 
-export async function updateHighlight(id: string, data: Partial<Highlight>) {
-  const fields: string[] = [];
-  const params: any[] = [id];
-
-  if (data.comment !== undefined) {
-    params.push(data.comment);
-    fields.push(`comment = $${params.length}`);
-  }
-  if (data.status !== undefined) {
-    params.push(data.status);
-    fields.push(`status = $${params.length}`);
-  }
-  if (data.visibility !== undefined) {
-    params.push(data.visibility);
-    fields.push(`visibility = $${params.length}`);
-  }
-
-  if (fields.length === 0) return fetchHighlightById(id);
-
-  const result = await dbQueryOne<Highlight>(
-    `
-      UPDATE highlights
-      SET ${fields.join(', ')}, updated_at = NOW()
-      WHERE id = $1
-      RETURNING ${highlightColumns}
-    `,
-    params
-  );
-  if (!result) return null;
-  return {
-    ...result,
-    type: result.type as HighlightType,
-    visibility: result.visibility as HighlightVisibility,
-    status: result.status as HighlightStatus,
-    range_data: typeof result.range_data === 'string'
-      ? JSON.parse(result.range_data)
-      : result.range_data || {}
-  };
+export async function updateHighlight(_id: string, _data: Partial<Highlight>): Promise<Highlight | null> {
+  return null
 }
 
-export async function deleteHighlight(id: string) {
-  await dbQuery('DELETE FROM highlights WHERE id = $1', [id]);
-}
+export async function deleteHighlight(_id: string): Promise<void> {}
 
-// Chapter Ratings
-export async function upsertChapterRating(data: {
+export async function upsertChapterRating(_data: {
   bookId: string;
   chapterIndex: number;
   userId: string;
   rating: number;
-}) {
-  return dbQueryOne<ChapterRating>(
-    `
-      INSERT INTO chapter_ratings (book_id, chapter_index, user_id, rating)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (book_id, chapter_index, user_id)
-      DO UPDATE SET rating = EXCLUDED.rating
-      RETURNING *
-    `,
-    [data.bookId, data.chapterIndex, data.userId, data.rating]
-  );
+}): Promise<ChapterRating | null> {
+  return null
 }
 
-export async function fetchChapterRatings(bookId: string, chapterIndex?: number) {
-  let query = `SELECT * FROM chapter_ratings WHERE book_id = $1`;
-  const params: any[] = [bookId];
-
-  if (chapterIndex !== undefined) {
-    params.push(chapterIndex);
-    query += ` AND chapter_index = $${params.length}`;
-  }
-
-  return dbQuery<ChapterRating>(query, params);
+export async function fetchChapterRatings(_bookId: string, _chapterIndex?: number): Promise<ChapterRating[]> {
+  return []
 }
 
-// Book Reviews
-export async function createBookReview(data: Partial<BookReview>) {
-  return dbQueryOne<BookReview>(
-    `
-      INSERT INTO book_reviews (book_id, user_id, rating, content)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *
-    `,
-    [data.book_id, data.user_id, data.rating, data.content]
-  );
+export async function createBookReview(_data: Partial<BookReview>): Promise<BookReview | null> {
+  return null
 }
 
-export async function fetchBookReviews(bookId: string) {
-  return dbQuery<BookReview>(
-    `SELECT * FROM book_reviews WHERE book_id = $1 AND is_published = true ORDER BY created_at DESC`,
-    [bookId]
-  );
+export async function fetchBookReviews(_bookId: string): Promise<BookReview[]> {
+  return []
 }

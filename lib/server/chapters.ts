@@ -2,13 +2,13 @@ import { dbQuery, dbQueryOne } from '@/lib/db'
 import type { Chapter, ChapterVersion } from '@/lib/releases-types'
 
 const chapterColumns = `
-  id, edition_id, title, content, chapter_index,
+  id, edition_id, title, content, audio_url, duration_seconds, chapter_index,
   status, word_count, view_count,
   created_at, updated_at, published_at
 `
 
 const chapterListColumns = `
-  id, edition_id, title, chapter_index,
+  id, edition_id, title, audio_url, duration_seconds, chapter_index,
   status, word_count, view_count,
   created_at, updated_at, published_at
 `
@@ -48,13 +48,15 @@ export async function fetchChapterByEditionAndIndex(editionId: string, chapterIn
 
 export async function createChapter(data: Record<string, unknown>) {
   return dbQueryOne<Chapter>(
-    `INSERT INTO chapters (edition_id, title, content, chapter_index, status, word_count)
-     VALUES ($1, $2, $3, $4, $5::chapter_status, $6)
+    `INSERT INTO chapters (edition_id, title, content, audio_url, duration_seconds, chapter_index, status, word_count)
+     VALUES ($1, $2, $3, $4, $5, $6, $7::chapter_status, $8)
      RETURNING ${chapterColumns}`,
     [
       data.edition_id,
       data.title,
       data.content ?? null,
+      data.audio_url ?? null,
+      data.duration_seconds ?? null,
       data.chapter_index,
       data.status ?? 'draft',
       data.word_count ?? 0,
@@ -65,14 +67,16 @@ export async function createChapter(data: Record<string, unknown>) {
 export async function updateChapter(id: string, data: Record<string, unknown>) {
   return dbQueryOne<Chapter>(
     `UPDATE chapters SET
-      title = $2, content = $3, chapter_index = $4,
-      status = $5::chapter_status, word_count = $6
+      title = $2, content = $3, audio_url = $4, duration_seconds = $5,
+      chapter_index = $6, status = $7::chapter_status, word_count = $8
      WHERE id = $1
      RETURNING ${chapterColumns}`,
     [
       id,
       data.title,
       data.content ?? null,
+      data.audio_url ?? null,
+      data.duration_seconds ?? null,
       data.chapter_index,
       data.status ?? 'draft',
       data.word_count ?? 0,

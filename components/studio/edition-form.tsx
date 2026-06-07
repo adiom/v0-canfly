@@ -38,6 +38,7 @@ export function EditionFormDialog({ releaseId }: { releaseId: string }) {
   const [platform, setPlatform] = useState('')
   const [externalUrl, setExternalUrl] = useState('')
   const [slug, setSlug] = useState('')
+  const [isPrimary, setIsPrimary] = useState(false)
 
   useEffect(() => {
     const formatLabel = formats.find(f => f.value === format)?.label ?? format
@@ -58,6 +59,7 @@ export function EditionFormDialog({ releaseId }: { releaseId: string }) {
       formData.set('platform', platform)
       formData.set('external_url', externalUrl)
       formData.set('slug', slug)
+      formData.set('is_primary', isPrimary ? 'true' : 'false')
       await createEditionAction(formData)
       setOpen(false)
     } catch {
@@ -107,6 +109,19 @@ export function EditionFormDialog({ releaseId }: { releaseId: string }) {
           <div className="space-y-2">
             <Label>Slug</Label>
             <Input value={slug} onChange={e => setSlug(e.target.value)} />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="is_primary"
+              checked={isPrimary}
+              onChange={e => setIsPrimary(e.target.checked)}
+              className="h-4 w-4 rounded border-input"
+            />
+            <Label htmlFor="is_primary" className="cursor-pointer font-normal">
+              Главное издание <span className="text-muted-foreground text-xs">(показывается на странице релиза)</span>
+            </Label>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

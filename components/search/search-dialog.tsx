@@ -93,7 +93,7 @@ export function SearchDialog() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex h-10 w-10 cursor-pointer touch-manipulation items-center justify-center rounded-sm border border-[#f4efe5]/12 text-[#ded7cc] transition-colors hover:bg-[#f4efe5]/8"
+        className="flex h-10 w-10 cursor-pointer touch-manipulation items-center justify-center rounded-sm border border-cf-text-1/12 text-cf-text-2 transition-colors hover:bg-cf-text-1/8"
         aria-label="Поиск (Cmd+K)"
       >
         <Search className="h-5 w-5" />
@@ -116,7 +116,7 @@ export function SearchDialog() {
             <CommandItem
               value={`__search__${query}`}
               onSelect={() => handleSelect(`/search?q=${encodeURIComponent(query.trim())}`)}
-              className="text-[#9f978b]"
+              className="text-cf-text-3"
             >
               <Search className="mr-2 h-4 w-4 flex-shrink-0" />
               <span>Искать «{query}» — все результаты</span>
@@ -132,7 +132,7 @@ export function SearchDialog() {
                 value={`book-${item.id}`}
                 onSelect={() => handleSelect(item.href)}
               >
-                <div className="relative mr-3 h-9 w-6 flex-shrink-0 overflow-hidden rounded-sm bg-[#1b1c19]">
+                <div className="relative mr-3 h-9 w-6 flex-shrink-0 overflow-hidden rounded-sm bg-cf-bg-2">
                   {item.image ? (
                     <Image src={item.image} alt={item.title} fill className="object-cover" sizes="24px" />
                   ) : (
@@ -143,7 +143,7 @@ export function SearchDialog() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-bold">{item.title}</span>
-                  <span className="text-xs text-[#9f978b]">{item.subtitle}</span>
+                  <span className="text-xs text-cf-text-3">{item.subtitle}</span>
                 </div>
               </CommandItem>
             ))}
@@ -158,7 +158,7 @@ export function SearchDialog() {
                 value={`character-${item.id}`}
                 onSelect={() => handleSelect(item.href)}
               >
-                <div className="relative mr-3 h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-[#1b1c19]">
+                <div className="relative mr-3 h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-cf-bg-2">
                   {item.image ? (
                     <Image src={item.image} alt={item.title} fill className="object-cover" sizes="32px" />
                   ) : (
@@ -169,7 +169,7 @@ export function SearchDialog() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-bold">{item.title}</span>
-                  <span className="text-xs text-[#9f978b]">{item.subtitle}</span>
+                  <span className="text-xs text-cf-text-3">{item.subtitle}</span>
                 </div>
               </CommandItem>
             ))}
@@ -186,7 +186,7 @@ export function SearchDialog() {
               >
                 <div className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-bold">{item.title}</span>
-                  <span className="text-xs text-[#9f978b]">{item.subtitle}</span>
+                  <span className="text-xs text-cf-text-3">{item.subtitle}</span>
                 </div>
               </CommandItem>
             ))}

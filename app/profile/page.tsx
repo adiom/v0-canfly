@@ -17,34 +17,34 @@ export default async function ProfilePage() {
   const summary = user ? await fetchReaderProfileSummary(user.id) : null
 
   return (
-    <main className="min-h-screen bg-[#111210] text-[#f4efe5]">
-      <header className="border-b border-[#f4efe5]/10 bg-[#111210]/95">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 md:px-8">
-          <Link href="/" className="text-xl font-black uppercase tracking-[0.18em] text-[#f4efe5]">
+    <main className="min-h-screen bg-cf-bg text-cf-text-1">
+      <header className="border-b border-cf-text-1/10 bg-cf-bg/95 sticky top-0 z-50">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-8">
+          <Link href="/" className="flex h-9 w-16 items-center justify-center bg-cf-accent text-lg font-black uppercase tracking-[-0.04em] text-white">
             canfly
           </Link>
-          <Link href="/characters" className="text-xs font-bold uppercase tracking-[0.18em] text-[#ded7cc]">
+          <Link href="/characters" className="text-xs font-black uppercase tracking-[0.18em] text-cf-text-2 hover:text-cf-text-heading transition-colors">
             Персонажи
           </Link>
         </div>
       </header>
 
       <section className="mx-auto max-w-7xl px-4 py-12 md:px-8 md:py-16">
-        <div className="mb-10 flex flex-col gap-6 border-b border-[#f4efe5]/10 pb-10 md:flex-row md:items-end md:justify-between">
+        <div className="mb-10 flex flex-col gap-6 border-b border-cf-text-1/10 pb-10 md:flex-row md:items-end md:justify-between">
           <div className="flex items-center gap-5">
-            <div className="flex h-20 w-20 items-center justify-center rounded-lg border border-[#f4efe5]/10 bg-[#1b1c19]">
+            <div className="flex h-20 w-20 items-center justify-center border border-cf-text-1/10 bg-cf-bg-2">
               {user?.avatar ? (
-                <Image src={user.avatar} alt={user.display_name} width={80} height={80} className="h-full w-full rounded-lg object-cover" />
+                <Image src={user.avatar} alt={user.display_name} width={80} height={80} className="h-full w-full object-cover" />
               ) : (
-                <UserRound className="h-9 w-9 text-[#d7c6ad]" />
+                <UserRound className="h-9 w-9 text-cf-tan" />
               )}
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#d7c6ad]">Профиль</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-cf-tan">Профиль</p>
               <h1 className="mt-2 text-4xl font-black uppercase md:text-5xl">
                 {user?.display_name || 'Читатель canfly'}
               </h1>
-              <p className="mt-2 text-sm text-[#ded7cc]">
+              <p className="mt-2 text-sm text-cf-text-2">
                 {user
                   ? user.login
                     ? `login: ${user.login}`
@@ -59,7 +59,7 @@ export default async function ProfilePage() {
               {summary.roles.map((role) => (
                 <span
                   key={role}
-                  className="border border-[#f4efe5]/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#f6d6a8]"
+                  className="border border-cf-text-1/10 px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-cf-warm"
                 >
                   {role}
                 </span>
@@ -69,12 +69,12 @@ export default async function ProfilePage() {
         </div>
 
         {!user || !summary ? (
-          <div className="max-w-2xl border border-[#f4efe5]/10 bg-[#1b1c19] p-6">
+          <div className="max-w-2xl border border-cf-text-1/10 bg-cf-bg-2 p-6">
             <h2 className="text-2xl font-black uppercase">Пока пусто</h2>
-            <p className="mt-3 leading-7 text-[#ded7cc]">
+            <p className="mt-3 leading-7 text-cf-text-2">
               Добавь персонажа в друзья или начни чат, и здесь появятся твои связи, роли и история диалогов.
             </p>
-            <Button asChild className="mt-6 h-12 bg-[#d52525] px-5 text-sm font-black uppercase text-white hover:bg-[#b91f1f]">
+            <Button asChild className="mt-6 h-12 bg-cf-accent px-5 text-sm font-black uppercase text-white hover:bg-[#b01e1e]">
               <Link href="/login">Войти или создать профиль</Link>
             </Button>
           </div>
@@ -83,7 +83,7 @@ export default async function ProfilePage() {
             <section>
               <div className="mb-5 flex items-center justify-between">
                 <h2 className="text-2xl font-black uppercase">Персонажи-друзья</h2>
-                <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#9db5c8]">
+                <span className="text-xs font-black uppercase tracking-[0.18em] text-cf-blue">
                   {summary.friendships.length}
                 </span>
               </div>
@@ -93,10 +93,10 @@ export default async function ProfilePage() {
                   <Link
                     key={friendship.id}
                     href={`/characters/${friendship.character_slug}`}
-                    className="group border border-[#f4efe5]/10 bg-[#1b1c19] p-4 transition-colors hover:border-[#f6d6a8]/45"
+                    className="group border border-cf-text-1/10 bg-cf-bg-2 p-4 transition-colors hover:border-cf-warm/45"
                   >
                     <div className="flex gap-4">
-                      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-[#f4efe5]/10 bg-[#111210]">
+                      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden border border-cf-text-1/10 bg-cf-bg">
                         {friendship.character_avatar ? (
                           <Image
                             src={friendship.character_avatar}
@@ -107,21 +107,21 @@ export default async function ProfilePage() {
                         ) : null}
                       </div>
                       <div>
-                        <h3 className="font-black uppercase group-hover:text-[#f6d6a8]">
+                        <h3 className="font-black uppercase group-hover:text-cf-warm">
                           {friendship.character_name}
                         </h3>
-                        <p className="mt-1 line-clamp-2 text-sm leading-6 text-[#ded7cc]">
+                        <p className="mt-1 line-clamp-2 text-sm leading-6 text-cf-text-2">
                           {friendship.character_bio || 'Персонаж canfly'}
                         </p>
                       </div>
                     </div>
-                    <div className="mt-4 h-1 bg-[#111210]">
+                    <div className="mt-4 h-1 bg-cf-bg">
                       <div
-                        className="h-full bg-[#d52525]"
+                        className="h-full bg-cf-accent"
                         style={{ width: `${Math.min(friendship.intimacy_level, 100)}%` }}
                       />
                     </div>
-                    <p className="mt-2 text-xs uppercase tracking-[0.18em] text-[#d7c6ad]">
+                    <p className="mt-2 text-xs uppercase tracking-[0.18em] text-cf-tan">
                       Близость {friendship.intimacy_level}/100
                     </p>
                   </Link>
@@ -132,35 +132,51 @@ export default async function ProfilePage() {
             <section>
               <div className="mb-5 flex items-center justify-between">
                 <h2 className="text-2xl font-black uppercase">Мои цитаты</h2>
-                <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#9db5c8]">
+                <span className="text-xs font-black uppercase tracking-[0.18em] text-cf-blue">
                   {summary.highlights.length}
                 </span>
               </div>
               <div className="space-y-4">
-                {summary.highlights.map((highlight) => (
+                {summary.highlights.map((highlight: any) => (
                   <div
                     key={highlight.id}
-                    className="border border-[#f4efe5]/10 bg-[#1b1c19] p-4 transition-colors hover:border-[#f6d6a8]/45"
+                    className="border border-cf-text-1/10 bg-cf-bg-2 p-4 transition-colors hover:border-cf-warm/45"
                   >
-                    <p className="text-sm italic leading-6 text-[#ded7cc]">
-                      "{highlight.text_content}"
+                    <p className="text-sm italic leading-6 text-cf-text-2">
+                      «{highlight.text_content}»
                     </p>
+                    {highlight.note && (
+                      <p className="mt-2 text-sm text-cf-text-1">{highlight.note}</p>
+                    )}
                     <div className="mt-3 flex items-center justify-between">
-                      <Link
-                        href={`/books/${(highlight as any).book_slug}#highlight-${highlight.id}`}
-                        className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#f6d6a8] hover:underline"
-                      >
-                        Перейти к цитате
-                      </Link>
-                      <span className="text-[10px] uppercase tracking-[0.18em] text-[#9db5c8]">
-                        {new Date(highlight.created_at).toLocaleDateString()}
-                      </span>
+                      {highlight.is_public ? (
+                        <Link
+                          href={`/release/${highlight.release_slug}/highlight/${highlight.id}`}
+                          className="text-[10px] font-black uppercase tracking-[0.18em] text-cf-warm hover:underline"
+                        >
+                          Поделиться
+                        </Link>
+                      ) : (
+                        <span className="text-[10px] font-black uppercase tracking-[0.18em] text-cf-text-4">
+                          приватная
+                        </span>
+                      )}
+                      <div className="flex items-center gap-3">
+                        {highlight.likes_count > 0 && (
+                          <span className="text-[10px] uppercase tracking-[0.18em] text-cf-accent">
+                            ♥ {highlight.likes_count}
+                          </span>
+                        )}
+                        <span className="text-[10px] uppercase tracking-[0.18em] text-cf-blue">
+                          {new Date(highlight.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
 
                 {summary.highlights.length === 0 ? (
-                  <p className="border border-[#f4efe5]/10 bg-[#1b1c19] p-4 text-sm text-[#ded7cc]">
+                  <p className="border border-cf-text-1/10 bg-cf-bg-2 p-4 text-sm text-cf-text-2">
                     Цитат пока нет. Выделите текст в читалке, чтобы сохранить цитату.
                   </p>
                 ) : null}
@@ -174,12 +190,12 @@ export default async function ProfilePage() {
                   <Link
                     key={conversation.id}
                     href={`/characters/${conversation.character_slug}/chat`}
-                    className="flex gap-4 border border-[#f4efe5]/10 bg-[#1b1c19] p-4 transition-colors hover:border-[#f6d6a8]/45"
+                    className="flex gap-4 border border-cf-text-1/10 bg-cf-bg-2 p-4 transition-colors hover:border-cf-warm/45"
                   >
-                    <MessageCircle className="mt-1 h-5 w-5 flex-shrink-0 text-[#9db5c8]" />
+                    <MessageCircle className="mt-1 h-5 w-5 flex-shrink-0 text-cf-blue" />
                     <div>
                       <h3 className="font-black uppercase">{conversation.character_name}</h3>
-                      <p className="mt-1 line-clamp-2 text-sm leading-6 text-[#ded7cc]">
+                      <p className="mt-1 line-clamp-2 text-sm leading-6 text-cf-text-2">
                         {conversation.last_message || 'Диалог создан. Напиши первое сообщение.'}
                       </p>
                     </div>
@@ -187,7 +203,7 @@ export default async function ProfilePage() {
                 ))}
 
                 {summary.conversations.length === 0 ? (
-                  <p className="border border-[#f4efe5]/10 bg-[#1b1c19] p-4 text-sm text-[#ded7cc]">
+                  <p className="border border-cf-text-1/10 bg-cf-bg-2 p-4 text-sm text-cf-text-2">
                     Диалогов пока нет.
                   </p>
                 ) : null}
