@@ -1,3 +1,4 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminSession } from '@/lib/admin-session'
 import {
   deleteAdminHomepageSlide,
@@ -6,6 +7,7 @@ import {
   updateAdminHomepageSlide,
 } from '@/lib/homepage-slide-store'
 import { HomepageSlideTheme } from '@/lib/types'
+import { apiHandler } from '@/lib/api-handler'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,28 +52,28 @@ function normalizeSlidePayload(body: Record<string, unknown>) {
   }
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+async function getHomepageSlideById(
+  request: NextRequest,
+  context: { params: Promise<Record<string, string>> },
 ) {
   try {
     const session = await requireAdminSession()
 
     if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { id } = await params
+    const { id } = await context.params as { id: string }
     const slide = await getAdminHomepageSlide(id)
 
     if (!slide) {
-      return Response.json({ error: 'Homepage slide not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Homepage slide not found' }, { status: 404 })
     }
 
-    return Response.json(slide)
+    return NextResponse.json(slide)
   } catch (error) {
     if (isHomepageSlidesTableMissing(error)) {
-      return Response.json(
+      return NextResponse.json(
         {
           error:
             'Таблица homepage_slides не создана. Выполните SQL из postgres/schema.sql в Postgres.',
@@ -80,40 +82,39 @@ export async function GET(
       )
     }
 
-    console.error('Error fetching admin homepage slide:', error)
-    return Response.json({ error: 'Failed to fetch homepage slide' }, { status: 500 })
+    throw error
   }
 }
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+async function patchHomepageSlideById(
+  request: NextRequest,
+  context: { params: Promise<Record<string, string>> },
 ) {
   try {
     const session = await requireAdminSession()
 
     if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { id } = await params
+    const { id } = await context.params as { id: string }
     const body = await request.json()
     const normalized = normalizeSlidePayload(body)
 
     if ('error' in normalized) {
-      return Response.json({ error: normalized.error }, { status: 400 })
+      return NextResponse.json({ error: normalized.error }, { status: 400 })
     }
 
     const slide = await updateAdminHomepageSlide(id, normalized.data)
 
     if (!slide) {
-      return Response.json({ error: 'Homepage slide not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Homepage slide not found' }, { status: 404 })
     }
 
-    return Response.json(slide)
+    return NextResponse.json(slide)
   } catch (error) {
     if (isHomepageSlidesTableMissing(error)) {
-      return Response.json(
+      return NextResponse.json(
         {
           error:
             'Таблица homepage_slides не создана. Выполните SQL из postgres/schema.sql в Postgres.',
@@ -122,30 +123,29 @@ export async function PATCH(
       )
     }
 
-    console.error('Error updating homepage slide:', error)
-    return Response.json({ error: 'Failed to update homepage slide' }, { status: 500 })
+    throw error
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+async function deleteHomepageSlideById(
+  request: NextRequest,
+  context: { params: Promise<Record<string, string>> },
 ) {
   try {
     const session = await requireAdminSession()
 
     if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { id } = await params
+    const { id } = await context.params as { id: string }
 
     await deleteAdminHomepageSlide(id)
 
-    return Response.json({ ok: true })
+    return NextResponse.json({ ok: true })
   } catch (error) {
     if (isHomepageSlidesTableMissing(error)) {
-      return Response.json(
+      return NextResponse.json(
         {
           error:
             'Таблица homepage_slides не создана. Выполните SQL из postgres/schema.sql в Postgres.',
@@ -154,7 +154,10 @@ export async function DELETE(
       )
     }
 
-    console.error('Error deleting homepage slide:', error)
-    return Response.json({ error: 'Failed to delete homepage slide' }, { status: 500 })
+    throw error
   }
 }
+
+export const GET = apiHandler(getHomepageSlideById)
+export const PATCH = apiHandler(patchHomepageSlideById)
+export const DELETE = apiHandler(deleteHomepageSlideById)

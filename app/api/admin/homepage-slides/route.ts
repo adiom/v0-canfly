@@ -1,3 +1,4 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminSession } from '@/lib/admin-session'
 import {
   createAdminHomepageSlide,
@@ -5,6 +6,7 @@ import {
   listAdminHomepageSlides,
 } from '@/lib/homepage-slide-store'
 import { HomepageSlideTheme } from '@/lib/types'
+import { apiHandler } from '@/lib/api-handler'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,20 +51,20 @@ function normalizeSlidePayload(body: Record<string, unknown>) {
   }
 }
 
-export async function GET() {
+async function getAdminHomepageSlides(request: NextRequest) {
   try {
     const session = await requireAdminSession()
 
     if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const slides = await listAdminHomepageSlides()
 
-    return Response.json(slides)
+    return NextResponse.json(slides)
   } catch (error) {
     if (isHomepageSlidesTableMissing(error)) {
-      return Response.json(
+      return NextResponse.json(
         {
           error:
             'Таблица homepage_slides не создана. Выполните SQL из postgres/schema.sql в Postgres.',
@@ -71,36 +73,35 @@ export async function GET() {
       )
     }
 
-    console.error('Error fetching admin homepage slides:', error)
-    return Response.json({ error: 'Failed to fetch homepage slides' }, { status: 500 })
+    throw error
   }
 }
 
-export async function POST(request: Request) {
+async function postHomepageSlide(request: NextRequest) {
   try {
     const session = await requireAdminSession()
 
     if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const normalized = normalizeSlidePayload(body)
 
     if ('error' in normalized) {
-      return Response.json({ error: normalized.error }, { status: 400 })
+      return NextResponse.json({ error: normalized.error }, { status: 400 })
     }
 
     const slide = await createAdminHomepageSlide(normalized.data)
 
     if (!slide) {
-      return Response.json({ error: 'Failed to create homepage slide' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to create homepage slide' }, { status: 500 })
     }
 
-    return Response.json(slide, { status: 201 })
+    return NextResponse.json(slide, { status: 201 })
   } catch (error) {
     if (isHomepageSlidesTableMissing(error)) {
-      return Response.json(
+      return NextResponse.json(
         {
           error:
             'Таблица homepage_slides не создана. Выполните SQL из postgres/schema.sql в Postgres.',
@@ -109,7 +110,9 @@ export async function POST(request: Request) {
       )
     }
 
-    console.error('Error creating homepage slide:', error)
-    return Response.json({ error: 'Failed to create homepage slide' }, { status: 500 })
+    throw error
   }
 }
+
+export const GET = apiHandler(getAdminHomepageSlides)
+export const POST = apiHandler(postHomepageSlide)

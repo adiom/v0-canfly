@@ -1,3 +1,4 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminSession } from '@/lib/admin-session'
 import {
   deleteBook,
@@ -7,6 +8,7 @@ import {
   updateBookCharacters,
 } from '@/lib/server/books'
 import { Book, BookChapter, BookType, BookWithCharacters } from '@/lib/types'
+import { apiHandler } from '@/lib/api-handler'
 
 export const dynamic = 'force-dynamic'
 
@@ -106,91 +108,80 @@ function normalizeBookPayload(body: Record<string, unknown>) {
   }
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+async function getAdminBook(
+  request: NextRequest,
+  context: { params: Promise<Record<string, string>> },
 ) {
-  try {
-    const session = await requireAdminSession()
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id } = await params
-    const book = await fetchBookById(id)
-
-    if (!book) {
-      return Response.json({ error: 'Book not found' }, { status: 404 })
-    }
-
-    const characterIds = await getBookCharacterIds(id)
-
-    return Response.json({
-      ...book,
-      character_ids: characterIds,
-    } satisfies BookWithCharacters)
-  } catch (error) {
-    console.error('Error fetching admin book:', error)
-    return Response.json({ error: 'Failed to fetch book' }, { status: 500 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const { id } = await context.params as { id: string }
+  const book = await fetchBookById(id)
+
+  if (!book) {
+    return NextResponse.json({ error: 'Book not found' }, { status: 404 })
+  }
+
+  const characterIds = await getBookCharacterIds(id)
+
+  return NextResponse.json({
+    ...book,
+    character_ids: characterIds,
+  } satisfies BookWithCharacters)
 }
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+async function updateAdminBook(
+  request: NextRequest,
+  context: { params: Promise<Record<string, string>> },
 ) {
-  try {
-    const session = await requireAdminSession()
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id } = await params
-    const body = await request.json()
-    const normalized = normalizeBookPayload(body)
-
-    if ('error' in normalized) {
-      return Response.json({ error: normalized.error }, { status: 400 })
-    }
-
-    const book = await updateBook(id, normalized.data)
-
-    if (!book) {
-      return Response.json({ error: 'Book not found' }, { status: 404 })
-    }
-
-    await updateBookCharacters(id, normalized.characterIds)
-
-    return Response.json({
-      ...book,
-      character_ids: normalized.characterIds,
-    } satisfies BookWithCharacters)
-  } catch (error) {
-    console.error('Error updating book:', error)
-    return Response.json({ error: 'Failed to update book' }, { status: 500 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const { id } = await context.params as { id: string }
+  const body = await request.json()
+  const normalized = normalizeBookPayload(body)
+
+  if ('error' in normalized) {
+    return NextResponse.json({ error: normalized.error }, { status: 400 })
+  }
+
+  const book = await updateBook(id, normalized.data)
+
+  if (!book) {
+    return NextResponse.json({ error: 'Book not found' }, { status: 404 })
+  }
+
+  await updateBookCharacters(id, normalized.characterIds)
+
+  return NextResponse.json({
+    ...book,
+    character_ids: normalized.characterIds,
+  } satisfies BookWithCharacters)
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+async function deleteAdminBook(
+  request: NextRequest,
+  context: { params: Promise<Record<string, string>> },
 ) {
-  try {
-    const session = await requireAdminSession()
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id } = await params
-
-    await deleteBook(id)
-
-    return Response.json({ ok: true })
-  } catch (error) {
-    console.error('Error deleting book:', error)
-    return Response.json({ error: 'Failed to delete book' }, { status: 500 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const { id } = await context.params as { id: string }
+
+  await deleteBook(id)
+
+  return NextResponse.json({ ok: true })
 }
+
+export const GET = apiHandler(getAdminBook)
+export const PATCH = apiHandler(updateAdminBook)
+export const DELETE = apiHandler(deleteAdminBook)

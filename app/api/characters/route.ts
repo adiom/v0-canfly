@@ -1,33 +1,31 @@
-import { fetchCharactersList } from '@/lib/server/characters';
-import { Character } from '@/lib/types';
+import { NextRequest, NextResponse } from 'next/server'
+import { fetchCharactersList } from '@/lib/server/characters'
+import { Character } from '@/lib/types'
+import { apiHandler } from '@/lib/api-handler'
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
-export async function GET() {
-  try {
-    const data = await fetchCharactersList();
-    
-    // Parse JSONB fields
-    const parsedCharacters = data.map((character) => ({
-      ...character,
-      abilities: (() => {
-        if (!character.abilities) return []
-        if (Array.isArray(character.abilities)) return character.abilities
-        if (typeof character.abilities === 'string') {
-          try {
-            const parsed = JSON.parse(character.abilities)
-            return Array.isArray(parsed) ? parsed : []
-          } catch {
-            return []
-          }
+async function getCharacters(request: NextRequest) {
+  const data = await fetchCharactersList()
+
+  const parsedCharacters = data.map((character) => ({
+    ...character,
+    abilities: (() => {
+      if (!character.abilities) return []
+      if (Array.isArray(character.abilities)) return character.abilities
+      if (typeof character.abilities === 'string') {
+        try {
+          const parsed = JSON.parse(character.abilities)
+          return Array.isArray(parsed) ? parsed : []
+        } catch {
+          return []
         }
-        return []
-      })(),
-    }));
-    
-    return Response.json(parsedCharacters as Character[]);
-  } catch (error) {
-    console.error('Error fetching characters:', error);
-    return Response.json({ error: 'Failed to fetch characters' }, { status: 500 });
-  }
+      }
+      return []
+    })(),
+  }))
+
+  return NextResponse.json(parsedCharacters as Character[])
 }
+
+export const GET = apiHandler(getCharacters)

@@ -1,5 +1,7 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminSession } from '@/lib/admin-session'
 import { createNewsPost, listAdminNewsPosts } from '@/lib/server/books'
+import { apiHandler } from '@/lib/api-handler'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,43 +25,36 @@ function normalizeNewsPayload(body: Record<string, unknown>) {
   }
 }
 
-export async function GET() {
-  try {
-    const session = await requireAdminSession()
+async function getAdminNews(request: NextRequest) {
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const posts = await listAdminNewsPosts()
-
-    return Response.json(posts)
-  } catch (error) {
-    console.error('Error fetching admin news:', error)
-    return Response.json({ error: 'Failed to fetch news' }, { status: 500 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const posts = await listAdminNewsPosts()
+
+  return NextResponse.json(posts)
 }
 
-export async function POST(request: Request) {
-  try {
-    const session = await requireAdminSession()
+async function postNews(request: NextRequest) {
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const body = await request.json()
-    const normalized = normalizeNewsPayload(body)
-
-    if ('error' in normalized) {
-      return Response.json({ error: normalized.error }, { status: 400 })
-    }
-
-    const post = await createNewsPost(normalized.data)
-
-    return Response.json(post, { status: 201 })
-  } catch (error) {
-    console.error('Error creating news post:', error)
-    return Response.json({ error: 'Failed to create news post' }, { status: 500 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const body = await request.json()
+  const normalized = normalizeNewsPayload(body)
+
+  if ('error' in normalized) {
+    return NextResponse.json({ error: normalized.error }, { status: 400 })
+  }
+
+  const post = await createNewsPost(normalized.data)
+
+  return NextResponse.json(post, { status: 201 })
 }
+
+export const GET = apiHandler(getAdminNews)
+export const POST = apiHandler(postNews)

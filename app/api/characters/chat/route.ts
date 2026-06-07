@@ -1,3 +1,4 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { ModelMessage, streamText } from 'ai'
 import {
   addCharacterMessage,
@@ -7,6 +8,7 @@ import {
   upsertCharacterFriendship,
 } from '@/lib/server/users'
 import { fetchCharacterBySlug } from '@/lib/server/characters'
+import { apiHandler } from '@/lib/api-handler'
 
 const characterPrompts: Record<string, string> = {
   cipher: `Вы Cipher, герой с загадочным прошлым из вселенной canfly. Вы управляете временем и видите возможные будущие. Вы глубокий, философский персонаж, часто говорите загадками и метафорами. Вы помогаете людям понять себя и свои возможности. Говорите как персонаж, используйте его манеру речи.`,
@@ -15,7 +17,7 @@ const characterPrompts: Record<string, string> = {
   
   aether: `Вы Aether, древний маг с тысячелетиями знаний за спиной. Вы говорите мудро и часто цитируете древние легенды. Вы видите связи между всеми вещами. Вы помогаете людям понять глубокие истины мироздания. Ваша речь полна образности и магической поэтики.`,
   
-  vex: `Вы Vex, гениальный хакер, живущий в цифровом мире. Вы остроумны, сарказстичны, но справедливы. Вы видите системы и коды там, где другие видят просто информацию. Говорите как человек из будущего, используйте геек-культуру и сравнения с кодом и системами.`,
+  vex: `Вы Vex, гениальный хакер, живущий в цифровом мире. Вы остроумны, сарказстичны, но справедливы. Вы видите системы и коды там, где другие видите просто информацию. Говорите как человек из будущего, используйте геек-культуру и сравнения с кодом и системами.`,
   
   eclipse: `Вы Eclipse, молчаливый убийца, ищущий искупления. Вы немногословны, но каждое слово весомо. Вы видите мир через призму теней и света. Вы преодолеваете свою темную природу и помогаете другим найти свой путь к свету.`,
   
@@ -26,54 +28,53 @@ const characterPrompts: Record<string, string> = {
   ubyr: `Вы Убыр, древний дух из татарских легенд. Вы не добрый и не злой — вы просто есть. Вы говорите философски о страхе, теньях и человеческой природе. Вы помогаете людям принять свою темную сторону. Ваша речь полна глубокой мудрости и образов тьмы.`
 }
 
-export async function POST(request: Request) {
-  try {
-    const { messages, characterSlug } = await request.json()
-    
-    if (!characterSlug) {
-      return new Response('Invalid character', { status: 400 })
-    }
+async function postCharacterChat(request: NextRequest) {
+  const { messages, characterSlug } = await request.json()
 
-    const data = await fetchCharacterBySlug(characterSlug)
+  if (!characterSlug) {
+    return new NextResponse('Invalid character', { status: 400 })
+  }
 
-    if (!data?.character) {
-      return new Response('Invalid character', { status: 400 })
-    }
+  const data = await fetchCharacterBySlug(characterSlug)
 
-    const character = data.character
+  if (!data?.character) {
+    return new NextResponse('Invalid character', { status: 400 })
+  }
 
-    if (!character.can_receive_messages || character.reply_mode === 'disabled') {
-      return new Response('Character does not receive messages', { status: 403 })
-    }
+  const character = data.character
 
-    const user = await ensureReaderUser()
-    const friendship = await upsertCharacterFriendship(user.id, character.id)
-    const conversation = await getOrCreateCharacterConversation(user.id, character.id)
+  if (!character.can_receive_messages || character.reply_mode === 'disabled') {
+    return new NextResponse('Character does not receive messages', { status: 403 })
+  }
 
-    if (!conversation) {
-      return new Response('Conversation unavailable', { status: 500 })
-    }
+  const user = await ensureReaderUser()
+  const friendship = await upsertCharacterFriendship(user.id, character.id)
+  const conversation = await getOrCreateCharacterConversation(user.id, character.id)
 
-    const incomingMessages = Array.isArray(messages) ? messages : []
-    const latestUserMessage = [...incomingMessages]
-      .reverse()
-      .find((msg: { role?: string; content?: string }) => msg.role === 'user' && msg.content?.trim())
+  if (!conversation) {
+    return new NextResponse('Conversation unavailable', { status: 500 })
+  }
 
-    if (latestUserMessage?.content) {
-      await addCharacterMessage(conversation.id, 'user', latestUserMessage.content.trim(), {
-        source: 'chat',
-      })
-    }
+  const incomingMessages = Array.isArray(messages) ? messages : []
+  const latestUserMessage = [...incomingMessages]
+    .reverse()
+    .find((msg: { role?: string; content?: string }) => msg.role === 'user' && msg.content?.trim())
 
-    const storedMessages = await fetchConversationMessages(conversation.id, 24)
-    const modelMessages: ModelMessage[] = storedMessages.map((message) => ({
-      role: message.role === 'character' ? 'assistant' : message.role,
-      content: message.content,
-    }))
+  if (latestUserMessage?.content) {
+    await addCharacterMessage(conversation.id, 'user', latestUserMessage.content.trim(), {
+      source: 'chat',
+    })
+  }
 
-    const characterPrompt = characterPrompts[characterSlug] || `Вы ${character.name}, персонаж литературной вселенной canfly.`
+  const storedMessages = await fetchConversationMessages(conversation.id, 24)
+  const modelMessages: ModelMessage[] = storedMessages.map((message) => ({
+    role: message.role === 'character' ? 'assistant' : message.role,
+    content: message.content,
+  }))
 
-    const systemPrompt = `${characterPrompt}
+  const characterPrompt = characterPrompts[characterSlug] || `Вы ${character.name}, персонаж литературной вселенной canfly.`
+
+  const systemPrompt = `${characterPrompt}
 
 Информация о персонаже:
 Имя: ${character.name}
@@ -95,25 +96,23 @@ ${character.boundaries ? `\nОграничения: ${character.boundaries}` : '
 - Не раскрывай скрытые сюжетные детали, если пользователь явно не просит спойлеры.
 - Если тебя спрашивают о книгах и комиксах вселенной canfly, рассказывай как этот персонаж видит эти события.`
 
-    const result = streamText({
-      model: 'openai/gpt-4o-mini',
-      system: systemPrompt,
-      messages: modelMessages,
-      temperature: 0.8,
-      maxOutputTokens: 1024,
-      onFinish: async ({ text }) => {
-        if (text?.trim()) {
-          await addCharacterMessage(conversation.id, 'character', text.trim(), {
-            source: 'openai',
-            model: 'gpt-4o-mini',
-          })
-        }
-      },
-    })
+  const result = streamText({
+    model: 'openai/gpt-4o-mini',
+    system: systemPrompt,
+    messages: modelMessages,
+    temperature: 0.8,
+    maxOutputTokens: 1024,
+    onFinish: async ({ text }) => {
+      if (text?.trim()) {
+        await addCharacterMessage(conversation.id, 'character', text.trim(), {
+          source: 'openai',
+          model: 'gpt-4o-mini',
+        })
+      }
+    },
+  })
 
-    return result.toTextStreamResponse()
-  } catch (error) {
-    console.error('Chat error:', error)
-    return new Response('Internal server error', { status: 500 })
-  }
+  return result.toTextStreamResponse() as unknown as NextResponse
 }
+
+export const POST = apiHandler(postCharacterChat)

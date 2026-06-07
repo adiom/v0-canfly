@@ -1,6 +1,8 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminSession } from '@/lib/admin-session'
 import { createCharacter, fetchCharactersList } from '@/lib/server/characters'
 import { Character } from '@/lib/types'
+import { apiHandler } from '@/lib/api-handler'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,79 +63,70 @@ function normalizeCharacterPayload(body: Record<string, unknown>) {
   }
 }
 
-export async function GET() {
-  try {
-    const session = await requireAdminSession()
+async function getAdminCharacters(request: NextRequest) {
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const characters = await fetchCharactersList()
-
-    // Parse JSONB fields
-    const parsedCharacters = characters.map((character) => ({
-      ...character,
-      abilities: (() => {
-        if (!character.abilities) return []
-        if (Array.isArray(character.abilities)) return character.abilities
-        if (typeof character.abilities === 'string') {
-          try {
-            const parsed = JSON.parse(character.abilities)
-            return Array.isArray(parsed) ? parsed : []
-          } catch {
-            return []
-          }
-        }
-        return []
-      })(),
-    }))
-
-    return Response.json(parsedCharacters)
-  } catch (error) {
-    console.error('Error fetching admin characters:', error)
-    return Response.json({ error: 'Failed to fetch characters' }, { status: 500 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const characters = await fetchCharactersList()
+
+  const parsedCharacters = characters.map((character) => ({
+    ...character,
+    abilities: (() => {
+      if (!character.abilities) return []
+      if (Array.isArray(character.abilities)) return character.abilities
+      if (typeof character.abilities === 'string') {
+        try {
+          const parsed = JSON.parse(character.abilities)
+          return Array.isArray(parsed) ? parsed : []
+        } catch {
+          return []
+        }
+      }
+      return []
+    })(),
+  }))
+
+  return NextResponse.json(parsedCharacters)
 }
 
-export async function POST(request: Request) {
-  try {
-    const session = await requireAdminSession()
+async function createAdminCharacter(request: NextRequest) {
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const body = await request.json()
-    const normalized = normalizeCharacterPayload(body)
-
-    if ('error' in normalized) {
-      return Response.json({ error: normalized.error }, { status: 400 })
-    }
-
-    const character = await createCharacter(normalized.data)
-
-    // Parse JSONB fields
-    const parsedCharacter = {
-      ...character,
-      abilities: (() => {
-        if (!character.abilities) return []
-        if (Array.isArray(character.abilities)) return character.abilities
-        if (typeof character.abilities === 'string') {
-          try {
-            const parsed = JSON.parse(character.abilities)
-            return Array.isArray(parsed) ? parsed : []
-          } catch {
-            return []
-          }
-        }
-        return []
-      })(),
-    }
-
-    return Response.json(parsedCharacter, { status: 201 })
-  } catch (error) {
-    console.error('Error creating character:', error)
-    return Response.json({ error: 'Failed to create character' }, { status: 500 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const body = await request.json()
+  const normalized = normalizeCharacterPayload(body)
+
+  if ('error' in normalized) {
+    return NextResponse.json({ error: normalized.error }, { status: 400 })
+  }
+
+  const character = await createCharacter(normalized.data)
+
+  const parsedCharacter = {
+    ...character,
+    abilities: (() => {
+      if (!character.abilities) return []
+      if (Array.isArray(character.abilities)) return character.abilities
+      if (typeof character.abilities === 'string') {
+        try {
+          const parsed = JSON.parse(character.abilities)
+          return Array.isArray(parsed) ? parsed : []
+        } catch {
+          return []
+        }
+      }
+      return []
+    })(),
+  }
+
+  return NextResponse.json(parsedCharacter, { status: 201 })
 }
+
+export const GET = apiHandler(getAdminCharacters)
+export const POST = apiHandler(createAdminCharacter)

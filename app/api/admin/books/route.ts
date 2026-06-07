@@ -1,3 +1,4 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminSession } from '@/lib/admin-session'
 import {
   createBook,
@@ -5,6 +6,7 @@ import {
   updateBookCharacters,
 } from '@/lib/server/books'
 import { Book, BookChapter, BookType, BookWithCharacters } from '@/lib/types'
+import { apiHandler } from '@/lib/api-handler'
 
 export const dynamic = 'force-dynamic'
 
@@ -104,55 +106,48 @@ function normalizeBookPayload(body: Record<string, unknown>) {
   }
 }
 
-export async function GET() {
-  try {
-    const session = await requireAdminSession()
+async function getAdminBooks(request: NextRequest) {
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const books = await listAdminBooks()
-
-    return Response.json(books)
-  } catch (error) {
-    console.error('Error fetching admin books:', error)
-    return Response.json({ error: 'Failed to fetch books' }, { status: 500 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const books = await listAdminBooks()
+
+  return NextResponse.json(books)
 }
 
-export async function POST(request: Request) {
-  try {
-    const session = await requireAdminSession()
+async function postBook(request: NextRequest) {
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const body = await request.json()
-    const normalized = normalizeBookPayload(body)
-
-    if ('error' in normalized) {
-      return Response.json({ error: normalized.error }, { status: 400 })
-    }
-
-    const book = await createBook(normalized.data)
-
-    if (!book) {
-      return Response.json({ error: 'Failed to create book' }, { status: 500 })
-    }
-
-    await updateBookCharacters(book.id, normalized.characterIds)
-
-    return Response.json(
-      {
-        ...book,
-        character_ids: normalized.characterIds,
-      } satisfies BookWithCharacters,
-      { status: 201 },
-    )
-  } catch (error) {
-    console.error('Error creating book:', error)
-    return Response.json({ error: 'Failed to create book' }, { status: 500 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const body = await request.json()
+  const normalized = normalizeBookPayload(body)
+
+  if ('error' in normalized) {
+    return NextResponse.json({ error: normalized.error }, { status: 400 })
+  }
+
+  const book = await createBook(normalized.data)
+
+  if (!book) {
+    return NextResponse.json({ error: 'Failed to create book' }, { status: 500 })
+  }
+
+  await updateBookCharacters(book.id, normalized.characterIds)
+
+  return NextResponse.json(
+    {
+      ...book,
+      character_ids: normalized.characterIds,
+    } satisfies BookWithCharacters,
+    { status: 201 },
+  )
 }
+
+export const GET = apiHandler(getAdminBooks)
+export const POST = apiHandler(postBook)

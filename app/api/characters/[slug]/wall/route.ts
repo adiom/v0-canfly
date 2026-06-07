@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 
 import { fetchCharacterBySlug } from '@/lib/server/characters'
@@ -8,17 +8,18 @@ import {
 } from '@/lib/server/character-wall'
 import { getCurrentUserFromCookie } from '@/lib/server/users'
 import { formatZodError, wallPostSchema } from '@/lib/schemas/character-post'
+import { apiHandler } from '@/lib/api-handler'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> },
+async function getCharacterWall(
+  request: NextRequest,
+  context: { params: Promise<Record<string, string>> },
 ) {
-  const { slug } = await params
+  const { slug } = await context.params as { slug: string }
   const data = await fetchCharacterBySlug(slug)
   if (!data?.character) {
-    return Response.json({ error: 'Character not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Character not found' }, { status: 404 })
   }
 
   const posts = await fetchWallPosts(data.character.id, {
@@ -26,28 +27,28 @@ export async function GET(
     limit: 50,
   })
 
-  return Response.json({ data: { posts } })
+  return NextResponse.json({ data: { posts } })
 }
 
-export async function POST(
+async function createCharacterWallPost(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> },
+  context: { params: Promise<Record<string, string>> },
 ) {
-  const { slug } = await params
+  const { slug } = await context.params as { slug: string }
   const data = await fetchCharacterBySlug(slug)
   if (!data?.character) {
-    return Response.json({ error: 'Character not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Character not found' }, { status: 404 })
   }
 
   const user = await getCurrentUserFromCookie()
   if (!user) {
-    return Response.json({ error: 'Необходимо войти' }, { status: 401 })
+    return NextResponse.json({ error: 'Необходимо войти' }, { status: 401 })
   }
 
   const body = await request.json().catch(() => null)
   const parsed = wallPostSchema.safeParse(body)
   if (!parsed.success) {
-    return Response.json(
+    return NextResponse.json(
       { error: formatZodError(parsed.error) },
       { status: 400 },
     )
@@ -55,5 +56,8 @@ export async function POST(
 
   const post = await createWallPost(data.character.id, user.id, parsed.data.content)
   revalidatePath(`/characters/${slug}`)
-  return Response.json({ data: { post } }, { status: 201 })
+  return NextResponse.json({ data: { post } }, { status: 201 })
 }
+
+export const GET = apiHandler(getCharacterWall)
+export const POST = apiHandler(createCharacterWallPost)

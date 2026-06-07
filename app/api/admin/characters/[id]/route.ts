@@ -1,3 +1,4 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminSession } from '@/lib/admin-session'
 import {
   deleteCharacter,
@@ -5,6 +6,7 @@ import {
   updateCharacter,
 } from '@/lib/server/characters'
 import { Character } from '@/lib/types'
+import { apiHandler } from '@/lib/api-handler'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,117 +67,104 @@ function normalizeCharacterPayload(body: Record<string, unknown>) {
   }
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+async function getAdminCharacter(
+  request: NextRequest,
+  context: { params: Promise<Record<string, string>> },
 ) {
-  try {
-    const session = await requireAdminSession()
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-    const { id } = await params
-    const character = await fetchCharacterById(id)
+  const { id } = await context.params as { id: string }
+  const character = await fetchCharacterById(id)
 
-    if (!character) {
-      return Response.json({ error: 'Character not found' }, { status: 404 })
-    }
+  if (!character) {
+    return NextResponse.json({ error: 'Character not found' }, { status: 404 })
+  }
 
-    // Parse JSONB fields
-    const parsedCharacter = {
-      ...character,
-      abilities: (() => {
-        if (!character.abilities) return []
-        if (Array.isArray(character.abilities)) return character.abilities
-        if (typeof character.abilities === 'string') {
-          try {
-            const parsed = JSON.parse(character.abilities)
-            return Array.isArray(parsed) ? parsed : []
-          } catch {
-            return []
-          }
+  const parsedCharacter = {
+    ...character,
+    abilities: (() => {
+      if (!character.abilities) return []
+      if (Array.isArray(character.abilities)) return character.abilities
+      if (typeof character.abilities === 'string') {
+        try {
+          const parsed = JSON.parse(character.abilities)
+          return Array.isArray(parsed) ? parsed : []
+        } catch {
+          return []
         }
-        return []
-      })(),
-    }
-
-    return Response.json(parsedCharacter)
-  } catch (error) {
-    console.error('Error fetching admin character:', error)
-    return Response.json({ error: 'Failed to fetch character' }, { status: 500 })
+      }
+      return []
+    })(),
   }
+
+  return NextResponse.json(parsedCharacter)
 }
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+async function updateAdminCharacter(
+  request: NextRequest,
+  context: { params: Promise<Record<string, string>> },
 ) {
-  try {
-    const session = await requireAdminSession()
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-    const { id } = await params
-    const body = await request.json()
-    const normalized = normalizeCharacterPayload(body)
+  const { id } = await context.params as { id: string }
+  const body = await request.json()
+  const normalized = normalizeCharacterPayload(body)
 
-    if ('error' in normalized) {
-      return Response.json({ error: normalized.error }, { status: 400 })
-    }
+  if ('error' in normalized) {
+    return NextResponse.json({ error: normalized.error }, { status: 400 })
+  }
 
-    const character = await updateCharacter(id, normalized.data)
+  const character = await updateCharacter(id, normalized.data)
 
-    if (!character) {
-      return Response.json({ error: 'Character not found' }, { status: 404 })
-    }
+  if (!character) {
+    return NextResponse.json({ error: 'Character not found' }, { status: 404 })
+  }
 
-    // Parse JSONB fields
-    const parsedCharacter = {
-      ...character,
-      abilities: (() => {
-        if (!character.abilities) return []
-        if (Array.isArray(character.abilities)) return character.abilities
-        if (typeof character.abilities === 'string') {
-          try {
-            const parsed = JSON.parse(character.abilities)
-            return Array.isArray(parsed) ? parsed : []
-          } catch {
-            return []
-          }
+  const parsedCharacter = {
+    ...character,
+    abilities: (() => {
+      if (!character.abilities) return []
+      if (Array.isArray(character.abilities)) return character.abilities
+      if (typeof character.abilities === 'string') {
+        try {
+          const parsed = JSON.parse(character.abilities)
+          return Array.isArray(parsed) ? parsed : []
+        } catch {
+          return []
         }
-        return []
-      })(),
-    }
-
-    return Response.json(parsedCharacter)
-  } catch (error) {
-    console.error('Error updating character:', error)
-    return Response.json({ error: 'Failed to update character' }, { status: 500 })
+      }
+      return []
+    })(),
   }
+
+  return NextResponse.json(parsedCharacter)
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+async function deleteAdminCharacter(
+  request: NextRequest,
+  context: { params: Promise<Record<string, string>> },
 ) {
-  try {
-    const session = await requireAdminSession()
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id } = await params
-
-    await deleteCharacter(id)
-
-    return Response.json({ ok: true })
-  } catch (error) {
-    console.error('Error deleting character:', error)
-    return Response.json({ error: 'Failed to delete character' }, { status: 500 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const { id } = await context.params as { id: string }
+
+  await deleteCharacter(id)
+
+  return NextResponse.json({ ok: true })
 }
+
+export const GET = apiHandler(getAdminCharacter)
+export const PATCH = apiHandler(updateAdminCharacter)
+export const DELETE = apiHandler(deleteAdminCharacter)

@@ -1,21 +1,17 @@
-import { fetchBooks } from '@/lib/server/books';
-import { BookWithCharacters } from '@/lib/types';
+import { NextRequest, NextResponse } from 'next/server'
+import { fetchBooks } from '@/lib/server/books'
+import { BookWithCharacters } from '@/lib/types'
+import { apiHandler } from '@/lib/api-handler'
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
-export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const featured = searchParams.get('featured') === 'true';
+async function getBooks(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const featured = searchParams.get('featured') === 'true'
 
-    const books = await fetchBooks({ featured });
+  const books = await fetchBooks({ featured })
 
-    return Response.json(books as BookWithCharacters[]);
-  } catch (err) {
-    console.error('API error:', err);
-    return Response.json(
-      { error: 'Failed to fetch books' },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(books as BookWithCharacters[])
 }
+
+export const GET = apiHandler(getBooks)

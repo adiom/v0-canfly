@@ -1,9 +1,11 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminSession } from '@/lib/admin-session'
 import {
   deleteNewsPost,
   fetchNewsPostById,
   updateNewsPost,
 } from '@/lib/server/books'
+import { apiHandler } from '@/lib/api-handler'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,81 +29,70 @@ function normalizeNewsPayload(body: Record<string, unknown>) {
   }
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+async function getAdminNewsPost(
+  request: NextRequest,
+  context: { params: Promise<Record<string, string>> },
 ) {
-  try {
-    const session = await requireAdminSession()
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id } = await params
-    const post = await fetchNewsPostById(id)
-
-    if (!post) {
-      return Response.json({ error: 'News post not found' }, { status: 404 })
-    }
-
-    return Response.json(post)
-  } catch (error) {
-    console.error('Error fetching admin news post:', error)
-    return Response.json({ error: 'Failed to fetch news post' }, { status: 500 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const { id } = await context.params as { id: string }
+  const post = await fetchNewsPostById(id)
+
+  if (!post) {
+    return NextResponse.json({ error: 'News post not found' }, { status: 404 })
+  }
+
+  return NextResponse.json(post)
 }
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+async function updateAdminNewsPost(
+  request: NextRequest,
+  context: { params: Promise<Record<string, string>> },
 ) {
-  try {
-    const session = await requireAdminSession()
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id } = await params
-    const body = await request.json()
-    const normalized = normalizeNewsPayload(body)
-
-    if ('error' in normalized) {
-      return Response.json({ error: normalized.error }, { status: 400 })
-    }
-
-    const post = await updateNewsPost(id, normalized.data)
-
-    if (!post) {
-      return Response.json({ error: 'News post not found' }, { status: 404 })
-    }
-
-    return Response.json(post)
-  } catch (error) {
-    console.error('Error updating news post:', error)
-    return Response.json({ error: 'Failed to update news post' }, { status: 500 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const { id } = await context.params as { id: string }
+  const body = await request.json()
+  const normalized = normalizeNewsPayload(body)
+
+  if ('error' in normalized) {
+    return NextResponse.json({ error: normalized.error }, { status: 400 })
+  }
+
+  const post = await updateNewsPost(id, normalized.data)
+
+  if (!post) {
+    return NextResponse.json({ error: 'News post not found' }, { status: 404 })
+  }
+
+  return NextResponse.json(post)
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+async function deleteAdminNewsPost(
+  request: NextRequest,
+  context: { params: Promise<Record<string, string>> },
 ) {
-  try {
-    const session = await requireAdminSession()
+  const session = await requireAdminSession()
 
-    if (!session) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id } = await params
-
-    await deleteNewsPost(id)
-
-    return Response.json({ ok: true })
-  } catch (error) {
-    console.error('Error deleting news post:', error)
-    return Response.json({ error: 'Failed to delete news post' }, { status: 500 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const { id } = await context.params as { id: string }
+
+  await deleteNewsPost(id)
+
+  return NextResponse.json({ ok: true })
 }
+
+export const GET = apiHandler(getAdminNewsPost)
+export const PATCH = apiHandler(updateAdminNewsPost)
+export const DELETE = apiHandler(deleteAdminNewsPost)
