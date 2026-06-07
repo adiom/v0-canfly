@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { SessionProvider } from 'next-auth/react'
 import { CartProvider } from '@/lib/cart-context'
 import { ThemeProvider } from '@/components/theme-provider'
 import { generateOrganizationSchema } from '@/lib/seo/schema'
@@ -49,13 +50,15 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-          <Analytics />
-          <SpeedInsights/>
-          <CartProvider>
-            {children}
-          </CartProvider>
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+            <Analytics />
+            <SpeedInsights/>
+            <CartProvider>
+              {children}
+            </CartProvider>
+          </ThemeProvider>
+        </SessionProvider>
         <YandexMetrika />
       </body>
     </html>
