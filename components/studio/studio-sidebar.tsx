@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BookOpen, Library, Home, PenTool } from 'lucide-react'
+import { BookOpen, Library, Home, PenTool, Users } from 'lucide-react'
 import type { UserProfile } from '@/lib/types'
 import {
   Sidebar,
@@ -18,13 +18,18 @@ import {
 } from '@/components/ui/sidebar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
-const navItems = [
+const baseNav = [
   { title: 'Релизы', href: '/studio', icon: BookOpen },
   { title: 'Серии', href: '/studio/series', icon: Library },
 ]
 
-export function StudioSidebar({ user }: { user: UserProfile }) {
+const adminNav = [
+  { title: 'Персонажи', href: '/studio/characters', icon: Users },
+]
+
+export function StudioSidebar({ user, isAdmin = false }: { user: UserProfile; isAdmin?: boolean }) {
   const pathname = usePathname()
+  const navItems = isAdmin ? [...baseNav, ...adminNav] : baseNav
 
   return (
     <Sidebar>
@@ -76,3 +81,4 @@ export function StudioSidebar({ user }: { user: UserProfile }) {
     </Sidebar>
   )
 }
+

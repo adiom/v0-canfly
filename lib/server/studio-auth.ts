@@ -17,3 +17,15 @@ export async function requireStudioSession(): Promise<StudioSession | null> {
 
   return { user, roles }
 }
+
+export async function requireStudioAdminSession(): Promise<StudioSession | null> {
+  const session = await requireStudioSession()
+  if (!session) return null
+  if (!session.roles.includes('admin')) return null
+  return session
+}
+
+export function isStudioAdmin(session: StudioSession | null | undefined) {
+  return !!session?.roles.includes('admin')
+}
+

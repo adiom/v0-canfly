@@ -139,7 +139,7 @@ export default async function SearchPage({
                     <Link key={book.id} href={`/books/${book.slug}`} className="group block">
                       <div className="relative mb-2 aspect-[2/3] w-full overflow-hidden rounded-sm bg-cf-bg-2">
                         {book.cover_image ? (
-                          <Image src={book.cover_image} alt={book.title} fill className="object-cover transition-transform group-hover:scale-105" />
+                          <Image src={book.cover_image} alt={book.title} fill sizes="(max-width:768px) 50vw, 25vw" className="object-cover transition-transform group-hover:scale-105" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center bg-cf-accent/20">
                             <span className="text-lg font-black text-cf-accent">CF</span>
@@ -160,7 +160,7 @@ export default async function SearchPage({
                     <Link key={c.id} href={`/characters/${c.slug}`} className="group flex items-center gap-3">
                       <div className="relative h-10 w-10 overflow-hidden rounded-full bg-cf-bg-2">
                         {c.avatar ? (
-                          <Image src={c.avatar} alt={c.name} fill className="object-cover" />
+                          <Image src={c.avatar} alt={c.name} fill sizes="40px" className="object-cover" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center bg-cf-accent/20">
                             <span className="text-xs font-black text-cf-accent">{c.name[0]}</span>

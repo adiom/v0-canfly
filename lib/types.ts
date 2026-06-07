@@ -131,6 +131,62 @@ export interface CharacterBookAppearance {
   importance_score: number;
 }
 
+export type CharacterPostType = 'thought' | 'announcement' | 'question';
+
+export interface CharacterPost {
+  id: string;
+  character_id: string;
+  content: string;
+  post_type: CharacterPostType;
+  image_url: string | null;
+  scheduled_at: string | null;
+  author_user_id: string | null;
+  created_at: string;
+}
+
+export interface CharacterPostWithCharacter extends CharacterPost {
+  character: {
+    id: string;
+    name: string;
+    slug: string;
+    avatar: string | null;
+  };
+}
+
+export interface CharacterWallPost {
+  id: string;
+  character_id: string;
+  user_id: string;
+  content: string;
+  hidden: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CharacterWallPostWithUser extends CharacterWallPost {
+  user: {
+    id: string;
+    handle: string;
+    display_name: string;
+    avatar: string | null;
+  };
+}
+
+export interface CharacterStats {
+  friends: number;
+  posts: number;
+  books: number;
+}
+
+export interface CharacterFriendSummary {
+  id: string;
+  handle: string;
+  display_name: string;
+  avatar: string | null;
+  intimacy_level: number;
+}
+
+
 export interface CharacterRelationship {
   id: string;
   character_id: string;

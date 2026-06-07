@@ -130,7 +130,7 @@ export async function createPasswordUser(data: {
     throw new Error('Failed to create user')
   }
 
-  const roles = data.roles?.length ? data.roles : ['reader']
+  const roles: UserRole[] = data.roles?.length ? data.roles : ['reader']
   await setUserRoles(user.id, roles)
 
   return user
@@ -193,8 +193,8 @@ export async function listAdminUsers() {
         u.created_at,
         u.updated_at,
         COALESCE(
-          array_agg(ur.role ORDER BY ur.role) FILTER (WHERE ur.role IS NOT NULL),
-          '{}'::user_role[]
+          array_agg(ur.role::text ORDER BY ur.role) FILTER (WHERE ur.role IS NOT NULL),
+          ARRAY[]::text[]
         ) AS roles,
         COUNT(DISTINCT cf.id)::int AS friends_count,
         COUNT(DISTINCT cc.id)::int AS conversations_count
@@ -220,6 +220,13 @@ export async function getFriendship(userId: string, characterId: string) {
       WHERE user_id = $1 AND character_id = $2
       LIMIT 1
     `,
+    [userId, characterId],
+  )
+}
+
+export async function deleteCharacterFriendship(userId: string, characterId: string) {
+  await dbQuery(
+    'DELETE FROM character_friendships WHERE user_id = $1 AND character_id = $2',
     [userId, characterId],
   )
 }

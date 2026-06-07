@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { isRedirectError } from 'next/dist/client/components/redirect'
+import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { toast } from 'sonner'
 import type { Release } from '@/lib/releases-types'
 import { generateSlug } from '@/lib/slug-utils'
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CoverImageUploader } from '@/components/studio/cover-image-uploader'
 
 interface ReleaseFormProps {
   release?: Release | null
@@ -117,8 +118,8 @@ export function ReleaseForm({ release }: ReleaseFormProps) {
               <Input id="isbn" value={isbn} onChange={e => setIsbn(e.target.value)} placeholder="978-..." />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cover">Обложка (URL)</Label>
-              <Input id="cover" value={coverImage} onChange={e => setCoverImage(e.target.value)} placeholder="https://..." />
+              <Label>Обложка</Label>
+              <CoverImageUploader value={coverImage || null} onChange={setCoverImage} />
             </div>
           </div>
 

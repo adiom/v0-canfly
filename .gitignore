@@ -19,6 +19,11 @@ node_modules
 .DS_Store
 tsconfig.tsbuildinfo
 
+# Playwright
+playwright-report/
+test-results/
+playwright/.cache/
+
 # AI stop
 .cursor/
 .kiro/

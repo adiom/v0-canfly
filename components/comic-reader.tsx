@@ -272,7 +272,7 @@ export function ComicReader({ book }: ComicReaderProps) {
                       : 'border-[#f4efe5]/10 opacity-40 hover:opacity-70'
                   }`}
                 >
-                  <Image src={url} alt="" fill className="object-cover" />
+                  <Image src={url} alt="" fill sizes="80px" className="object-cover" />
                 </button>
               ))}
             </div>

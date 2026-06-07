@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { isRedirectError } from 'next/dist/client/components/redirect'
+import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import type { Edition, Chapter } from '@/lib/releases-types'

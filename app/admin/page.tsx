@@ -271,6 +271,16 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <section className="max-w-7xl mx-auto px-4 py-8">
+        <div className="mb-6 flex items-start gap-3 rounded-md border border-purple-900/60 bg-purple-950/30 px-4 py-3 text-sm text-purple-100">
+          <span aria-hidden>✨</span>
+          <p>
+            Управление персонажами теперь в{' '}
+            <Link href="/studio/characters" className="font-semibold underline underline-offset-2 hover:text-purple-50">
+              Студии
+            </Link>
+            . Здесь остались заказы, книги, слайды и пользователи.
+          </p>
+        </div>
         {error && (
           <div className="mb-6 rounded-md border border-red-900/60 bg-red-950/40 px-4 py-3 text-sm text-red-200">
             {error}

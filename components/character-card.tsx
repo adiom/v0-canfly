@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 
 interface CharacterCardProps {
   character: Character;
+  priority?: boolean;
 }
 
-export function CharacterCard({ character }: CharacterCardProps) {
+export function CharacterCard({ character, priority = false }: CharacterCardProps) {
   return (
     <Link href={`/characters/${character.slug}`}>
       <div className="bg-slate-800 hover:bg-slate-700 transition-colors rounded-lg overflow-hidden border border-slate-700 hover:border-purple-500 group cursor-pointer h-full">
@@ -18,6 +19,8 @@ export function CharacterCard({ character }: CharacterCardProps) {
               src={character.avatar}
               alt={character.name}
               fill
+              priority={priority}
+              sizes="(max-width:768px) 100vw, (max-width:1024px) 50vw, 33vw"
               className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           </div>

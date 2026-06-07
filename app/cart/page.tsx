@@ -142,7 +142,7 @@ export default function CartPage() {
                   <div key={item.bookId} className="border border-cf-text-1/10 bg-cf-bg-2 p-6 flex gap-6">
                     {item.image ? (
                       <div className="flex-shrink-0 relative w-24 h-32">
-                        <Image src={item.image} alt={item.title} fill className="object-cover" />
+                        <Image src={item.image} alt={item.title} fill sizes="96px" className="object-cover" />
                       </div>
                     ) : (
                       <div className="flex-shrink-0 w-24 h-32 bg-cf-bg flex items-center justify-center text-cf-text-4 text-xs">

@@ -14,7 +14,7 @@ export interface CharacterPost {
     id: string
     name: string
     slug: string
-    avatar: string
+    avatar: string | null
   }
 }
 
@@ -64,13 +64,19 @@ export function CharacterPostsFeed({ characterSlug }: PostsFeedProps) {
           <div className="p-6">
             {/* Header */}
             <div className="flex items-center gap-4 mb-4">
-              <div className="relative w-12 h-12 rounded-full overflow-hidden border border-slate-600">
-                <Image
-                  src={post.character.avatar}
-                  alt={post.character.name}
-                  fill
-                  className="object-cover"
-                />
+              <div className="relative w-12 h-12 rounded-full overflow-hidden border border-slate-600 bg-slate-700">
+                {post.character.avatar ? (
+                  <Image
+                    src={post.character.avatar}
+                    alt={post.character.name}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-sm font-bold text-slate-300">
+                    {post.character.name.charAt(0)}
+                  </div>
+                )}
               </div>
               <div>
                 <h3 className="font-bold text-white">{post.character.name}</h3>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { isRedirectError } from 'next/dist/client/components/redirect'
+import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { toast } from 'sonner'
 import type { Release, Edition } from '@/lib/releases-types'
 import { updateReleaseStatusAction, deleteReleaseAction } from '@/lib/actions/studio'

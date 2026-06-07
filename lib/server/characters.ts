@@ -1,5 +1,11 @@
 import { dbQuery, dbQueryOne } from '@/lib/db'
-import { Character, CharacterBookAppearance, CharacterRelationship } from '@/lib/types'
+import {
+  Character,
+  CharacterBookAppearance,
+  CharacterFriendSummary,
+  CharacterRelationship,
+  CharacterStats,
+} from '@/lib/types'
 
 export async function fetchCharactersList(): Promise<Character[]> {
   return dbQuery<Character>('SELECT * FROM characters ORDER BY created_at DESC')
@@ -82,6 +88,58 @@ export async function fetchBooksForCharacter(characterId: string) {
 
 export async function fetchCharacterById(id: string) {
   return dbQueryOne<Character>('SELECT * FROM characters WHERE id = $1 LIMIT 1', [id])
+}
+
+export async function fetchCharacterStats(characterId: string): Promise<CharacterStats> {
+  const [friendsRow, postsRow, booksRow] = await Promise.all([
+    dbQueryOne<{ count: string }>(
+      `SELECT COUNT(*)::text AS count
+       FROM character_friendships
+       WHERE character_id = $1 AND status = 'accepted'`,
+      [characterId],
+    ),
+    dbQueryOne<{ count: string }>(
+      `SELECT COUNT(*)::text AS count
+       FROM character_posts
+       WHERE character_id = $1
+         AND (scheduled_at IS NULL OR scheduled_at <= NOW())`,
+      [characterId],
+    ),
+    dbQueryOne<{ count: string }>(
+      `SELECT COUNT(*)::text AS count
+       FROM book_characters
+       WHERE character_id = $1`,
+      [characterId],
+    ),
+  ])
+
+  return {
+    friends: friendsRow ? Number(friendsRow.count) : 0,
+    posts: postsRow ? Number(postsRow.count) : 0,
+    books: booksRow ? Number(booksRow.count) : 0,
+  }
+}
+
+export async function fetchCharacterFriends(
+  characterId: string,
+  limit = 12,
+): Promise<CharacterFriendSummary[]> {
+  return dbQuery<CharacterFriendSummary>(
+    `
+      SELECT
+        u.id,
+        u.handle,
+        u.display_name,
+        u.avatar,
+        cf.intimacy_level
+      FROM character_friendships cf
+      JOIN users u ON u.id = cf.user_id
+      WHERE cf.character_id = $1 AND cf.status = 'accepted'
+      ORDER BY cf.intimacy_level DESC, cf.created_at DESC
+      LIMIT $2
+    `,
+    [characterId, limit],
+  )
 }
 
 export async function createCharacter(data: Record<string, unknown>) {

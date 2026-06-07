@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { isRedirectError } from 'next/dist/client/components/redirect'
+import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { createEditionAction } from '@/lib/actions/studio'

@@ -30,6 +30,9 @@ export async function fetchEditionBySlug(slug: string) {
 }
 
 export async function createEdition(data: Record<string, unknown>) {
+  const baseSlug = (data.slug as string)?.trim() || 'edition'
+  const uniqueSlug = await makeUniqueEditionSlugGlobal(baseSlug)
+
   return dbQueryOne<Edition>(
     `INSERT INTO editions (release_id, format, platform, external_url, slug, status, is_primary)
      VALUES ($1, $2::edition_format, $3, $4, $5, $6::edition_status, $7)
@@ -39,14 +42,43 @@ export async function createEdition(data: Record<string, unknown>) {
       data.format ?? 'book',
       data.platform ?? null,
       data.external_url ?? null,
-      data.slug,
+      uniqueSlug,
       data.status ?? 'draft',
       data.is_primary ?? false,
     ],
   )
 }
 
+async function makeUniqueEditionSlugGlobal(baseSlug: string): Promise<string> {
+  const existing = await dbQuery<{ slug: string }>(
+    `SELECT slug FROM editions WHERE slug = $1 OR slug LIKE $2`,
+    [baseSlug, `${baseSlug}-%`],
+  )
+  const used = new Set(existing.map(e => e.slug))
+  if (!used.has(baseSlug)) return baseSlug
+
+  for (let i = 2; i < 100000; i++) {
+    const candidate = `${baseSlug}-${i}`
+    if (!used.has(candidate)) return candidate
+  }
+  return `${baseSlug}-${Date.now()}`
+}
+
 export async function updateEdition(id: string, data: Record<string, unknown>) {
+  const current = await fetchEditionById(id)
+  if (!current) throw new Error('Edition not found')
+
+  let nextSlug = (data.slug as string)?.trim() || current.slug
+  if (nextSlug !== current.slug) {
+    const clash = await dbQuery<{ slug: string }>(
+      `SELECT slug FROM editions WHERE slug = $1 AND id != $2 LIMIT 1`,
+      [nextSlug, id],
+    )
+    if (clash.length > 0) {
+      nextSlug = await makeUniqueEditionSlugGlobal(nextSlug)
+    }
+  }
+
   return dbQueryOne<Edition>(
     `UPDATE editions SET
       format = $2::edition_format, platform = $3, external_url = $4,
@@ -58,7 +90,7 @@ export async function updateEdition(id: string, data: Record<string, unknown>) {
       data.format ?? 'book',
       data.platform ?? null,
       data.external_url ?? null,
-      data.slug,
+      nextSlug,
       data.status ?? 'draft',
       data.is_primary ?? false,
     ],

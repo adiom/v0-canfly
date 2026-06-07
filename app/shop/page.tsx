@@ -95,7 +95,7 @@ export default function ShopPage() {
           <div className="text-center py-12 text-cf-text-3">Загрузка товаров...</div>
         ) : books.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {books.map((book) => (
+            {books.map((book, i) => (
               <div key={book.id} className="border border-cf-text-1/10 bg-cf-bg-2 overflow-hidden hover:border-cf-warm/45 transition-colors group">
                 {book.cover_image ? (
                   <div className="relative w-full h-72 overflow-hidden bg-cf-footer-bg">
@@ -103,6 +103,8 @@ export default function ShopPage() {
                       src={book.cover_image}
                       alt={book.title}
                       fill
+                      priority={i < 3}
+                      sizes="(max-width:768px) 50vw, 25vw"
                       className="object-cover group-hover:scale-105 transition-transform"
                     />
                   </div>

@@ -66,7 +66,7 @@ export default async function CharacterChatPage({ params }: ChatPageProps) {
           <div className="flex items-center gap-4">
             {character.avatar && (
               <div className="relative w-9 h-9 overflow-hidden border border-cf-text-1/10">
-                <Image src={character.avatar} alt={character.name} fill className="object-cover" />
+                <Image src={character.avatar} alt={character.name} fill sizes="36px" className="object-cover" />
               </div>
             )}
             <div>

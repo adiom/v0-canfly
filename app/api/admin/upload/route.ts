@@ -32,10 +32,9 @@ export async function POST(request: NextRequest) {
 
     console.log('[Upload] Success:', blob.url)
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       url: blob.url,
       pathname: blob.pathname,
-      size: blob.size 
     })
   } catch (error) {
     console.error('[Upload] Error:', error)

@@ -9,6 +9,7 @@ import { updateEditionSetupAction } from '@/lib/actions/studio'
 import { generateSlug } from '@/lib/slug-utils'
 import { ComicPagesEditor } from '@/components/studio/comic-pages-editor'
 import { AudioTracksEditor } from '@/components/studio/audio-tracks-editor'
+import { CoverImageUploader } from '@/components/studio/cover-image-uploader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -163,12 +164,8 @@ export function EditionSetupPage({ data }: { data: SetupData }) {
             </div>
 
             <div className="space-y-2">
-              <Label>Обложка (URL)</Label>
-              <Input
-                value={coverImage}
-                onChange={e => setCoverImage(e.target.value)}
-                placeholder="https://..."
-              />
+              <Label>Обложка</Label>
+              <CoverImageUploader value={coverImage || null} onChange={setCoverImage} />
             </div>
 
             <div className="space-y-2">

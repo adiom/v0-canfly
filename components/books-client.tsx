@@ -67,7 +67,7 @@ export function BooksClient({ books }: BooksClientProps) {
 
   return (
     <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
-      {books.map((book) => (
+      {books.map((book, i) => (
         <article
           key={book.id}
           className="group flex flex-col border border-cf-text-1/10 bg-cf-bg-2 transition-colors hover:border-cf-warm/35"
@@ -78,6 +78,7 @@ export function BooksClient({ books }: BooksClientProps) {
                 src={book.cover_image}
                 alt=""
                 fill
+                priority={i < 3}
                 className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                 sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
               />

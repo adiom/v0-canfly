@@ -2,6 +2,62 @@
 
 ---
 
+## v6.0 — Студия персонажей + социальный профиль (7 июня 2026)
+
+### Что изменено
+
+**1. Студия для управления персонажами (`/studio/characters`)** — admin-only
+- Список (responsive grid 1/2/3) с cover-градиентом, аватаром, bio, бейджами `reply_mode` и счётчиком способностей
+- CRUD-страницы: новый, детальный (с табами Посты | Стена | О персонаже), редактирование
+- Управление постами: composer (тип/текст/image upload через Vercel Blob/`scheduled_at`), таблица с индикатором scheduled, edit/delete
+- Модерация стены: hide/unhide, удаление
+- Доступ только для роли `admin` через `requireStudioAdminSession`
+
+**2. Публичный профиль персонажа (`/characters/[slug]`) перестроен как соцсеть**
+- Header: cover-градиент, аватар 128px, имя, bio, кнопки «Добавить/Удалить из друзей» и «Написать», блок статистики (друзья/посты/книги)
+- 5 табов через query-param: Лента | О герое | Связи | Книги | Стена
+- Стена: composer для зарегистрированных пользователей, удаление своих записей (или админом)
+- Удалён canvas-граф связей и глобальная лента с `/characters`
+
+**3. API и серверные функции**
+- `GET|POST /api/characters/[slug]/wall`, `DELETE /api/characters/[slug]/wall/[id]` (автор или admin)
+- `DELETE /api/characters/[slug]/friendship` (unfriend)
+- `/api/characters/posts` — фильтр `scheduled_at` для публичной ленты
+- `fetchCharacterStats`, `fetchCharacterFriends`, `deleteCharacterFriendship`
+
+**4. Zod-схемы** — `lib/schemas/character-post.ts`
+- Валидация для create/update character post и wall post через Zod (лимиты, типы, формат дат)
+- Локализованные сообщения об ошибках
+
+**5. Image polish** — `sizes` + `priority`
+- 7 файлов получили `sizes` атрибут на `<Image fill>`
+- `priority` для первых 3 карточек на `/characters`, `/shop`, `/books` (LCP fix)
+- Результат: 0 LCP-warning, 0 missing-sizes warning в Playwright
+
+**6. Техдолг**
+- `lib/server/users.ts` — аннотация `UserRole[]` для устранения TS2345
+- `app/api/admin/upload/route.ts` — убран `blob.size` (нет в типах)
+- `/admin` — баннер-ссылка «Персонажи переехали в Студию»
+
+**7. Инфраструктура тестирования**
+- Playwright + ESLint v9 настроены
+- `e2e/smoke.spec.ts` — 10 публичных роутов + 5 табов профиля
+- `e2e/admin.spec.ts` — 6 admin-роутов (требует `ADMIN_TEST_EMAIL/PASSWORD`)
+- `e2e/studio.spec.ts` — 3 studio-роута
+
+### Зачем
+
+Перенос управления персонажами в Студию (admin-only, role-based) и ребилд публичного профиля в стиле соцсети делают каталог героев живым: посты, друзья, читательская стена.
+
+### Как использовать
+
+- Студия: войти как `admin` → перейти в `/studio/characters`
+- Баннер в `/admin` ведёт в Студию для удобства
+- Smoke-тесты: `pnpm test:smoke` (без admin-сессии), `pnpm test:e2e` (полный прогон)
+- Для локального тестирования studio/admin: `ADMIN_TEST_EMAIL=… ADMIN_TEST_PASSWORD=… pnpm test:e2e`
+
+---
+
 ## v5.5 — Обновление зависимостей (7 июня 2026)
 
 ### Что изменено

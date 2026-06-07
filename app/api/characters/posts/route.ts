@@ -22,7 +22,8 @@ export async function GET(request: Request) {
         FROM character_posts p
         JOIN characters c ON c.id = p.character_id
         WHERE ($1::text IS NULL OR c.slug = $1)
-        ORDER BY p.created_at DESC
+          AND (p.scheduled_at IS NULL OR p.scheduled_at <= NOW())
+        ORDER BY COALESCE(p.scheduled_at, p.created_at) DESC
       `,
       [characterSlug],
     )
