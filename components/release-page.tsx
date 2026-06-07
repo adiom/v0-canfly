@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import type { Release, Edition, ReleaseDesignConfig, ReleaseCharacter, Series } from '@/lib/releases-types'
 import { Badge } from '@/components/ui/badge'
@@ -125,7 +126,7 @@ export function ReleasePagePublic({ release, editions, characters, seriesLink }:
                   className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors"
                   style={{ borderColor: `${text}20`, color: text }}
                 >
-                  {ch.avatar && <img src={ch.avatar} alt={ch.name} className="h-6 w-6 rounded-full object-cover" />}
+                  {ch.avatar && <Image src={ch.avatar} alt={ch.name} width={24} height={24} className="rounded-full object-cover" />}
                   <span>{ch.name}</span>
                   <span className="text-xs opacity-40">{roleLabels[ch.role] ?? ch.role}</span>
                 </Link>

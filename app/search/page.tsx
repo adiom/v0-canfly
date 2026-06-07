@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { Search } from 'lucide-react'
 import type { Metadata } from 'next'
@@ -134,8 +135,7 @@ export default async function SearchPage({
                     <Link key={book.id} href={`/books/${book.slug}`} className="group block">
                       <div className="relative mb-2 aspect-[2/3] w-full overflow-hidden rounded-sm bg-[#1b1c19]">
                         {book.cover_image ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={book.cover_image} alt={book.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                          <Image src={book.cover_image} alt={book.title} fill className="object-cover transition-transform group-hover:scale-105" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center bg-[#d52525]/20">
                             <span className="text-lg font-black text-[#d52525]">CF</span>
@@ -156,8 +156,7 @@ export default async function SearchPage({
                     <Link key={c.id} href={`/characters/${c.slug}`} className="group flex items-center gap-3">
                       <div className="relative h-10 w-10 overflow-hidden rounded-full bg-[#1b1c19]">
                         {c.avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={c.avatar} alt={c.name} className="h-full w-full object-cover" />
+                          <Image src={c.avatar} alt={c.name} fill className="object-cover" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center bg-[#d52525]/20">
                             <span className="text-xs font-black text-[#d52525]">{c.name[0]}</span>

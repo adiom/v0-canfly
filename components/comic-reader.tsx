@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { BookWithCharacters } from '@/lib/types'
 import { useCart } from '@/lib/cart-context'
@@ -271,7 +272,7 @@ export function ComicReader({ book }: ComicReaderProps) {
                       : 'border-[#f4efe5]/10 opacity-40 hover:opacity-70'
                   }`}
                 >
-                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <Image src={url} alt="" fill className="object-cover" />
                 </button>
               ))}
             </div>
