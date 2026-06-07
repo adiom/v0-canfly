@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -18,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Plus, Pencil, Trash2, Library } from 'lucide-react'
+import { Plus, Pencil, Trash2, Library, Sparkles } from 'lucide-react'
 
 function SeriesFormDialog({
   series,
@@ -70,29 +69,29 @@ function SeriesFormDialog({
       if (v && !isEdit) { setTitle(''); setSlug(''); setDescription('') }
     }}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
+      <DialogContent className="bg-white/80 backdrop-blur-xl border-white/70 rounded-2xl shadow-xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Редактировать серию' : 'Новая серия'}</DialogTitle>
+          <DialogTitle className="text-gray-900">{isEdit ? 'Редактировать серию' : 'Новая серия'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Название</Label>
+            <Label className="text-gray-600">Название</Label>
             <Input value={title} onChange={e => {
               setTitle(e.target.value)
               if (!isEdit) setSlug(generateSlug(e.target.value))
-            }} placeholder="Название серии" />
+            }} placeholder="Название серии" className="bg-white/60 border-white/70 rounded-xl" />
           </div>
           <div className="space-y-2">
-            <Label>Slug</Label>
-            <Input value={slug} onChange={e => setSlug(e.target.value)} />
+            <Label className="text-gray-600">Slug</Label>
+            <Input value={slug} onChange={e => setSlug(e.target.value)} className="bg-white/60 border-white/70 rounded-xl" />
           </div>
           <div className="space-y-2">
-            <Label>Описание</Label>
-            <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} />
+            <Label className="text-gray-600">Описание</Label>
+            <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} className="bg-white/60 border-white/70 rounded-xl" />
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Отмена</Button>
-            <Button type="submit" disabled={saving}>{saving ? 'Сохраняю...' : isEdit ? 'Сохранить' : 'Создать'}</Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl border-white/70 bg-white/60 text-gray-600 hover:bg-white/80 hover:text-gray-800">Отмена</Button>
+            <Button type="submit" disabled={saving} className="rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white shadow-md shadow-violet-500/25 hover:from-violet-700 hover:to-violet-600">{saving ? 'Сохраняю...' : isEdit ? 'Сохранить' : 'Создать'}</Button>
           </div>
         </form>
       </DialogContent>
@@ -115,42 +114,45 @@ export function SeriesPageClient({ series }: { series: Series[] }) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-8">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-12">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Серии</h1>
-          <p className="mt-1 text-muted-foreground">Группируйте релизы в серии</p>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Серии</h1>
+          <p className="mt-1 text-gray-500">Группируйте релизы в серии</p>
         </div>
         <SeriesFormDialog trigger={
-          <Button><Plus className="mr-2 h-4 w-4" />Новая серия</Button>
+          <Button className="h-11 px-5 bg-gradient-to-r from-violet-600 to-violet-500 text-white font-semibold rounded-xl shadow-md shadow-violet-500/25 hover:shadow-lg hover:shadow-violet-500/30 hover:from-violet-700 hover:to-violet-600"><Plus className="mr-2 h-4 w-4" />Новая серия</Button>
         } />
       </div>
 
       {series.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
-          <Library className="mb-4 h-10 w-10 text-muted-foreground" />
-          <p className="text-lg text-muted-foreground">Нет серий</p>
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200/80 bg-white/30 backdrop-blur-sm py-20">
+          <div className="flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-br from-violet-100 to-amber-100 mb-4">
+            <Library className="h-8 w-8 text-violet-400" />
+          </div>
+          <p className="text-lg font-semibold text-gray-700">Нет серий</p>
+          <p className="mt-1 text-sm text-gray-400">Создайте первую серию для ваших релизов</p>
         </div>
       ) : (
         <div className="grid gap-3">
           {series.map(s => (
-            <Card key={s.id}>
-              <CardContent className="flex items-center gap-4 p-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold">{s.title}</h3>
+            <div key={s.id} className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-4 md:p-5 transition-all duration-300 hover:bg-white/80 hover:shadow-md">
+              <div className="flex items-center gap-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-gray-900">{s.title}</h3>
                   {s.description && (
-                    <p className="mt-1 text-sm text-muted-foreground">{s.description}</p>
+                    <p className="mt-1 text-sm text-gray-500">{s.description}</p>
                   )}
                 </div>
                 <SeriesFormDialog
                   series={s}
-                  trigger={<Button variant="ghost" size="icon-sm"><Pencil className="h-4 w-4" /></Button>}
+                  trigger={<Button size="icon-sm" className="rounded-xl bg-white/70 backdrop-blur-sm border border-white/70 text-gray-500 shadow-sm hover:bg-violet-50 hover:text-violet-600 hover:border-violet-200"><Pencil className="h-4 w-4" /></Button>}
                 />
-                <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(s.id)}>
+                <Button size="icon-sm" className="rounded-xl bg-white/70 backdrop-blur-sm border border-white/70 text-red-500/70 shadow-sm hover:bg-red-50 hover:text-red-600 hover:border-red-200" onClick={() => handleDelete(s.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       )}

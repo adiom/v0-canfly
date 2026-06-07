@@ -7,7 +7,6 @@ import { updateReleaseDesignAction } from '@/lib/actions/studio'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -81,152 +80,134 @@ export function ReleaseDesignForm({ release }: { release: Release }) {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Предустановки</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            {presets.map(p => (
-              <Button key={p.label} variant="outline" size="sm" onClick={() => applyPreset(p.config)}>
-                {p.label}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-5 md:p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Предустановки</h2>
+        <div className="flex gap-2">
+          {presets.map(p => (
+            <Button key={p.label} variant="outline" size="sm" onClick={() => applyPreset(p.config)} className="rounded-xl border-white/70 bg-white/60 text-gray-600 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200">
+              {p.label}
+            </Button>
+          ))}
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Цветовая тема</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-2">
-              <Label>Accent</Label>
-              <div className="flex gap-2">
-                <input type="color" value={accent} onChange={e => update('accent_color', e.target.value)} className="h-9 w-12 rounded border cursor-pointer" />
-                <Input value={accent} onChange={e => update('accent_color', e.target.value)} className="flex-1" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Фон</Label>
-              <div className="flex gap-2">
-                <input type="color" value={bg} onChange={e => update('bg_color', e.target.value)} className="h-9 w-12 rounded border cursor-pointer" />
-                <Input value={bg} onChange={e => update('bg_color', e.target.value)} className="flex-1" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Текст</Label>
-              <div className="flex gap-2">
-                <input type="color" value={text} onChange={e => update('text_color', e.target.value)} className="h-9 w-12 rounded border cursor-pointer" />
-                <Input value={text} onChange={e => update('text_color', e.target.value)} className="flex-1" />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Hero (обложка)</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Стиль hero</Label>
-              <Select value={config.hero_style ?? 'full'} onValueChange={v => update('hero_style', v as ReleaseDesignConfig['hero_style'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(heroLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Overlay</Label>
-              <Select value={config.hero_overlay ?? 'gradient'} onValueChange={v => update('hero_overlay', v as ReleaseDesignConfig['hero_overlay'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(overlayLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Макет страницы</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-5 md:p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Цветовая тема</h2>
+        <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label>Layout</Label>
+            <Label className="text-gray-600">Accent</Label>
+            <div className="flex gap-2">
+              <input type="color" value={accent} onChange={e => update('accent_color', e.target.value)} className="h-9 w-12 rounded-xl border border-white/70 cursor-pointer" />
+              <Input value={accent} onChange={e => update('accent_color', e.target.value)} className="flex-1 bg-white/60 border-white/70 rounded-xl" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-gray-600">Фон</Label>
+            <div className="flex gap-2">
+              <input type="color" value={bg} onChange={e => update('bg_color', e.target.value)} className="h-9 w-12 rounded-xl border border-white/70 cursor-pointer" />
+              <Input value={bg} onChange={e => update('bg_color', e.target.value)} className="flex-1 bg-white/60 border-white/70 rounded-xl" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-gray-600">Текст</Label>
+            <div className="flex gap-2">
+              <input type="color" value={text} onChange={e => update('text_color', e.target.value)} className="h-9 w-12 rounded-xl border border-white/70 cursor-pointer" />
+              <Input value={text} onChange={e => update('text_color', e.target.value)} className="flex-1 bg-white/60 border-white/70 rounded-xl" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-5 md:p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Hero (обложка)</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label className="text-gray-600">Стиль hero</Label>
+            <Select value={config.hero_style ?? 'full'} onValueChange={v => update('hero_style', v as ReleaseDesignConfig['hero_style'])}>
+              <SelectTrigger className="bg-white/60 border-white/70 rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(heroLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-gray-600">Overlay</Label>
+            <Select value={config.hero_overlay ?? 'gradient'} onValueChange={v => update('hero_overlay', v as ReleaseDesignConfig['hero_overlay'])}>
+              <SelectTrigger className="bg-white/60 border-white/70 rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(overlayLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-5 md:p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Макет страницы</h2>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-gray-600">Layout</Label>
             <Select value={config.layout ?? 'narrow'} onValueChange={v => update('layout', v as ReleaseDesignConfig['layout'])}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-white/60 border-white/70 rounded-xl"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(layoutLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                </SelectContent>
+              </SelectContent>
             </Select>
           </div>
 
           <div className="flex gap-6">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={config.show_toc ?? true} onChange={e => update('show_toc', e.target.checked)} className="size-4 rounded" />
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input type="checkbox" checked={config.show_toc ?? true} onChange={e => update('show_toc', e.target.checked)} className="size-4 rounded accent-violet-600" />
               Оглавление
             </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={config.show_characters ?? true} onChange={e => update('show_characters', e.target.checked)} className="size-4 rounded" />
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input type="checkbox" checked={config.show_characters ?? true} onChange={e => update('show_characters', e.target.checked)} className="size-4 rounded accent-violet-600" />
               Персонажи
             </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={config.show_series ?? true} onChange={e => update('show_series', e.target.checked)} className="size-4 rounded" />
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input type="checkbox" checked={config.show_series ?? true} onChange={e => update('show_series', e.target.checked)} className="size-4 rounded accent-violet-600" />
               Серия
             </label>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Превью</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div
-            className="rounded-lg border p-6 transition-all"
-            style={{ backgroundColor: bg, color: text }}
-          >
-            {release.cover_image && (
-              <div
-                className="mb-4 rounded overflow-hidden"
-                style={{
-                  height: config.hero_style === 'full' ? '120px' : config.hero_style === 'centered' ? '80px' : '40px',
-                  backgroundImage: `url(${release.cover_image})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                }}
-              >
-                {config.hero_overlay !== 'none' && (
-                  <div
-                    className="h-full"
-                    style={{
-                      background: config.hero_overlay === 'dark' ? 'rgba(0,0,0,0.5)' : `linear-gradient(to bottom, transparent, ${bg})`,
-                    }}
-                  />
-                )}
-              </div>
-            )}
-            <h3 className="text-lg font-bold" style={{ color: accent }}>{release.title}</h3>
-            {release.annotation && <p className="mt-2 text-sm opacity-70">{release.annotation.slice(0, 100)}...</p>}
-            {config.layout === 'sidebar' && (
-              <div className="mt-3 text-xs opacity-50">☰ Sidebar с главами</div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-5 md:p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Превью</h2>
+        <div
+          className="rounded-xl border p-6 transition-all"
+          style={{ backgroundColor: bg, color: text }}
+        >
+          {release.cover_image && (
+            <div
+              className="mb-4 rounded-lg overflow-hidden"
+              style={{
+                height: config.hero_style === 'full' ? '120px' : config.hero_style === 'centered' ? '80px' : '40px',
+                backgroundImage: `url(${release.cover_image})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            >
+              {config.hero_overlay !== 'none' && (
+                <div
+                  className="h-full"
+                  style={{
+                    background: config.hero_overlay === 'dark' ? 'rgba(0,0,0,0.5)' : `linear-gradient(to bottom, transparent, ${bg})`,
+                  }}
+                />
+              )}
+            </div>
+          )}
+          <h3 className="text-lg font-bold" style={{ color: accent }}>{release.title}</h3>
+          {release.annotation && <p className="mt-2 text-sm opacity-70">{release.annotation.slice(0, 100)}...</p>}
+          {config.layout === 'sidebar' && (
+            <div className="mt-3 text-xs opacity-50">Sidebar с главами</div>
+          )}
+        </div>
+      </div>
 
       <div className="flex gap-3">
-        <Button onClick={handleSave} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving} className="rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white shadow-md shadow-violet-500/25 hover:from-violet-700 hover:to-violet-600">
           {saving ? 'Сохраняю...' : 'Сохранить дизайн'}
         </Button>
       </div>

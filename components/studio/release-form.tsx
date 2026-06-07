@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CoverImageUploader } from '@/components/studio/cover-image-uploader'
 
 interface ReleaseFormProps {
@@ -81,68 +80,66 @@ export function ReleaseForm({ release }: ReleaseFormProps) {
 
   return (
     <form onSubmit={handleSubmit}>
-      <Card>
-        <CardHeader>
-          <CardTitle>{isEdit ? 'Редактирование' : 'Новый релиз'}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-5 md:p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-6">{isEdit ? 'Редактирование' : 'Новый релиз'}</h2>
+        <div className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="title">Название</Label>
-            <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Название произведения" />
+            <Label htmlFor="title" className="text-gray-600">Название</Label>
+            <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Название произведения" className="bg-white/60 border-white/70 rounded-xl focus-visible:ring-violet-500/30" />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="slug">Slug</Label>
-            <Input id="slug" value={slug} onChange={e => { setSlug(e.target.value); setSlugManual(true) }} placeholder="url-slug" />
+            <Label htmlFor="slug" className="text-gray-600">Slug</Label>
+            <Input id="slug" value={slug} onChange={e => { setSlug(e.target.value); setSlugManual(true) }} placeholder="url-slug" className="bg-white/60 border-white/70 rounded-xl focus-visible:ring-violet-500/30" />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Описание</Label>
-            <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={4} placeholder="Краткое описание" />
+            <Label htmlFor="description" className="text-gray-600">Описание</Label>
+            <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={4} placeholder="Краткое описание" className="bg-white/60 border-white/70 rounded-xl focus-visible:ring-violet-500/30" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="genre">Жанр</Label>
-              <Input id="genre" value={genre} onChange={e => setGenre(e.target.value)} placeholder="Фантастика" />
+              <Label htmlFor="genre" className="text-gray-600">Жанр</Label>
+              <Input id="genre" value={genre} onChange={e => setGenre(e.target.value)} placeholder="Фантастика" className="bg-white/60 border-white/70 rounded-xl" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="release_date">Дата выпуска</Label>
-              <Input id="release_date" type="date" value={releaseDate} onChange={e => setReleaseDate(e.target.value)} />
+              <Label htmlFor="release_date" className="text-gray-600">Дата выпуска</Label>
+              <Input id="release_date" type="date" value={releaseDate} onChange={e => setReleaseDate(e.target.value)} className="bg-white/60 border-white/70 rounded-xl" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="isbn">ISBN</Label>
-              <Input id="isbn" value={isbn} onChange={e => setIsbn(e.target.value)} placeholder="978-..." />
+              <Label htmlFor="isbn" className="text-gray-600">ISBN</Label>
+              <Input id="isbn" value={isbn} onChange={e => setIsbn(e.target.value)} placeholder="978-..." className="bg-white/60 border-white/70 rounded-xl" />
             </div>
             <div className="space-y-2">
-              <Label>Обложка</Label>
+              <Label className="text-gray-600">Обложка</Label>
               <CoverImageUploader value={coverImage || null} onChange={setCoverImage} />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="annotation">Аннотация</Label>
-            <Textarea id="annotation" value={annotation} onChange={e => setAnnotation(e.target.value)} rows={3} placeholder="Аннотация для читателей" />
+            <Label htmlFor="annotation" className="text-gray-600">Аннотация</Label>
+            <Textarea id="annotation" value={annotation} onChange={e => setAnnotation(e.target.value)} rows={3} placeholder="Аннотация для читателей" className="bg-white/60 border-white/70 rounded-xl" />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="editor_notes">Заметки редактора</Label>
-            <Textarea id="editor_notes" value={editorNotes} onChange={e => setEditorNotes(e.target.value)} rows={2} placeholder="Внутренние заметки" />
+            <Label htmlFor="editor_notes" className="text-gray-600">Заметки редактора</Label>
+            <Textarea id="editor_notes" value={editorNotes} onChange={e => setEditorNotes(e.target.value)} rows={2} placeholder="Внутренние заметки" className="bg-white/60 border-white/70 rounded-xl" />
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving} className="rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white shadow-md shadow-violet-500/25 hover:from-violet-700 hover:to-violet-600">
               {saving ? 'Сохраняю...' : isEdit ? 'Сохранить' : 'Создать'}
             </Button>
-            <Button type="button" variant="outline" onClick={() => router.back()}>
+            <Button type="button" variant="outline" onClick={() => router.back()} className="rounded-xl border-white/70 bg-white/60 text-gray-600 hover:bg-white/80">
               Отмена
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </form>
   )
 }

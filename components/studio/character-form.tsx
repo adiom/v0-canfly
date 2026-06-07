@@ -16,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Card } from '@/components/ui/card'
 import {
   createCharacterAction,
   updateCharacterAction,
@@ -60,11 +59,11 @@ export function CharacterForm({ character }: CharacterFormProps) {
   }
 
   return (
-    <Card className="p-6">
-      <form action={handleSubmit} className="space-y-6">
+    <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-5 md:p-6">
+      <form action={handleSubmit} className="space-y-5">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="name">Имя</Label>
+            <Label htmlFor="name" className="text-gray-600">Имя</Label>
             <Input
               id="name"
               name="name"
@@ -74,66 +73,72 @@ export function CharacterForm({ character }: CharacterFormProps) {
                 if (!slug && name) setSlug(createSlug(name))
               }}
               required
+              className="bg-white/60 border-white/70 rounded-xl"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="slug">Slug</Label>
+            <Label htmlFor="slug" className="text-gray-600">Slug</Label>
             <Input
               id="slug"
               name="slug"
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
               required
+              className="bg-white/60 border-white/70 rounded-xl"
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="avatar">Avatar URL</Label>
+          <Label htmlFor="avatar" className="text-gray-600">Avatar URL</Label>
           <Input
             id="avatar"
             name="avatar"
             type="url"
             defaultValue={character?.avatar ?? ''}
             placeholder="https://..."
+            className="bg-white/60 border-white/70 rounded-xl"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="bio">Краткое описание</Label>
+          <Label htmlFor="bio" className="text-gray-600">Краткое описание</Label>
           <Textarea
             id="bio"
             name="bio"
             rows={3}
             defaultValue={character?.bio ?? ''}
+            className="bg-white/60 border-white/70 rounded-xl"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="full_description">Полное описание</Label>
+          <Label htmlFor="full_description" className="text-gray-600">Полное описание</Label>
           <Textarea
             id="full_description"
             name="full_description"
             rows={8}
             defaultValue={character?.full_description ?? ''}
+            className="bg-white/60 border-white/70 rounded-xl"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="abilities">Способности (по одной на строку)</Label>
+          <Label htmlFor="abilities" className="text-gray-600">Способности (по одной на строку)</Label>
           <Textarea
             id="abilities"
             name="abilities"
             rows={5}
             defaultValue={character?.abilities?.join('\n') ?? ''}
+            className="bg-white/60 border-white/70 rounded-xl"
           />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="reply_mode">Режим ответов</Label>
+            <Label htmlFor="reply_mode" className="text-gray-600">Режим ответов</Label>
             <Select name="reply_mode" defaultValue={character?.reply_mode ?? 'ai_auto'}>
-              <SelectTrigger id="reply_mode">
+              <SelectTrigger id="reply_mode" className="bg-white/60 border-white/70 rounded-xl">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -146,12 +151,12 @@ export function CharacterForm({ character }: CharacterFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="can_receive_messages">Принимает сообщения</Label>
+            <Label htmlFor="can_receive_messages" className="text-gray-600">Принимает сообщения</Label>
             <Select
               name="can_receive_messages"
               defaultValue={character?.can_receive_messages === false ? 'false' : 'true'}
             >
-              <SelectTrigger id="can_receive_messages">
+              <SelectTrigger id="can_receive_messages" className="bg-white/60 border-white/70 rounded-xl">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -163,68 +168,74 @@ export function CharacterForm({ character }: CharacterFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="speaking_style">Манера речи</Label>
+          <Label htmlFor="speaking_style" className="text-gray-600">Манера речи</Label>
           <Textarea
             id="speaking_style"
             name="speaking_style"
             rows={3}
             defaultValue={character?.speaking_style ?? ''}
+            className="bg-white/60 border-white/70 rounded-xl"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="personality">Характер</Label>
+          <Label htmlFor="personality" className="text-gray-600">Характер</Label>
           <Textarea
             id="personality"
             name="personality"
             rows={3}
             defaultValue={character?.personality ?? ''}
+            className="bg-white/60 border-white/70 rounded-xl"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="knowledge_scope">Границы знаний</Label>
+          <Label htmlFor="knowledge_scope" className="text-gray-600">Границы знаний</Label>
           <Textarea
             id="knowledge_scope"
             name="knowledge_scope"
             rows={3}
             defaultValue={character?.knowledge_scope ?? ''}
+            className="bg-white/60 border-white/70 rounded-xl"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="spoiler_policy">Политика спойлеров</Label>
+          <Label htmlFor="spoiler_policy" className="text-gray-600">Политика спойлеров</Label>
           <Textarea
             id="spoiler_policy"
             name="spoiler_policy"
             rows={3}
             defaultValue={character?.spoiler_policy ?? ''}
+            className="bg-white/60 border-white/70 rounded-xl"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="boundaries">Ограничения</Label>
+          <Label htmlFor="boundaries" className="text-gray-600">Ограничения</Label>
           <Textarea
             id="boundaries"
             name="boundaries"
             rows={3}
             defaultValue={character?.boundaries ?? ''}
+            className="bg-white/60 border-white/70 rounded-xl"
           />
         </div>
 
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-3 pt-4">
           <Button
             type="button"
             variant="outline"
             onClick={() => router.push('/studio/characters')}
+            className="rounded-xl border-white/70 bg-white/60 text-gray-600 hover:bg-white/80"
           >
             Отмена
           </Button>
-          <Button type="submit" disabled={saving}>
-            {saving ? 'Сохранение…' : isEditing ? 'Сохранить' : 'Создать'}
+          <Button type="submit" disabled={saving} className="rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white shadow-md shadow-violet-500/25 hover:from-violet-700 hover:to-violet-600">
+            {saving ? 'Сохранение...' : isEditing ? 'Сохранить' : 'Создать'}
           </Button>
         </div>
       </form>
-    </Card>
+    </div>
   )
 }

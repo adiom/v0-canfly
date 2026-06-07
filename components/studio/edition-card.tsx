@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import type { Edition } from '@/lib/releases-types'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 import { BookOpen, Headphones, Image, Music, Newspaper, Radio } from 'lucide-react'
 
 const formatIcons: Record<string, React.ElementType> = {
@@ -24,33 +23,51 @@ const formatLabels: Record<string, string> = {
   magazine: 'Журнал',
 }
 
+const statusBadgeStyles: Record<string, string> = {
+  draft: 'bg-amber-50 text-amber-600 border-amber-200/80',
+  published: 'bg-emerald-50 text-emerald-600 border-emerald-200/80',
+  archived: 'bg-gray-100 text-gray-500 border-gray-200/80',
+}
+
 const statusLabels: Record<string, string> = {
   draft: 'Черновик',
   published: 'Опубликован',
   archived: 'Архив',
 }
 
+const formatGradients: Record<string, string> = {
+  book: 'from-violet-100 to-violet-50',
+  comic: 'from-rose-100 to-rose-50',
+  audiobook: 'from-amber-100 to-amber-50',
+  audiorelease: 'from-sky-100 to-sky-50',
+  album: 'from-emerald-100 to-emerald-50',
+  magazine: 'from-orange-100 to-orange-50',
+}
+
 export function EditionCard({ edition }: { edition: Edition }) {
   const Icon = formatIcons[edition.format] ?? BookOpen
+  const gradient = formatGradients[edition.format] ?? 'from-violet-100 to-violet-50'
 
   return (
     <Link href={`/studio/editions/${edition.id}`}>
-      <Card className="group transition-colors hover:border-primary/50">
-        <CardContent className="flex items-center gap-4 p-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
-            <Icon className="h-5 w-5 text-muted-foreground" />
+      <div className="group bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-4 md:p-5 transition-all duration-300 hover:bg-white/80 hover:shadow-md hover:shadow-black/8 hover:-translate-y-0.5 hover:border-white/90">
+        <div className="flex items-center gap-4">
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-sm`}>
+            <Icon className="h-5 w-5 text-gray-600 group-hover:text-violet-600 transition-colors" />
           </div>
-          <div className="flex-1">
-            <p className="font-medium group-hover:text-primary">
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-gray-900 group-hover:text-violet-700 transition-colors">
               {formatLabels[edition.format]}
             </p>
             {edition.platform && (
-              <p className="text-sm text-muted-foreground">{edition.platform}</p>
+              <p className="text-sm text-gray-400">{edition.platform}</p>
             )}
           </div>
-          <Badge variant="secondary">{statusLabels[edition.status]}</Badge>
-        </CardContent>
-      </Card>
+          <Badge variant="outline" className={`border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] rounded-lg ${statusBadgeStyles[edition.status]}`}>
+            {statusLabels[edition.status]}
+          </Badge>
+        </div>
+      </div>
     </Link>
   )
 }
