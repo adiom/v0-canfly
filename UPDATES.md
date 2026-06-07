@@ -357,6 +357,29 @@ ALTER TABLE books
 4. Добавить реакции к постам (лайки, комментарии)
 5. Создать админ-интерфейс для добавления постов
 
+## v6.1 — E2E test infrastructure (7 июня 2026)
+
+### Изменено
+- `e2e/setup/global-setup.ts` — NEW: идемпотентный upsert тестового админа (login `studio_test_admin`, email `studio-test-admin@canfly.test`, password `StudioTest_Admin_2026`) с ролью `admin` + запись в `admins` таблице. Грузит `.env.local` вручную (Playwright не пробрасывает env в globalSetup). Записывает креды в `e2e/.test-credentials.json` (gitignored).
+- `e2e/setup/global-teardown.ts` — NEW: удаляет тестового пользователя и связанные `user_roles`.
+- `e2e/setup/credentials.ts` — NEW: `loadTestCredentials()` хелпер для тестов.
+- `e2e/admin.spec.ts` — переписан: логин через `/api/admin/login` (legacy password auth, `ADMIN_SESSION_COOKIE`). Skip если креды отсутствуют.
+- `e2e/studio.spec.ts` — переписан: логин через `/api/auth/login` (new user auth, `USER_SESSION_COOKIE`). Hydration regression test на `/studio/characters/[id]` через рендер первой карточки.
+- `playwright.config.ts` — добавлен `testIgnore: ['**/setup/**', '**/_helpers/**']` (хелперы не подхватываются как тесты), `globalSetup`/`globalTeardown`, timeout 60s (первая компиляция в dev).
+- `.gitignore` — добавлен `e2e/.test-credentials.json`.
+
+### Два независимых auth-флоу
+- `/admin` (legacy) — `/api/admin/login` с `ADMIN_PASSWORD` env → `ADMIN_SESSION_COOKIE` → `admins` таблица
+- `/studio` (новый) — `/api/auth/login` с login/password → `USER_SESSION_COOKIE` + `READER_PROFILE_COOKIE` → `users` + `user_roles` таблицы
+
+### Результат
+- 21/21 e2e тестов проходят (smoke 10 public + 1 profile tabs + admin 6 + studio 4)
+
+### Зачем
+- Раньше тесты логинились через неправильный эндпоинт: `/api/admin/login` ставит `ADMIN_SESSION_COOKIE`, который не читается `getCurrentUserFromCookie()`. Студийные тесты проходили «случайно» — `requireStudioSession()` возвращал null, layout редиректил на `/login` (307, что < 400 — тест думал, что ок). Теперь studio логинится через `/api/auth/login` и реально рендерит защищённые страницы.
+
+---
+
 ## 📞 Support
 
 Если что-то не работает:
