@@ -1,4 +1,5 @@
-import { test, expect, type Page, type Route } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
+import { loadTestCredentials, type TestCredentials } from './setup/credentials'
 
 const ADMIN_ROUTES = [
   '/admin',
@@ -36,18 +37,23 @@ function attachErrorCollectors(page: Page) {
   return errors
 }
 
-const ADMIN_EMAIL = process.env.ADMIN_TEST_EMAIL
-const ADMIN_PASSWORD = process.env.ADMIN_TEST_PASSWORD
+const CREDENTIALS = loadTestCredentials()
 
-test.describe('smoke: admin routes', () => {
+test.describe('smoke: admin routes (legacy /admin)', () => {
   test.skip(
-    !ADMIN_EMAIL || !ADMIN_PASSWORD,
-    'Set ADMIN_TEST_EMAIL и ADMIN_TEST_PASSWORD для запуска admin-смоков',
+    !CREDENTIALS,
+    'Test admin не создан — DATABASE_URL не настроен или globalSetup упал',
   )
+
+  let credentials: TestCredentials
+
+  test.beforeAll(() => {
+    credentials = CREDENTIALS!
+  })
 
   test.beforeEach(async ({ page }) => {
     const res = await page.request.post('/api/admin/login', {
-      data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
+      data: credentials.adminAuth,
     })
     expect(res.status(), 'admin login').toBeLessThan(400)
   })

@@ -23,6 +23,7 @@ tsconfig.tsbuildinfo
 playwright-report/
 test-results/
 playwright/.cache/
+e2e/.test-credentials.json
 
 # AI stop
 .cursor/
