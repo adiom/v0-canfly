@@ -93,10 +93,8 @@ export default async function StudioCharacterPage({
               </Link>
             </Button>
             <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="icon">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+              <AlertDialogTrigger className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-destructive text-white transition-colors hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40">
+                <Trash2 className="h-4 w-4" />
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>

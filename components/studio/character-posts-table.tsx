@@ -46,6 +46,8 @@ export function CharacterPostsTable({
   characterId: string
   posts: CharacterPost[]
 }) {
+  const [now] = useState(() => Date.now())
+
   async function handleDelete(postId: string) {
     try {
       await deleteCharacterPostAction(postId)
@@ -63,8 +65,6 @@ export function CharacterPostsTable({
       </Card>
     )
   }
-
-  const [now] = useState(() => Date.now())
 
   return (
     <div className="space-y-2">
@@ -99,10 +99,8 @@ export function CharacterPostsTable({
                   </Link>
                 </Button>
                 <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <AlertDialogTrigger className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+                    <Trash2 className="h-4 w-4" />
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>

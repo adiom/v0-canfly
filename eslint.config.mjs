@@ -10,11 +10,35 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
-          patterns: [
+          paths: [
             {
-              group: ['next/dist/*'],
+              name: 'next/dist/client/components/redirect',
               message:
-                'Internal Next.js API. Используйте публичные экспорты (next/navigation, next/headers и т.п.). Эти пути ломаются между мажорами без предупреждения.',
+                'Переехал в next/dist/client/components/redirect-error (Next 16). Используйте его для isRedirectError.',
+            },
+            {
+              name: 'next/dist/api/constants',
+              message: 'Internal Next.js API. Используйте публичные экспорты.',
+            },
+            {
+              name: 'next/dist/api/node',
+              message: 'Internal Next.js API. Используйте публичные экспорты.',
+            },
+            {
+              name: 'next/dist/build',
+              message: 'Internal Next.js API. Используйте публичные экспорты.',
+            },
+            {
+              name: 'next/dist/compiled',
+              message: 'Internal Next.js API. Используйте публичные экспорты.',
+            },
+            {
+              name: 'next/dist/server',
+              message: 'Internal Next.js API. Используйте публичные экспорты.',
+            },
+            {
+              name: 'next/dist/shared',
+              message: 'Internal Next.js API. Используйте публичные экспорты.',
             },
           ],
         },
