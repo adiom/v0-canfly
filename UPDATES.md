@@ -2,6 +2,72 @@
 
 ---
 
+## v6.2 — Авторизация через Magic Link + next-auth v5 (7 июня 2026)
+
+### Что изменено
+
+**1. Новая система авторизации (next-auth v5)**
+- Установлен `next-auth@5.0.0-beta.25`
+- Конфиг: `app/(auth)/auth.config.ts` — Credentials + Yandex + Google провайдеры (OAuth включается через env)
+- `app/(auth)/auth.ts` — реэкспорт `signIn`, `signOut`, `auth`, handlers
+- `app/(auth)/api/auth/[...nextauth]/route.ts` — next-auth обработчик на `/api/auth/*`
+
+**2. Magic Link авторизация**
+- Генерация 8-значного кода: `app/(auth)/actions.ts` → Server Action `createMagicLink`
+- Верификация по ссылке: `GET /api/magic/verify?token=...` → помечает токен использованным → редирект на `/login?magic_email=...` → автовход
+- Верификация по коду (dev): `POST /api/user/verify-code-direct` — вводишь код вручную
+- В dev-режиме код выводится в консоль сервера и возвращается в UI
+- Rate limit: 3 активных токена за 15 минут на email
+- Таблица `magic_tokens` в Postgres (миграция: `postgres/migrations/001_magic_tokens.sql`)
+
+**3. Страница `/login` переработана**
+- Форма Magic Link (email → получить ссылку → ввести код)
+- Кнопки «Войти через Яндекс» и «Войти через Google» (показываются если заданы OAuth ключи)
+- Компонент `components/magic-link-form.tsx` в стиле canfly
+- После успешного входа — редирект на `/profile`
+
+**4. Роуты переорганизованы**
+- Старые `/api/auth/login|logout|session` перемещены в `/api/user/login|logout|session` (не конфликтуют с next-auth)
+- `components/book-reader.tsx` обновлён на `/api/user/session`
+
+**5. Middleware (`proxy.ts`)**
+- `/profile` защищён через next-auth JWT (`getToken()`)
+- Авторизованный пользователь на `/login` → редирект на `/`
+- `/api/auth/*` и `/api/magic/*` пропускаются без проверок
+
+**6. `app/layout.tsx`** — добавлен `SessionProvider` из next-auth
+
+### Как использовать
+
+1. Накатить миграцию БД:
+   ```bash
+   psql $DATABASE_URL -f postgres/migrations/001_magic_tokens.sql
+   ```
+
+2. Заполнить `.env.local`:
+   ```
+   AUTH_SECRET=<openssl rand -base64 32>
+   NEXTAUTH_URL=http://localhost:3000
+
+   # Опционально — OAuth
+   AUTH_YANDEX_CLIENT_ID=...
+   AUTH_YANDEX_CLIENT_SECRET=...
+   AUTH_GOOGLE_CLIENT_ID=...
+   AUTH_GOOGLE_CLIENT_SECRET=...
+   ```
+
+3. Для OAuth добавить callback URL в консолях провайдеров:
+   - `https://yourdomain.com/api/auth/callback/yandex`
+   - `https://yourdomain.com/api/auth/callback/google`
+
+4. В dev-режиме: открыть `/login`, ввести email → код появится в консоли сервера → ввести в форму.
+
+### Зачем
+
+Замена login/password авторизации на Magic Link убирает необходимость хранить пароли для читателей. Старая система (login/password через `/api/user/login`) сохранена для обратной совместимости.
+
+---
+
 ## v6.0 — Студия персонажей + социальный профиль (7 июня 2026)
 
 ### Что изменено

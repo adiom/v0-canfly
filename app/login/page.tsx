@@ -50,10 +50,10 @@ function LoginForm() {
     if (magicState.status === 'success' && !successHandled) {
       setSuccessHandled(true)
       updateSession()
-      const redirect = searchParams.get('redirect') || '/'
+      const redirect = magicState.redirectTo || searchParams.get('redirect') || '/profile'
       router.push(redirect)
     }
-  }, [magicState.status, updateSession, router, successHandled, searchParams])
+  }, [magicState.status, magicState.redirectTo, updateSession, router, successHandled, searchParams])
 
   const errorParam = searchParams.get('error')
   const errorMessages: Record<string, string> = {

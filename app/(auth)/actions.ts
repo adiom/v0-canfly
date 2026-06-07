@@ -10,6 +10,7 @@ const emailSchema = z.object({
 
 export interface LoginActionState {
   status: 'idle' | 'in_progress' | 'success' | 'failed' | 'invalid_data'
+  redirectTo?: string
 }
 
 export interface CreateMagicLinkState {
@@ -107,7 +108,7 @@ export const loginWithMagicLink = async (
 
     if (result?.error) return { status: 'failed' }
 
-    return { status: 'success' }
+    return { status: 'success', redirectTo: '/profile' }
   } catch (error) {
     if (error instanceof z.ZodError) return { status: 'invalid_data' }
     return { status: 'failed' }

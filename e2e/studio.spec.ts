@@ -43,7 +43,7 @@ test.describe('smoke: studio routes (admin role)', () => {
   })
 
   test.beforeEach(async ({ page }) => {
-    const res = await page.request.post('/api/auth/login', {
+    const res = await page.request.post('/api/user/login', {
       data: { login: credentials.userAuth.login, password: credentials.userAuth.password },
     })
     expect(res.status(), 'user login').toBeLessThan(400)

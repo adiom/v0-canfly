@@ -50,7 +50,7 @@ export function BookReader({ book, initialHighlights = [], initialChapter = 0 }:
   }, [chapters.length, book.slug, router])
 
   useEffect(() => {
-    fetch('/api/auth/session')
+    fetch('/api/user/session')
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         const authenticated = !!data?.isAuthenticated

@@ -49,7 +49,7 @@ export function MagicLinkForm({ onFocus, onBlur }: MagicLinkFormProps) {
     setCodeLoading(true)
 
     try {
-      const response = await fetch('/api/auth/verify-code-direct', {
+      const response = await fetch('/api/user/verify-code-direct', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code }),
@@ -59,7 +59,7 @@ export function MagicLinkForm({ onFocus, onBlur }: MagicLinkFormProps) {
 
       if (response.ok) {
         await updateSession()
-        router.push('/')
+        router.push('/profile')
         router.refresh()
       } else {
         setCodeError(data.error || 'Неверный код')
