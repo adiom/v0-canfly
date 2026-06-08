@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { sanitizeChapterHtml } from '@/lib/sanitize'
 import type { Release, Edition, Chapter, ReleaseDesignConfig } from '@/lib/releases-types'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, BookOpen } from 'lucide-react'
@@ -65,7 +66,7 @@ export function ReleaseFullPage({ release, edition, chapters }: {
             {chapter.content ? (
               <div
                 className="prose prose-lg max-w-none leading-7"
-                dangerouslySetInnerHTML={{ __html: chapter.content }}
+                dangerouslySetInnerHTML={{ __html: sanitizeChapterHtml(chapter.content) }}
               />
             ) : (
               <div className="text-center opacity-40 py-8">Содержимое ещё не добавлено</div>

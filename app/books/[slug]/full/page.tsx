@@ -69,7 +69,6 @@ export default async function BookFullPage({ params }: BookFullPageProps) {
       { label: book.title, url: `${BASE_URL}/books/${book.slug}/1` },
       { label: 'Полная версия', url: `${BASE_URL}/books/${book.slug}/full` },
     ],
-    BASE_URL,
   )
 
   return (

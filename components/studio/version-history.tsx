@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import type { ChapterVersion } from '@/lib/releases-types'
 import { getChapterVersions, restoreChapterVersionAction } from '@/lib/actions/studio'

@@ -22,10 +22,15 @@ const navItems = [
 ]
 
 async function CharactersContent() {
-  try {
-    const characters = await fetchCharactersList();
+  let characters: Character[] = []
 
-    return (
+  try {
+    characters = await fetchCharactersList()
+  } catch (error) {
+    console.error('Error loading characters:', error)
+  }
+
+  return (
       <section>
         <div className="mb-8">
           <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-cf-accent">профили</p>
@@ -46,14 +51,6 @@ async function CharactersContent() {
         )}
       </section>
     );
-  } catch (error) {
-    console.error('Error loading characters:', error);
-    return (
-      <div className="text-center py-12">
-        <p className="text-cf-text-3">Ошибка при загрузке персонажей</p>
-      </div>
-    );
-  }
 }
 
 export default function CharactersPage() {

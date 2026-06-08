@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, List, X } from 'lucide-react'
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, List, X } from 'lucide-react'
 import type { Release, Edition, Chapter } from '@/lib/releases-types'
 import { formatDuration, formatTotalDuration } from '@/lib/utils/editions'
 
@@ -13,7 +13,7 @@ interface ReleaseAudioPlayerProps {
   chapters: Chapter[]
 }
 
-export function ReleaseAudioPlayer({ release, edition, chapters }: ReleaseAudioPlayerProps) {
+export function ReleaseAudioPlayer({ release, chapters }: ReleaseAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
 
@@ -31,35 +31,6 @@ export function ReleaseAudioPlayer({ release, edition, chapters }: ReleaseAudioP
 
   const totalDuration = chapters.reduce((sum, ch) => sum + (ch.duration_seconds ?? 0), 0)
 
-  // Загружаем новый трек при смене индекса
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio || !currentTrack?.audio_url) return
-    const wasPlaying = isPlaying
-    audio.src = currentTrack.audio_url
-    audio.load()
-    if (wasPlaying) audio.play().catch(() => setIsPlaying(false))
-  }, [currentIndex])
-
-  // Синхронизируем громкость и mute
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-    audio.volume = isMuted ? 0 : volume
-  }, [volume, isMuted])
-
-  // Клавиатура
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement) return
-      if (e.code === 'Space') { e.preventDefault(); togglePlay() }
-      if (e.code === 'ArrowLeft') seek(-10)
-      if (e.code === 'ArrowRight') seek(10)
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [isPlaying])
-
   const togglePlay = useCallback(() => {
     const audio = audioRef.current
     if (!audio || !currentTrack?.audio_url) return
@@ -71,11 +42,11 @@ export function ReleaseAudioPlayer({ release, edition, chapters }: ReleaseAudioP
     }
   }, [isPlaying, currentTrack])
 
-  const seek = (delta: number) => {
+  const seek = useCallback((delta: number) => {
     const audio = audioRef.current
     if (!audio) return
     audio.currentTime = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + delta))
-  }
+  }, [])
 
   const goToTrack = (index: number) => {
     setCurrentIndex(index)
@@ -95,6 +66,32 @@ export function ReleaseAudioPlayer({ release, edition, chapters }: ReleaseAudioP
     if (currentIndex < chapters.length - 1) goToTrack(currentIndex + 1)
     else setIsPlaying(false)
   }, [currentIndex, chapters.length])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio || !currentTrack?.audio_url) return
+    const wasPlaying = isPlaying
+    audio.src = currentTrack.audio_url
+    audio.load()
+    if (wasPlaying) audio.play().catch(() => setIsPlaying(false))
+  }, [currentIndex])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.volume = isMuted ? 0 : volume
+  }, [volume, isMuted])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return
+      if (e.code === 'Space') { e.preventDefault(); togglePlay() }
+      if (e.code === 'ArrowLeft') seek(-10)
+      if (e.code === 'ArrowRight') seek(10)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [togglePlay, seek])
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const bar = progressRef.current

@@ -2,15 +2,14 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import { Plus, Trash2, GripVertical } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 
 interface ComicPage {
   url: string
 }
 
-export function ComicPagesEditor({ editionId }: { editionId: string }) {
+export function ComicPagesEditor({ editionId: _editionId }: { editionId: string }) {
   const [pages, setPages] = useState<ComicPage[]>([])
   const [uploading, setUploading] = useState(false)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)

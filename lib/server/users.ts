@@ -9,7 +9,13 @@ import {
   UserProfile,
   UserRole,
 } from '@/lib/types'
-import { hashPassword, USER_SESSION_COOKIE, verifyUserToken } from '@/lib/user-auth'
+import {
+  createReaderToken,
+  hashPassword,
+  USER_SESSION_COOKIE,
+  verifyReaderToken,
+  verifyUserToken,
+} from '@/lib/user-auth'
 import { fetchUserHighlights } from './chapter-highlights'
 
 export const READER_PROFILE_COOKIE = 'canfly_reader_id'
@@ -43,7 +49,8 @@ export async function getCurrentUserFromCookie() {
     }
   }
 
-  const userId = cookieStore.get(READER_PROFILE_COOKIE)?.value
+  const readerSession = await verifyReaderToken(cookieStore.get(READER_PROFILE_COOKIE)?.value)
+  const userId = readerSession?.userId
 
   if (!userId) {
     return null
@@ -54,7 +61,8 @@ export async function getCurrentUserFromCookie() {
 
 export async function ensureReaderUser() {
   const cookieStore = await cookies()
-  const existingUserId = cookieStore.get(READER_PROFILE_COOKIE)?.value
+  const readerSession = await verifyReaderToken(cookieStore.get(READER_PROFILE_COOKIE)?.value)
+  const existingUserId = readerSession?.userId
 
   if (existingUserId) {
     const existingUser = await dbQueryOne<UserProfile>('SELECT * FROM users WHERE id = $1 LIMIT 1', [
@@ -83,9 +91,11 @@ export async function ensureReaderUser() {
 
   await assignReaderRole(user.id)
 
-  cookieStore.set(READER_PROFILE_COOKIE, user.id, {
+  const readerToken = await createReaderToken(user.id)
+  cookieStore.set(READER_PROFILE_COOKIE, readerToken, {
     httpOnly: true,
     sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
     path: '/',
     maxAge: 60 * 60 * 24 * 365,
   })

@@ -165,6 +165,8 @@ export interface ChapterHighlight {
   user_name?: string | null
   user_avatar?: string | null
   is_liked_by_me?: boolean
+  release_slug?: string
+  chapter_title?: string
 }
 
 export interface ChapterHighlightInput {

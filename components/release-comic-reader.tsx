@@ -21,7 +21,7 @@ function parseComicPages(content: string | null): string[] {
   return []
 }
 
-export function ReleaseComicReader({ release, edition, chapters }: ReleaseComicReaderProps) {
+export function ReleaseComicReader({ release, chapters }: ReleaseComicReaderProps) {
   const accent = release.design_config?.accent_color ?? '#d52525'
 
   // Собираем все страницы из всех глав в плоский список с метой
@@ -75,6 +75,24 @@ export function ReleaseComicReader({ release, edition, chapters }: ReleaseComicR
     return () => { el.removeEventListener('scroll', resetUiTimer); el.removeEventListener('touchstart', resetUiTimer) }
   }, [resetUiTimer])
 
+  const scrollToPage = useCallback((index: number) => {
+    pageRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
+
+  const scrollToChapter = (chapterIndex: number) => {
+    const firstPageOfChapter = allPages.findIndex(p => p.chapterIndex === chapterIndex)
+    if (firstPageOfChapter >= 0) scrollToPage(firstPageOfChapter)
+    setShowChapterList(false)
+  }
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen().catch(() => {})
+    } else {
+      document.exitFullscreen()
+    }
+  }, [])
+
   // Клавиатура
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -84,7 +102,7 @@ export function ReleaseComicReader({ release, edition, chapters }: ReleaseComicR
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [currentPage, allPages.length])
+  }, [currentPage, allPages.length, scrollToPage, toggleFullscreen])
 
   // Fullscreen
   useEffect(() => {
@@ -92,24 +110,6 @@ export function ReleaseComicReader({ release, edition, chapters }: ReleaseComicR
     document.addEventListener('fullscreenchange', handler)
     return () => document.removeEventListener('fullscreenchange', handler)
   }, [])
-
-  const scrollToPage = (index: number) => {
-    pageRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
-  const scrollToChapter = (chapterIndex: number) => {
-    const firstPageOfChapter = allPages.findIndex(p => p.chapterIndex === chapterIndex)
-    if (firstPageOfChapter >= 0) scrollToPage(firstPageOfChapter)
-    setShowChapterList(false)
-  }
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen().catch(() => {})
-    } else {
-      document.exitFullscreen()
-    }
-  }
 
   if (allPages.length === 0) {
     return (

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { dbQueryOne, dbQuery } from '@/lib/db'
+import { dbQueryOne } from '@/lib/db'
 import { signIn } from '@/app/(auth)/auth'
 
 interface MagicTokenRow {
@@ -13,14 +13,16 @@ interface MagicTokenRow {
 export async function POST(request: NextRequest) {
   try {
     const { email, code } = await request.json()
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
+    const normalizedCode = typeof code === 'string' ? code.trim() : ''
 
-    if (!email || !code) {
+    if (!normalizedEmail || !normalizedCode) {
       return NextResponse.json({ error: 'Email и код обязательны' }, { status: 400 })
     }
 
     const record = await dbQueryOne<MagicTokenRow>(
       'SELECT * FROM magic_tokens WHERE token = $1 LIMIT 1',
-      [code],
+      [normalizedCode],
     )
 
     if (!record) {
@@ -35,16 +37,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Код уже использован' }, { status: 401 })
     }
 
-    if (record.email !== email) {
+    if (record.email.toLowerCase() !== normalizedEmail) {
       return NextResponse.json({ error: 'Код не для этого email' }, { status: 401 })
     }
 
-    // Помечаем токен как использованный
-    await dbQuery('UPDATE magic_tokens SET used = true WHERE token = $1', [code])
-
-    // Авторизуем через next-auth credentials
+    // Авторизуем через next-auth credentials; provider атомарно потребит одноразовый код.
     const result = await signIn('credentials', {
-      email,
+      email: normalizedEmail,
+      magicToken: normalizedCode,
       redirect: false,
     })
 

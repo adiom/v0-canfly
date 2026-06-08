@@ -16,12 +16,6 @@ export async function fetchSeriesById(id: string) {
   )
 }
 
-export async function fetchSeriesBySlug(slug: string) {
-  return dbQueryOne<Series>(
-    `SELECT ${seriesColumns} FROM series WHERE slug = $1 LIMIT 1`,
-    [slug],
-  )
-}
 
 export async function createSeries(data: Record<string, unknown>) {
   return dbQueryOne<Series>(

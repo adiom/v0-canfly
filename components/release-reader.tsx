@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
+import { sanitizeChapterHtml } from '@/lib/sanitize'
 import Link from 'next/link'
 import type { Edition, Chapter, Release, ReleaseDesignConfig } from '@/lib/releases-types'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, ArrowRight, List } from 'lucide-react'
 
@@ -34,11 +34,7 @@ export function ReleaseReader({ release, edition, chapters, chapterIndex }: {
   const showToc = config.show_toc ?? defaultConfig.show_toc!
 
   const [tocOpen, setTocOpen] = useState(false)
-  const [currentChapter, setCurrentChapter] = useState(chapters[chapterIndex])
-
-  useEffect(() => {
-    setCurrentChapter(chapters[chapterIndex])
-  }, [chapterIndex, chapters])
+  const currentChapter = useMemo(() => chapters[chapterIndex], [chapterIndex, chapters])
 
   const maxWidth = layout === 'wide' ? 'max-w-4xl' : 'max-w-2xl'
   const chapterLabel = chapterLabels[edition.format] ?? 'Глава'
@@ -94,7 +90,7 @@ export function ReleaseReader({ release, edition, chapters, chapterIndex }: {
         {currentChapter?.content ? (
           <div
             className="prose prose-lg max-w-none leading-7"
-            dangerouslySetInnerHTML={{ __html: currentChapter.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeChapterHtml(currentChapter.content) }}
           />
         ) : (
           <div className="text-center opacity-40 py-16">

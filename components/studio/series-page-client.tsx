@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Plus, Pencil, Trash2, Library, Sparkles } from 'lucide-react'
+import { Plus, Pencil, Trash2, Library } from 'lucide-react'
 
 function SeriesFormDialog({
   series,

@@ -7,8 +7,8 @@ import * as releasesDb from '@/lib/server/releases'
 import * as editionsDb from '@/lib/server/editions'
 import * as chaptersDb from '@/lib/server/chapters'
 import * as seriesDb from '@/lib/server/series'
-import { dbQuery, dbQueryOne } from '@/lib/db'
-import type { ReleaseCollaborator, ReleaseCharacterRole, ReleaseDesignConfig } from '@/lib/releases-types'
+import { dbQuery } from '@/lib/db'
+import type { ReleaseCharacterRole, ReleaseDesignConfig } from '@/lib/releases-types'
 
 async function requireAuth() {
   const session = await requireStudioSession()
@@ -92,7 +92,7 @@ export async function deleteReleaseAction(id: string) {
 
 export async function updateReleaseDesignAction(id: string, config: ReleaseDesignConfig) {
   await requireAuth()
-  await releasesDb.updateReleaseDesign(id, config)
+  await releasesDb.updateReleaseDesign(id, config as Record<string, unknown>)
   revalidatePath(`/studio/releases/${id}`)
   revalidatePath(`/release/${id}`)
 }
@@ -127,20 +127,6 @@ export async function createEditionAction(formData: FormData) {
   if (edition) redirect(`/studio/editions/${edition.id}/setup`)
 }
 
-export async function updateEditionAction(id: string, formData: FormData) {
-  await requireAuth()
-
-  await editionsDb.updateEdition(id, {
-    format: formData.get('format') || 'book',
-    platform: formData.get('platform') || null,
-    external_url: formData.get('external_url') || null,
-    slug: formData.get('slug'),
-    status: formData.get('status') || 'draft',
-    is_primary: formData.get('is_primary') === 'true',
-  })
-
-  revalidatePath(`/studio/editions/${id}`)
-}
 
 export async function updateEditionStatusAction(id: string, status: string) {
   await requireAuth()
@@ -280,16 +266,6 @@ export async function deleteSeriesAction(id: string) {
   await requireAuth()
   await seriesDb.deleteSeries(id)
   revalidatePath('/studio/series')
-}
-
-// === Collaborators ===
-
-export async function getReleaseCollaborators(releaseId: string) {
-  await requireAuth()
-  return dbQuery<ReleaseCollaborator>(
-    `SELECT release_id, user_id, role FROM release_collaborators WHERE release_id = $1`,
-    [releaseId],
-  )
 }
 
 // === Edition Setup ===

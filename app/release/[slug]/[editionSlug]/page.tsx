@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { fetchReleaseBySlug, fetchReleaseCharacters, fetchReleaseSeries } from '@/lib/server/releases'
+import { fetchReleaseBySlug } from '@/lib/server/releases'
 import { fetchEditionsByRelease, fetchEditionBySlug } from '@/lib/server/editions'
 import { fetchPublishedChaptersByEdition } from '@/lib/server/chapters'
 import { ReleaseReader } from '@/components/release-reader'

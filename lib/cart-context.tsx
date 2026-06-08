@@ -23,11 +23,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem('canfly-cart');
     if (saved) {
       try {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- initializing from localStorage
         setItems(JSON.parse(saved));
       } catch (e) {
         console.error('Error loading cart:', e);
       }
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration gate
     setMounted(true);
   }, []);
 

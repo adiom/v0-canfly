@@ -2,9 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import type { Release, Edition, ReleaseDesignConfig, ReleaseCharacter, Series } from '@/lib/releases-types'
-import { Badge } from '@/components/ui/badge'
-
+import type { Release, Edition, ReleaseDesignConfig, Series } from '@/lib/releases-types'
 const defaultConfig: ReleaseDesignConfig = {
   accent_color: '#d52525',
   bg_color: '#111210',
@@ -41,7 +39,6 @@ export function ReleasePagePublic({ release, editions, characters, seriesLink }:
   const heroStyle = config.hero_style ?? defaultConfig.hero_style!
   const heroOverlay = config.hero_overlay ?? defaultConfig.hero_overlay!
   const layout = config.layout ?? defaultConfig.layout!
-  const showToc = config.show_toc ?? defaultConfig.show_toc!
   const showCharacters = config.show_characters ?? defaultConfig.show_characters!
   const showSeries = config.show_series ?? defaultConfig.show_series!
 

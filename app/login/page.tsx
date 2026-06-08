@@ -25,6 +25,7 @@ function LoginForm() {
   // Редирект если уже авторизован
   useEffect(() => {
     if (status === 'authenticated' && !successHandled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- redirect on auth status change
       setSuccessHandled(true)
       const redirect = searchParams.get('redirect') || '/'
       router.push(redirect)
@@ -35,11 +36,14 @@ function LoginForm() {
   useEffect(() => {
     if (loginTriggered) return
     const magicEmail = searchParams.get('magic_email')
-    if (!magicEmail) return
+    const magicToken = searchParams.get('magic_token')
+    if (!magicEmail || !magicToken) return
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time magic link trigger
     setLoginTriggered(true)
     const formData = new FormData()
     formData.append('email', magicEmail)
+    formData.append('magicToken', magicToken)
     startTransition(() => {
       magicFormAction(formData)
     })
@@ -48,6 +52,7 @@ function LoginForm() {
   // После успешного входа через credentials
   useEffect(() => {
     if (magicState.status === 'success' && !successHandled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- redirect after successful login
       setSuccessHandled(true)
       updateSession()
       const redirect = magicState.redirectTo || searchParams.get('redirect') || '/profile'

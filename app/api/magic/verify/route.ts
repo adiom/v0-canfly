@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { dbQueryOne, dbQuery } from '@/lib/db'
+import { dbQueryOne } from '@/lib/db'
 
 interface MagicTokenRow {
   id: string
@@ -12,7 +12,7 @@ interface MagicTokenRow {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const token = searchParams.get('token')
+    const token = searchParams.get('token')?.trim()
 
     if (!token) {
       return NextResponse.redirect(new URL('/login?error=invalid_token', request.url))
@@ -35,10 +35,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?error=used_token', request.url))
     }
 
-    // Помечаем токен как использованный
-    await dbQuery('UPDATE magic_tokens SET used = true WHERE token = $1', [token])
-
-    // Редиректим на /login с email для автоматического входа через credentials
+    // Редиректим на /login; одноразовый токен потребляется только credentials-провайдером.
     const redirectUrl = new URL('/login', request.url)
     redirectUrl.searchParams.set('magic_email', record.email)
     redirectUrl.searchParams.set('magic_token', token)

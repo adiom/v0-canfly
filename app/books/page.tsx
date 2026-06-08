@@ -69,7 +69,6 @@ export default async function BooksHubPage() {
       { label: 'Главная', url: BASE_URL },
       { label: 'Книги', url: `${BASE_URL}/books` },
     ],
-    BASE_URL,
   )
 
   return (

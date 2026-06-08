@@ -22,16 +22,6 @@ export async function fetchReleases(options: { status?: string; limit?: number; 
   )
 }
 
-export async function fetchPublishedReleases(limit = 20, offset = 0) {
-  return dbQuery<Release>(
-    `SELECT ${releaseColumns} FROM releases
-     WHERE status = 'published'
-     ORDER BY release_date DESC NULLS LAST, created_at DESC
-     LIMIT $1 OFFSET $2`,
-    [limit, offset],
-  )
-}
-
 export async function fetchReleaseById(id: string) {
   return dbQueryOne<Release>(
     `SELECT ${releaseColumns} FROM releases WHERE id = $1 LIMIT 1`,
@@ -113,10 +103,6 @@ export async function updateReleaseDesign(id: string, config: Record<string, unk
 
 export async function deleteRelease(id: string) {
   await dbQuery('DELETE FROM releases WHERE id = $1', [id])
-}
-
-export async function incrementReleaseViews(id: string) {
-  await dbQuery('UPDATE releases SET view_count = view_count + 1 WHERE id = $1', [id])
 }
 
 // --- Release Characters ---

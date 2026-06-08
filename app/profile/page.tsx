@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { MessageCircle, UserRound } from 'lucide-react'
+import type { ChapterHighlight } from '@/lib/releases-types'
 
 import { getCurrentUserFromCookie, fetchReaderProfileSummary } from '@/lib/server/users'
 import { Button } from '@/components/ui/button'
@@ -137,7 +138,7 @@ export default async function ProfilePage() {
                 </span>
               </div>
               <div className="space-y-4">
-                {summary.highlights.map((highlight: any) => (
+                {summary.highlights.map((highlight: ChapterHighlight) => (
                   <div
                     key={highlight.id}
                     className="border border-cf-text-1/10 bg-cf-bg-2 p-4 transition-colors hover:border-cf-warm/45"

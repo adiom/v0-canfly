@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import { Plus, Trash2, Music, Headphones } from 'lucide-react'
+import { Plus, Trash2, Headphones } from 'lucide-react'
 
 interface AudioTrack {
   title: string
@@ -12,7 +12,7 @@ interface AudioTrack {
   duration: string
 }
 
-export function AudioTracksEditor({ editionId }: { editionId: string }) {
+export function AudioTracksEditor({ editionId: _editionId }: { editionId: string }) {
   const [tracks, setTracks] = useState<AudioTrack[]>([])
   const [newTitle, setNewTitle] = useState('')
   const [newUrl, setNewUrl] = useState('')

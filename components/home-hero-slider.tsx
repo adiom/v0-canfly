@@ -59,6 +59,7 @@ export function HomeHeroSlider({ slides }: HomeHeroSliderProps) {
   useEffect(() => {
     if (!api) return
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- subscribing to carousel API
     onSelect(api)
     api.on('select', onSelect)
     api.on('reInit', onSelect)

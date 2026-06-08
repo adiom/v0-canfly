@@ -4,8 +4,6 @@ import type { Metadata } from 'next'
 import { fetchBookBySlug } from '@/lib/server/books'
 import { generateBookSchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
 import { BookReader } from '@/components/book-reader'
-import { fetchHighlights } from '@/lib/server/highlights'
-import { getCurrentUserFromCookie, getUserRoles } from '@/lib/server/users'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
 
@@ -25,7 +23,7 @@ export async function generateMetadata({ params }: BookChapterPageProps): Promis
   const chapterData = book.chapters?.[chapterIndex]
 
   const typeLabel = book.type === 'comic' ? 'Комикс' : book.type === 'audiobook' ? 'Аудиокнига' : 'Книга'
-  const title = chapterData 
+  const title = chapterData
     ? `${chapterData.title} — ${book.title} | canfly`
     : `${book.title} — ${typeLabel} | canfly`
   const description = book.description || `${typeLabel} «${book.title}» от издательства canfly`
@@ -66,20 +64,11 @@ export default async function BookChapterPage({ params }: BookChapterPageProps) 
   }
 
   const chapterIndex = parseInt(chapter) - 1
-  
+
   // Валидация главы
   if (isNaN(chapterIndex) || chapterIndex < 0 || (book.chapters && chapterIndex >= book.chapters.length)) {
     redirect(`/books/${slug}/1`)
   }
-
-  const user = await getCurrentUserFromCookie()
-  const roles = user ? await getUserRoles(user.id) : []
-  const isTeam = roles.some(r => ['admin', 'editor', 'author'].includes(r))
-
-  const initialHighlights = await fetchHighlights({
-    bookId: book.id,
-    includeInternal: isTeam
-  })
 
   const bookSchema = generateBookSchema(book, BASE_URL)
   const breadcrumbSchema = generateBreadcrumbSchema(
@@ -89,7 +78,6 @@ export default async function BookChapterPage({ params }: BookChapterPageProps) 
       { label: book.title, url: `${BASE_URL}/books/${book.slug}/1` },
       ...(book.chapters?.[chapterIndex] ? [{ label: book.chapters[chapterIndex].title, url: `${BASE_URL}/books/${book.slug}/${chapter}` }] : []),
     ],
-    BASE_URL,
   )
 
   return (
@@ -102,7 +90,7 @@ export default async function BookChapterPage({ params }: BookChapterPageProps) 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
-      <BookReader book={book} initialHighlights={initialHighlights} initialChapter={chapterIndex} />
+      <BookReader book={book} initialChapter={chapterIndex} />
     </>
   )
 }

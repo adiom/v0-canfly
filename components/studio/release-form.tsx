@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { toast } from 'sonner'
@@ -37,11 +37,12 @@ export function ReleaseForm({ release }: ReleaseFormProps) {
   const [editorNotes, setEditorNotes] = useState(release?.editor_notes ?? '')
   const [slugManual, setSlugManual] = useState(false)
 
-  useEffect(() => {
+  function handleTitleChange(newTitle: string) {
+    setTitle(newTitle)
     if (!slugManual && !isEdit) {
-      setSlug(generateSlug(title))
+      setSlug(generateSlug(newTitle))
     }
-  }, [title, slugManual, isEdit])
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -85,7 +86,7 @@ export function ReleaseForm({ release }: ReleaseFormProps) {
         <div className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="title" className="text-gray-600">Название</Label>
-            <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Название произведения" className="bg-white/60 border-white/70 rounded-xl focus-visible:ring-violet-500/30" />
+            <Input id="title" value={title} onChange={e => handleTitleChange(e.target.value)} placeholder="Название произведения" className="bg-white/60 border-white/70 rounded-xl focus-visible:ring-violet-500/30" />
           </div>
 
           <div className="space-y-2">
@@ -116,7 +117,7 @@ export function ReleaseForm({ release }: ReleaseFormProps) {
             </div>
             <div className="space-y-2">
               <Label className="text-gray-600">Обложка</Label>
-              <CoverImageUploader value={coverImage || null} onChange={setCoverImage} />
+              <CoverImageUploader value={coverImage || null} onChange={(url) => setCoverImage(url ?? '')} />
             </div>
           </div>
 

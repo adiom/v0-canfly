@@ -169,7 +169,7 @@ export function EditionSetupPage({ data }: { data: SetupData }) {
 
           <div className="space-y-2">
             <Label className="text-gray-600">Обложка</Label>
-            <CoverImageUploader value={coverImage || null} onChange={setCoverImage} />
+            <CoverImageUploader value={coverImage || null} onChange={(url) => setCoverImage(url ?? '')} />
           </div>
 
           <div className="space-y-2">

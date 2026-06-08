@@ -3,11 +3,10 @@
  * Создаёт структурированные данные для Google, Яндекса и соцсетей
  */
 
-import { BookWithCharacters, Character } from '@/lib/types'
+import { BookWithCharacters } from '@/lib/types'
 
 export type SchemaType =
   | ReturnType<typeof generateBookSchema>
-  | ReturnType<typeof generateCharacterSchema>
   | ReturnType<typeof generateOrganizationSchema>
 
 /**
@@ -85,42 +84,6 @@ export function generateBookSchema(
 }
 
 /**
- * Schema для Character/Person
- */
-export function generateCharacterSchema(
-  character: Character,
-  baseUrl: string
-) {
-  const characterUrl = `${baseUrl}/characters/${character.slug}`
-  
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Person',
-    '@id': characterUrl,
-    name: character.name,
-    description: character.bio,
-    url: characterUrl,
-    image: character.avatar,
-    // Полное описание как расширенное поле
-    ...(character.full_description && {
-      disambiguatingDescription: character.full_description.substring(0, 500),
-    }),
-    // Способности как skills/knowsAbout
-    ...(character.abilities && character.abilities.length > 0 && {
-      knowsAbout: character.abilities,
-    }),
-    // Издатель (принадлежит вселенной)
-    publisher: {
-      '@type': 'Organization',
-      name: 'canfly',
-      url: baseUrl,
-    },
-    // Язык
-    inLanguage: 'ru-RU',
-  }
-}
-
-/**
  * Schema для организации (сайт целиком)
  */
 export function generateOrganizationSchema(baseUrl: string) {
@@ -154,8 +117,7 @@ export function generateOrganizationSchema(baseUrl: string) {
  * Schema для BreadcrumbList (навигация)
  */
 export function generateBreadcrumbSchema(
-  items: Array<{ label: string; url: string }>,
-  baseUrl: string
+  items: Array<{ label: string; url: string }>
 ) {
   return {
     '@context': 'https://schema.org',
@@ -242,9 +204,3 @@ export function isValidUrl(url: string): boolean {
   }
 }
 
-/**
- * Помощник для вставки схемы в <head>
- */
-export function schemaToString(schema: SchemaType): string {
-  return JSON.stringify(schema)
-}

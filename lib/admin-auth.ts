@@ -2,6 +2,7 @@ export const ADMIN_SESSION_COOKIE = 'canfly-admin-session'
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7
 const encoder = new TextEncoder()
+const localDevSessionSecret = `local-dev-${crypto.randomUUID()}`
 
 interface AdminSessionPayload {
   email: string
@@ -22,7 +23,10 @@ export function isLocalAdminHostname(hostname: string) {
 }
 
 function getSessionSecret() {
-  return process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || 'admin123'
+  const secret = process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD
+  if (secret) return secret
+  if (process.env.NODE_ENV !== 'production') return localDevSessionSecret
+  throw new Error('Missing ADMIN_SESSION_SECRET or ADMIN_PASSWORD')
 }
 
 function toBase64Url(bytes: Uint8Array) {

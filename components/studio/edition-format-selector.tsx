@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation'
 import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -8,7 +7,7 @@ import { createEditionAction } from '@/lib/actions/studio'
 import { generateSlug } from '@/lib/slug-utils'
 import { Button } from '@/components/ui/button'
 import {
-  BookOpen, Image, Headphones, Music, Newspaper, Radio,
+  BookOpen, Image, Headphones, Newspaper, Radio,
   ArrowLeft,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -22,7 +21,6 @@ const formats = [
 ]
 
 export function EditionFormatSelector({ releaseId }: { releaseId: string }) {
-  const router = useRouter()
   const [creating, setCreating] = useState<string | null>(null)
 
   async function handleSelect(format: string) {

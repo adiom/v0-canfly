@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus, Trash2, Check, X, MessageCircle, RefreshCw } from 'lucide-react'
+import { Plus, Check, X, MessageCircle, RefreshCw } from 'lucide-react'
 import type { ChapterEditorialNote, EditorialNoteStatus } from '@/lib/releases-types'
 
 interface EditorialNotesPanelProps {
@@ -30,6 +30,7 @@ export function EditorialNotesPanel({ chapterId }: EditorialNotesPanelProps) {
     }
   }, [chapterId])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetching pattern
   useEffect(() => { load() }, [load])
 
   const handleMouseUp = useCallback(() => {

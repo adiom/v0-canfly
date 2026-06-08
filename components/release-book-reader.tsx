@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { sanitizeChapterHtml } from '@/lib/sanitize'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, List, X, AlignJustify, Heart, Quote } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, AlignJustify, Heart, Quote } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Release, Edition, Chapter, ChapterHighlight } from '@/lib/releases-types'
 
@@ -24,7 +25,6 @@ interface SelectionData {
 
 export function ReleaseBookReader({
   release,
-  edition,
   chapters,
   currentUserId,
   initialHighlights,
@@ -134,6 +134,7 @@ export function ReleaseBookReader({
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
     window.scrollTo({ top: 0, behavior: 'smooth' })
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear selection on chapter change
     setSelection(null)
   }, [currentIndex])
 
@@ -389,7 +390,7 @@ export function ReleaseBookReader({
               ['--tw-prose-quotes' as string]: textColor,
               ['--tw-prose-hr' as string]: `${textColor}20`,
             }}
-            dangerouslySetInnerHTML={{ __html: currentChapter.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeChapterHtml(currentChapter.content) }}
           />
         ) : (
           <p className="opacity-40 py-16 text-center text-sm" style={{ color: textColor }}>
@@ -672,7 +673,6 @@ function wrapHighlight(paragraph: HTMLElement, hl: ChapterHighlight) {
     let idx = nodeText.indexOf(text)
     if (idx === -1 && hl.context_before) {
       // Пробуем найти с контекстом
-      const ctxText = (hl.context_before + text + hl.context_after).slice(0, 200)
       const foundAt = nodeText.indexOf(hl.context_before)
       if (foundAt >= 0) {
         const tail = nodeText.slice(foundAt + hl.context_before.length, foundAt + hl.context_before.length + text.length + 10)

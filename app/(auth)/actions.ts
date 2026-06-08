@@ -5,7 +5,11 @@ import { dbQuery, dbQueryOne } from '@/lib/db'
 import { signIn } from './auth'
 
 const emailSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
+})
+
+const magicLoginSchema = emailSchema.extend({
+  magicToken: z.string().min(1),
 })
 
 export interface LoginActionState {
@@ -99,10 +103,14 @@ export const loginWithMagicLink = async (
   formData: FormData,
 ): Promise<LoginActionState> => {
   try {
-    const validated = emailSchema.parse({ email: formData.get('email') })
+    const validated = magicLoginSchema.parse({
+      email: formData.get('email'),
+      magicToken: formData.get('magicToken'),
+    })
 
     const result = await signIn('credentials', {
       email: validated.email,
+      magicToken: validated.magicToken,
       redirect: false,
     })
 

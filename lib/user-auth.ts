@@ -1,12 +1,15 @@
 export const USER_SESSION_COOKIE = 'canfly-user-session'
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30
+const READER_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 365
 const PASSWORD_ITERATIONS = 120_000
 const encoder = new TextEncoder()
+const localDevSessionSecret = `local-dev-${crypto.randomUUID()}`
 
 interface UserSessionPayload {
   userId: string
   exp: number
+  kind?: 'user' | 'reader'
 }
 
 export interface UserSession {
@@ -14,7 +17,10 @@ export interface UserSession {
 }
 
 function getSessionSecret() {
-  return process.env.USER_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || 'admin123'
+  const secret = process.env.USER_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD
+  if (secret) return secret
+  if (process.env.NODE_ENV !== 'production') return localDevSessionSecret
+  throw new Error('Missing USER_SESSION_SECRET or ADMIN_SESSION_SECRET')
 }
 
 function toBase64Url(bytes: Uint8Array) {
@@ -59,6 +65,19 @@ export async function createUserToken(userId: string) {
   const payload: UserSessionPayload = {
     userId,
     exp: Date.now() + SESSION_TTL_MS,
+    kind: 'user',
+  }
+  const encodedPayload = stringToBase64Url(JSON.stringify(payload))
+  const signature = await sign(encodedPayload)
+
+  return `${encodedPayload}.${signature}`
+}
+
+export async function createReaderToken(userId: string) {
+  const payload: UserSessionPayload = {
+    userId,
+    exp: Date.now() + READER_SESSION_TTL_MS,
+    kind: 'reader',
   }
   const encodedPayload = stringToBase64Url(JSON.stringify(payload))
   const signature = await sign(encodedPayload)
@@ -78,6 +97,26 @@ export async function verifyUserToken(token: string | undefined): Promise<UserSe
   try {
     const payload = JSON.parse(base64UrlToString(encodedPayload)) as UserSessionPayload
     if (!payload.userId || payload.exp < Date.now()) return null
+    if (payload.kind && payload.kind !== 'user') return null
+
+    return { userId: payload.userId }
+  } catch {
+    return null
+  }
+}
+
+export async function verifyReaderToken(token: string | undefined): Promise<UserSession | null> {
+  if (!token) return null
+
+  const [encodedPayload, signature] = token.split('.')
+  if (!encodedPayload || !signature) return null
+
+  const expectedSignature = await sign(encodedPayload)
+  if (signature !== expectedSignature) return null
+
+  try {
+    const payload = JSON.parse(base64UrlToString(encodedPayload)) as UserSessionPayload
+    if (!payload.userId || payload.exp < Date.now() || payload.kind !== 'reader') return null
 
     return { userId: payload.userId }
   } catch {

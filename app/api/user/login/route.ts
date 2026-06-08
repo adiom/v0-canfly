@@ -5,7 +5,7 @@ import {
   normalizeLogin,
   READER_PROFILE_COOKIE,
 } from '@/lib/server/users'
-import { createUserToken, USER_SESSION_COOKIE, verifyPassword } from '@/lib/user-auth'
+import { createReaderToken, createUserToken, USER_SESSION_COOKIE, verifyPassword } from '@/lib/user-auth'
 import { apiHandler } from '@/lib/api-handler'
 
 async function postUserLogin(request: NextRequest) {
@@ -41,6 +41,7 @@ async function postUserLogin(request: NextRequest) {
   }
 
   const token = await createUserToken(user.id)
+  const readerToken = await createReaderToken(user.id)
   const response = NextResponse.json({
     data: {
       id: user.id,
@@ -57,7 +58,7 @@ async function postUserLogin(request: NextRequest) {
     path: '/',
     maxAge: 60 * 60 * 24 * 30,
   })
-  response.cookies.set(READER_PROFILE_COOKIE, user.id, {
+  response.cookies.set(READER_PROFILE_COOKIE, readerToken, {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',

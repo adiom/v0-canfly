@@ -60,6 +60,27 @@ export default function RootLayout({
           </ThemeProvider>
         </SessionProvider>
         <YandexMetrika />
+        {process.env.NODE_ENV === 'development' && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+window.addEventListener('error', function(e) {
+  if (e.message && e.message.includes('Failed to load chunk')) {
+    console.warn('[dev] ChunkLoadError detected — hard reload');
+    location.reload();
+  }
+});
+window.addEventListener('unhandledrejection', function(e) {
+  if (e.reason && e.reason.name === 'ChunkLoadError') {
+    console.warn('[dev] ChunkLoadError (async) detected — hard reload');
+    e.preventDefault();
+    location.reload();
+  }
+});
+`,
+            }}
+          />
+        )}
       </body>
     </html>
   )

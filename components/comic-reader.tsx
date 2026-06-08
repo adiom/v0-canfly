@@ -44,6 +44,20 @@ export function ComicReader({ book }: ComicReaderProps) {
     return () => observers.forEach(obs => obs.disconnect())
   }, [pages.length])
 
+  const scrollToPage = useCallback((index: number) => {
+    pageRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen().catch(() => {})
+      setIsFullscreen(true)
+    } else {
+      document.exitFullscreen()
+      setIsFullscreen(false)
+    }
+  }, [])
+
   // Клавиатурная навигация
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -57,7 +71,7 @@ export function ComicReader({ book }: ComicReaderProps) {
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [currentPage, pages.length])
+  }, [currentPage, pages.length, scrollToPage, toggleFullscreen])
 
   // Автоскрытие UI при скролле
   const resetUiTimer = useCallback(() => {
@@ -77,20 +91,6 @@ export function ComicReader({ book }: ComicReaderProps) {
       el.removeEventListener('touchstart', resetUiTimer)
     }
   }, [resetUiTimer])
-
-  const scrollToPage = (index: number) => {
-    pageRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen().catch(() => {})
-      setIsFullscreen(true)
-    } else {
-      document.exitFullscreen()
-      setIsFullscreen(false)
-    }
-  }
 
   useEffect(() => {
     const handler = () => setIsFullscreen(!!document.fullscreenElement)

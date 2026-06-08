@@ -4,7 +4,7 @@ import Credentials from 'next-auth/providers/credentials'
 import Yandex from 'next-auth/providers/yandex'
 import Google from 'next-auth/providers/google'
 
-import { dbQueryOne } from '@/lib/db'
+import { dbQuery, dbQueryOne } from '@/lib/db'
 import type { UserProfile } from '@/lib/types'
 
 export type UserType = 'regular'
@@ -65,6 +65,23 @@ async function findOrCreateUserByEmail(email: string, name?: string | null): Pro
   return created
 }
 
+async function consumeMagicToken(email: string, token: string) {
+  const claimed = await dbQueryOne<{ email: string }>(
+    `
+      UPDATE magic_tokens
+      SET used = true
+      WHERE token = $1
+        AND lower(email) = lower($2)
+        AND used = false
+        AND expires_at >= NOW()
+      RETURNING email
+    `,
+    [token, email],
+  )
+
+  return !!claimed
+}
+
 export const authConfig = {
   pages: {
     signIn: '/login',
@@ -74,15 +91,20 @@ export const authConfig = {
     Credentials({
       credentials: {},
       async authorize(credentials) {
-        const { email } = credentials as { email?: string }
-        if (!email) return null
+        const { email, magicToken } = credentials as { email?: string; magicToken?: string }
+        const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
+        const token = typeof magicToken === 'string' ? magicToken.trim() : ''
+        if (!normalizedEmail || !token) return null
 
-        const user = await findOrCreateUserByEmail(email)
+        const tokenValid = await consumeMagicToken(normalizedEmail, token)
+        if (!tokenValid) return null
+
+        const user = await findOrCreateUserByEmail(normalizedEmail)
         if (!user) return null
 
         return {
           id: user.id,
-          email: user.email ?? email,
+          email: user.email ?? normalizedEmail,
           name: user.display_name,
           type: 'regular' as UserType,
           login: user.login,
