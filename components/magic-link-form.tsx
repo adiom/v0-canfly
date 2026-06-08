@@ -4,7 +4,7 @@ import { useState, useActionState, startTransition } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { createMagicLink, type CreateMagicLinkState } from '@/app/(auth)/actions'
-import { useSession } from 'next-auth/react'
+import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
 interface MagicLinkFormProps {
@@ -48,22 +48,23 @@ export function MagicLinkForm({ onFocus, onBlur }: MagicLinkFormProps) {
     setCodeLoading(true)
 
     try {
-      const response = await fetch('/api/user/verify-code-direct', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code }),
+      // Код — это и есть одноразовый magicToken. Передаём его в credentials-провайдер,
+      // который атомарно гасит токен внутри authorize() (см. consumeMagicToken).
+      const result = await signIn('credentials', {
+        email,
+        magicToken: code.trim(),
+        redirect: false,
       })
 
-      const data = await response.json()
-
-      if (response.ok) {
-        await updateSession()
-        router.push('/profile')
-        router.refresh()
-      } else {
-        setCodeError(data.error || 'Неверный код')
+      if (result?.error) {
+        setCodeError('Неверный или просроченный код')
         setCodeLoading(false)
+        return
       }
+
+      await updateSession()
+      router.push('/profile')
+      router.refresh()
     } catch {
       setCodeError('Ошибка соединения')
       setCodeLoading(false)
