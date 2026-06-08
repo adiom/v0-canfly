@@ -38,8 +38,8 @@
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: var(--font-geist-sans), 'Geist Fallback', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), 'Geist Mono Fallback', ui-monospace, monospace;
   --color-cf-bg: var(--cf-bg);
   --color-cf-bg-2: var(--cf-bg-2);
   --color-cf-footer-bg: var(--cf-footer-bg);
