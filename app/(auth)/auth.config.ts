@@ -160,7 +160,7 @@ export const authConfig = {
       return true
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         if (user.id) token.id = user.id as string
         token.type = (user as { type?: UserType }).type ?? token.type ?? 'regular'
@@ -170,13 +170,22 @@ export const authConfig = {
 
       if (!token.type) token.type = 'regular'
 
-      if (token.sub) {
+      // Роли читаем из БД ОДИН раз — при входе (есть `user`) или при явном
+      // обновлении сессии (`updateSession()` → trigger === 'update'). На обычных
+      // декодах токена (каждый /api/auth/session, proxy.getToken) БД НЕ трогаем —
+      // роли уже лежат в JWT. Next.js docs (authentication → Session Management):
+      // payload должен нести минимум (id, role), а проверки в Proxy — только из
+      // куки, без обращений к БД, чтобы не ронять производительность.
+      const uid = (user?.id as string | undefined) ?? token.sub
+      if ((user || trigger === 'update') && uid) {
         const rows = await dbQuery<{ role: string }>(
           'SELECT role FROM user_roles WHERE user_id = $1',
-          [token.sub],
+          [uid],
         )
         token.roles = rows.map(r => r.role)
       }
+
+      if (!token.roles) token.roles = []
 
       return token
     },
