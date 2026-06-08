@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@11.5.0",
   "scripts": {
-    "dev": "next dev -H 0.0.0.0",
+    "dev": "next dev -H 0.0.0.0 --webpack",
     "build": "next build",
     "start": "next start",
     "db:structure": "node scripts/read-db-structure.mjs",
