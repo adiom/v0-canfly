@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireStudioAdminSession } from '@/lib/server/studio-auth'
 import { createPasswordUser, listAdminUsers, normalizeLogin } from '@/lib/server/users'
-import { UserRole } from '@/lib/types'
 import { apiHandler } from '@/lib/api-handler'
+import { normalizeRoles } from '@/lib/api/normalizers'
 
 export const dynamic = 'force-dynamic'
-
-function normalizeRoles(value: unknown): UserRole[] {
-  if (!Array.isArray(value)) return ['reader']
-
-  const roles = value.filter((role): role is UserRole =>
-    role === 'reader' || role === 'author' || role === 'editor' || role === 'admin',
-  )
-
-  return roles.length > 0 ? roles : ['reader']
-}
 
 async function getAdminUsers(request: NextRequest) {
   const session = await requireStudioAdminSession()

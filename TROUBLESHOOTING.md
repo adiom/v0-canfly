@@ -1,145 +1,137 @@
 # Решение проблем (Troubleshooting)
 
-## Ошибка: "Error fetching books: TypeError: Load failed"
+## Ошибка: "Error fetching books. Failed to fetch"
 
 ### Причины:
-1. Переменные окружения Supabase не установлены
-2. Supabase интеграция не подключена
-3. Таблица books не создана в БД
+1. `DATABASE_URL` не установлен или неверный
+2. Postgres не отвечает (Neon — холодный старт на бесплатном плане)
+3. Таблицы не созданы
 
 ### Решение:
 
-#### Шаг 1: Проверьте интеграцию Supabase
+#### Шаг 1: Проверьте DATABASE_URL
+```bash
+# В локальном dev — проверьте .env.local
+echo $DATABASE_URL
 
-Откройте Settings (сверху справа) → Integrations → Supabase
-
-**Должно быть подключено:**
-- Supabase проект
-
-#### Шаг 2: Проверьте переменные окружения
-
-Settings → Vars
-
-**Должны быть установлены:**
-- `NEXT_PUBLIC_SUPABASE_URL` - URL вашего Supabase проекта
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Public API ключ
-- `SUPABASE_SERVICE_ROLE_KEY` - Service role ключ (опционально для некоторых операций)
-
-Если переменных нет, Supabase интеграция их должна была добавить. Если нет:
-
-1. Откройте [supabase.com](https://supabase.com)
-2. Откройте ваш проект
-3. Settings → API
-4. Найдите:
-   - Project URL → скопируйте в `NEXT_PUBLIC_SUPABASE_URL`
-   - anon public → скопируйте в `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-
-#### Шаг 3: Создайте таблицу books
-
-Если таблица `books` не существует:
-
-1. Откройте Supabase console
-2. SQL Editor
-3. Выполните эту команду:
-
-```sql
-CREATE TABLE IF NOT EXISTS books (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
-  slug TEXT UNIQUE NOT NULL,
-  type TEXT NOT NULL DEFAULT 'comic',
-  description TEXT,
-  cover_image TEXT,
-  preview_pages JSONB DEFAULT '[]'::jsonb,
-  external_links JSONB DEFAULT '{}'::jsonb,
-  price NUMERIC(10,2),
-  is_featured BOOLEAN DEFAULT false,
-  display_order INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE books ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Books are viewable by everyone" ON books FOR SELECT USING (true);
-
--- Добавляем sample данные
-INSERT INTO books (title, slug, type, description, cover_image, price, is_featured, display_order) VALUES
-('The Cipher Chronicles: Genesis', 'cipher-chronicles-genesis', 'comic', 'Начало эпической саги о герое, который может управлять временем и пытается предотвратить апокалипсис.', 'https://images.unsplash.com/photo-1618835962148-cf2c217ea5c0?w=400&h=600&fit=crop', 599.99, true, 1),
-('Shadows of Rebellion', 'shadows-of-rebellion', 'book', 'Романтизированный рассказ о восстании против тиранического режима и цене свободы.', 'https://images.unsplash.com/photo-1507842217343-583f7270bfba?w=400&h=600&fit=crop', 799.99, true, 2),
-('The Aether Codex', 'aether-codex', 'comic', 'Визуальный эпос о древней магии и её скрытых законах. Каждая страница полна загадок.', 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=400&h=600&fit=crop', 699.99, true, 3),
-('Digital Ghosts', 'digital-ghosts', 'book', 'Рассказ о жизни хакеров в тени сетей. Остросюжетный триллер о цене информации.', 'https://images.unsplash.com/photo-1612220945571-fedda77c3b39?w=400&h=600&fit=crop', 549.99, true, 4),
-('Nocturne: The Eclipse Files', 'nocturne-eclipse-files', 'comic', 'Серия о тёмном прошлом и пути к искуплению. Красивое чёрно-белое искусство вызывает мурашки.', 'https://images.unsplash.com/photo-1611339555312-e607c90352fd?w=400&h=600&fit=crop', 649.99, true, 5)
-ON CONFLICT DO NOTHING;
+# Убедитесь что строка подключения валидна:
+psql $DATABASE_URL -c "SELECT 1"
 ```
 
-## Ошибка: "Cannot find module '@/lib/types'"
+#### Шаг 2: Проверьте миграции
+```bash
+pnpm db:structure
+```
+Если таблиц нет — выполните миграции из `postgres/schema.sql`.
+
+#### Шаг 3: Neon холодный старт
+Бесплатный Neon "засыпает" после 5 минут бездействия. Первый запрос после паузы может длиться до 5 секунд. Это нормально.
+
+## Ошибка: "Cannot find module '@/lib/...'"
 
 ### Решение:
-Убедитесь что файл `/lib/types.ts` существует. Если нет, создайте его с типами данных.
+```bash
+pnpm install
+```
+Если файл действительно отсутствует — возможно, он был удалён. Проверьте что файл существует. Серверные репозитории находятся в `lib/server/`.
+
+## Ошибка: "Auth: Invalid token" / "401 Unauthorized" в админке
+
+### Причины:
+1. JWT токен истёк
+2. У пользователя нет нужной роли
+3. AUTH_SECRET изменился
+
+### Решение:
+1. Выйдите и зайдите снова через `/login`
+2. Проверьте роли пользователя:
+```sql
+SELECT * FROM user_roles WHERE user_id = 'your-user-id';
+```
+3. `AUTH_SECRET` в `.env.local` должен быть стабильным. Сгенерируйте новый:
+```bash
+openssl rand -base64 32
+```
+
+## Ошибка: "AuthorComponent is not defined" / ChunkLoadError в dev
+
+### Решение:
+Это известная проблема Turbopack в Next.js 16. Страница перезагрузится автоматически после:
+1. Очистки кэша браузера (Hard Reload: Cmd+Shift+R)
+2. Рестарта dev-сервера (если не помогает)
+
+В продакшен-сборке (`pnpm build && pnpm start`) эта ошибка не воспроизводится.
 
 ## Ошибка: "OPENAI_API_KEY not found"
 
 ### Решение:
-1. Откройте Settings → Vars
-2. Добавьте переменную `OPENAI_API_KEY`
-3. Значение: ваш OpenAI API ключ (получите на [platform.openai.com](https://platform.openai.com/api-keys))
+1. Проверьте `.env.local` — должна быть переменная `OPENAI_API_KEY`
+2. Получите ключ на [platform.openai.com](https://platform.openai.com/api-keys)
+3. Убедитесь что на аккаунте есть баланс
+
+## Чат персонажей не отвечает
+
+### Решение:
+1. Проверьте `OPENAI_API_KEY` в `.env.local`
+2. Откройте консоль браузера (F12) — проверьте POST `/api/characters/chat`
+3. Убедитесь что персонаж существует и включён (reply_mode != 'disabled')
+4. Проверьте логи сервера — если AI Gateway возвращает ошибку, OpenAI API может быть недоступен
 
 ## Проект загружается очень долго
 
 ### Возможные причины:
-1. Первый запрос к API (revalidate = 3600)
-2. Медленное интернет соединение
-3. Supabase проект на бесплатном плане (холодный старт)
+1. Первый фетч после билда (статическая генерация)
+2. Neon холодный старт
+3. Медленное интернет соединение
 
 ### Решение:
-- Просто дождитесь загрузки
-- В продакшене используйте paid Supabase план
+- Дождитесь загрузки
+- Для постоянной работы используйте Neon paid план (без холодного старта)
 
-## Чат персонажей не работает
+## Magic link: "Код неверный или истёк"
 
-### Решение:
-1. Проверьте что `OPENAI_API_KEY` установлен
-2. Откройте браузер console (F12)
-3. Проверьте есть ли ошибки при отправке сообщения
-4. Убедитесь что у вас есть баланс на OpenAI аккаунте
-
-## Посты персонажей не загружаются
+### Причины:
+1. Токен истёк (живёт 15 минут)
+2. Токен уже был использован
+3. Токен введён неверно (регистр символов)
 
 ### Решение:
-1. Убедитесь что таблица `character_posts` создана
-2. Проверьте что персонажи добавлены в БД
-3. Если таблицы нет, выполните SQL:
+Запросите новый код на странице `/login`. В dev-режиме код выводится в консоль сервера и возвращается в теле ответа (если email-интеграция не настроена).
 
-```sql
-CREATE TABLE IF NOT EXISTS character_posts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  character_id UUID NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
-  content TEXT NOT NULL,
-  post_type TEXT DEFAULT 'thought',
-  image_url TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+## Сборка не проходит (TypeScript ошибки)
 
-CREATE INDEX IF NOT EXISTS idx_character_posts_character ON character_posts(character_id);
-CREATE INDEX IF NOT EXISTS idx_character_posts_created ON character_posts(created_at DESC);
-
-ALTER TABLE character_posts ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Character posts are viewable by everyone" ON character_posts;
-CREATE POLICY "Character posts are viewable by everyone" ON character_posts FOR SELECT USING (true);
+### Решение:
+```bash
+pnpm build --no-lint  # проверить только TS без линтера
+# или
+npx tsc --noEmit       # показать все ошибки TS
 ```
+
+Типичные причины:
+- `any` там где нужен конкретный тип
+- Импорт несуществующего модуля/файла
+- Несоответствие типов в API response
+
+## Vercel Blob: загрузка не работает
+
+### Решение:
+1. Проверьте `BLOB_READ_WRITE_TOKEN` в переменных окружения
+2. На Vercel: Project Settings → Environment Variables → добавьте токен
+3. Локально: добавьте в `.env.local`
+4. Получите токен в [vercel.com](https://vercel.com/docs/storage/vercel-blob)
 
 ## Нужна дополнительная помощь?
 
 1. Проверьте файлы документации:
-   - `README.md` - основная документация
-   - `SETUP.md` - подробная инструкция
-   - `FEATURES.md` - описание функций
-   - `UPDATES.md` - список обновлений
+   - `README.md` — основная документация
+   - `SETUP.md` — подробная инструкция
+   - `AGENTS.md` — описание архитектуры
+   - `UPDATES.md` — список обновлений
 
 2. Проверьте логи:
-   - Откройте браузер console (F12 → Console)
+   - Откройте консоль браузера (F12 → Console)
    - Проверьте Network tab для запросов к API
-   - Посмотрите логи сервера в v0 terminal
+   - Посмотрите логи сервера в терминале
 
 3. Убедитесь что все зависимости установлены:
    ```bash
@@ -148,5 +140,5 @@ CREATE POLICY "Character posts are viewable by everyone" ON character_posts FOR 
 
 4. Перезагрузите сервер:
    ```bash
-   Ctrl+C в terminal и снова pnpm dev
+   Ctrl+C и снова pnpm dev
    ```

@@ -29,7 +29,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         console.error('Error loading cart:', e);
       }
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration gate
+     
     setMounted(true);
   }, []);
 

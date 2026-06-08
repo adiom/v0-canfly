@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { BookOpen, Boxes, Newspaper, Radio, UserRound } from 'lucide-react'
+import { BookOpen, Boxes, UserRound } from 'lucide-react'
 
 import { HomeHeroSlider } from '@/components/home-hero-slider'
 import { HomeIssuesSection } from '@/components/home-issues-section'
@@ -10,9 +10,8 @@ import {
   isHomepageSlidesTableMissing,
 } from '@/lib/homepage-slide-store'
 import { HomepageSlide } from '@/lib/types'
-import { MobileNav } from '@/components/mobile-nav'
-import { SearchDialog } from '@/components/search/search-dialog'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { SiteHeader } from '@/components/site-header'
+import { SiteFooter } from '@/components/site-footer'
 
 export const revalidate = 60
 
@@ -21,16 +20,6 @@ export const metadata = {
   description:
     'canfly — литературная вселенная о тревоге, ремесле, памяти, цифровой усталости и людях, которые продолжают функционировать.',
 }
-
-const navItems = [
-  { label: 'Новости', href: '/news' },
-  { label: 'Книги', href: '/books' },
-  { label: 'Персонажи', href: '/characters' },
-  { label: 'Миры', href: '#worlds' },
-  { label: 'Выпуски', href: '#issues' },
-  { label: 'Блог', href: '/markdown' },
-  { label: 'Магазин', href: '/shop' },
-]
 
 export default async function Home() {
   let slides: HomepageSlide[] = []
@@ -46,38 +35,19 @@ export default async function Home() {
     isMigrationMissing = true
   }
 
+  const homeNavItems = [
+    { label: 'Новости', href: '/news' },
+    { label: 'Книги', href: '/books' },
+    { label: 'Персонажи', href: '/characters' },
+    { label: 'Миры', href: '#worlds' },
+    { label: 'Выпуски', href: '#issues' },
+    { label: 'Блог', href: '/markdown' },
+    { label: 'Магазин', href: '/shop' },
+  ]
+
   return (
     <main className="min-h-screen bg-cf-bg text-cf-text-1">
-      <header className="sticky top-0 z-50 border-b border-cf-text-1/10 bg-cf-bg/92 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 md:px-8">
-          <Link href="/" className="flex h-14 items-center gap-3" aria-label="Canfly home">
-            <span className="flex h-9 w-16 items-center justify-center bg-[#d52525] text-lg font-black uppercase tracking-[-0.04em] text-white">
-              canfly
-            </span>
-            <span className="hidden text-xs font-semibold uppercase tracking-[0.22em] text-cf-text-3 sm:block">
-              beta
-            </span>
-          </Link>
-
-          <nav className="hidden h-14 items-center lg:flex" aria-label="Главная навигация">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex h-full items-center border-x border-transparent px-3 text-xs font-black uppercase tracking-[0.12em] text-cf-text-2 transition-colors hover:border-cf-text-1/10 hover:bg-cf-text-1/6 hover:text-cf-text-heading lg:px-4"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <MobileNav items={navItems} />
-            <SearchDialog />
-          </div>
-        </div>
-      </header>
+      <SiteHeader activePath="/" navItems={homeNavItems} />
 
       {slides.length > 0 ? (
         <HomeHeroSlider slides={slides} />
@@ -170,21 +140,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <footer className="border-t border-cf-text-1/10 bg-cf-footer-bg px-4 py-8 md:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 text-sm text-cf-text-4 md:flex-row md:items-center md:gap-4">
-          <p>© 2005-2026 canfly. Литературная вселенная Адиома Тимура.</p>
-          <div className="flex flex-wrap gap-4">
-            <span className="inline-flex items-center gap-2">
-              <Newspaper className="h-4 w-4" />
-              новости
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <Radio className="h-4 w-4" />
-              обновления вселенной
-            </span>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter variant="full" />
     </main>
   )
 }

@@ -11,7 +11,8 @@ import { SearchResultBookRow } from '@/components/search/search-result-book'
 import { SearchResultCharacterRow } from '@/components/search/search-result-character'
 import { SearchResultNewsRow } from '@/components/search/search-result-news'
 import { SearchNoResults } from '@/components/search/search-no-results'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { SiteHeader } from '@/components/site-header'
+import { SiteFooter } from '@/components/site-footer'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,16 +27,6 @@ export async function generateMetadata({
     title: query ? `«${query}» — поиск | canfly` : 'Поиск | canfly',
   }
 }
-
-const navItems = [
-  { label: 'Новости', href: '/#news' },
-  { label: 'Книги', href: '/books' },
-  { label: 'Персонажи', href: '/characters' },
-  { label: 'Миры', href: '/#worlds' },
-  { label: 'Выпуски', href: '/#issues' },
-  { label: 'Блог', href: '/markdown' },
-  { label: 'Магазин', href: '/shop' },
-]
 
 export default async function SearchPage({
   searchParams,
@@ -73,41 +64,7 @@ export default async function SearchPage({
 
   return (
     <main className="min-h-screen bg-cf-bg text-cf-text-1">
-      <header className="sticky top-0 z-50 border-b border-cf-text-1/10 bg-cf-bg/92 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 md:px-8">
-          <Link href="/" className="flex h-14 items-center gap-3" aria-label="Canfly home">
-            <span className="flex h-9 w-16 items-center justify-center bg-cf-accent text-lg font-black uppercase tracking-[-0.04em] text-white">
-              canfly
-            </span>
-            <span className="hidden text-xs font-semibold uppercase tracking-[0.22em] text-cf-text-3 sm:block">
-              beta
-            </span>
-          </Link>
-
-          <nav className="hidden h-14 items-center lg:flex" aria-label="Главная навигация">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex h-full items-center border-x border-transparent px-3 text-xs font-black uppercase tracking-[0.12em] text-cf-text-2 transition-colors hover:border-cf-text-1/10 hover:bg-cf-text-1/6 hover:text-cf-text-heading lg:px-4"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Link
-              href="/search"
-              className="flex h-10 w-10 items-center justify-center rounded-sm border border-cf-text-1/12 text-cf-text-2 hover:bg-cf-text-1/8"
-              aria-label="Поиск"
-            >
-              <Search className="h-5 w-5" />
-            </Link>
-          </div>
-        </div>
-      </header>
+      <SiteHeader activePath="/search" showSearch={false} />
 
       <div className="mx-auto max-w-4xl px-4 py-12 md:px-8">
         {/* Search form */}
@@ -212,6 +169,6 @@ export default async function SearchPage({
           </div>
         )}
       </div>
-    </main>
+      <SiteFooter />\n    </main>
   )
 }

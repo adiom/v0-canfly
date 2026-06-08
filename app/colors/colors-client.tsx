@@ -5,57 +5,16 @@ import Link from 'next/link'
 import { CANFLY_COLORS, type CanflyColor } from './data'
 
 const SERIF = "var(--font-cormorant, 'Cormorant Garamond', Georgia, serif)"
-import { ThemeToggle } from '@/components/theme-toggle'
-import { MobileNav } from '@/components/mobile-nav'
+import { SiteHeader } from '@/components/site-header'
+import { SiteFooter } from '@/components/site-footer'
 import { ColorModal, ColorEntry, PaletteStrip } from './colors-parts'
-
-const navItems = [
-  { label: 'Новости', href: '/news' },
-  { label: 'Книги', href: '/books' },
-  { label: 'Персонажи', href: '/characters' },
-  { label: 'Цвета', href: '/colors' },
-  { label: 'Магазин', href: '/shop' },
-]
 
 export default function ColorsPageClient() {
   const [selectedColor, setSelectedColor] = useState<CanflyColor | null>(null)
 
   return (
     <main className="min-h-screen bg-cf-bg text-cf-text-1">
-      {/* Header */}
-      <header className="sticky top-0 z-[60] border-b border-cf-text-1/10 bg-cf-bg/92 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl h-14 items-center justify-between px-4 md:px-8">
-          <Link href="/" className="flex items-center gap-3" aria-label="Canfly home">
-            <span className="flex h-9 w-16 items-center justify-center bg-cf-accent text-lg font-black uppercase tracking-[-0.04em] text-white">
-              canfly
-            </span>
-            <span className="hidden text-xs font-black uppercase tracking-[0.22em] text-cf-text-3 sm:block">
-              colors
-            </span>
-          </Link>
-
-          <nav className="hidden h-14 items-center lg:flex" aria-label="Навигация">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex h-full items-center border-x px-3 text-xs font-black uppercase tracking-[0.12em] transition-colors lg:px-4
-                  ${item.href === '/colors'
-                    ? 'border-cf-text-1/10 bg-cf-text-1/6 text-cf-text-heading'
-                    : 'border-transparent text-cf-text-2 hover:border-cf-text-1/10 hover:bg-cf-text-1/6 hover:text-cf-text-heading'
-                  }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <MobileNav items={navItems} />
-          </div>
-        </div>
-      </header>
+      <SiteHeader activePath="/colors" />
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-cf-text-1/10 px-4 pb-16 pt-24 md:px-8 md:pb-20 md:pt-32">
@@ -165,12 +124,7 @@ export default function ColorsPageClient() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-cf-text-1/10 bg-cf-footer-bg py-8 text-center">
-        <p className="font-mono text-xs tracking-[0.1em] text-cf-text-4">
-          © 2026 canfly · Canfly Colors · Палитра литературной вселенной
-        </p>
-      </footer>
+      <SiteFooter />
 
       {/* Modal */}
       <ColorModal color={selectedColor} onClose={() => setSelectedColor(null)} />

@@ -3,11 +3,11 @@ import Link from 'next/link'
 import { BookOpen } from 'lucide-react'
 
 import { fetchBooks } from '@/lib/server/books'
-import { SearchDialog } from '@/components/search/search-dialog'
 import { BookType, BookWithCharacters } from '@/lib/types'
 import { generateBooksCollectionSchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
 import { BooksClient } from '@/components/books-client'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { SiteHeader } from '@/components/site-header'
+import { SiteFooter } from '@/components/site-footer'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,15 +16,6 @@ export const metadata = {
   description:
     'Каталог изданий вселенной canfly: романы, комиксы и аудио. Превью, персонажи и точки входа в мир.',
 }
-
-const navItems = [
-  { label: 'Новости', href: '/#news' },
-  { label: 'Книги', href: '/books' },
-  { label: 'Персонажи', href: '/characters' },
-  { label: 'Миры', href: '/#worlds' },
-  { label: 'Выпуски', href: '/#issues' },
-  { label: 'Блог', href: '/markdown' },
-]
 
 function typeLabel(type: BookType): string {
   switch (type) {
@@ -81,39 +72,7 @@ export default async function BooksHubPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
-      <header className="sticky top-0 z-50 border-b border-cf-text-1/10 bg-cf-bg/92 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 md:px-8">
-          <Link href="/" className="flex h-14 items-center gap-3" aria-label="Canfly home">
-            <span className="flex h-9 w-16 items-center justify-center bg-cf-accent text-lg font-black uppercase tracking-[-0.04em] text-white">
-              CF
-            </span>
-            <span className="hidden text-xs font-semibold uppercase tracking-[0.22em] text-cf-text-3 sm:block">
-              литературная вселенная
-            </span>
-          </Link>
-
-          <nav className="hidden h-14 items-center lg:flex" aria-label="Главная навигация">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={
-                  item.href === '/books'
-                    ? 'flex h-full items-center border-x border-cf-text-1/10 bg-cf-text-1/8 px-3 text-xs font-black uppercase tracking-[0.12em] text-cf-text-heading lg:px-4'
-                    : 'flex h-full items-center border-x border-transparent px-3 text-xs font-black uppercase tracking-[0.12em] text-cf-text-2 transition-colors hover:border-cf-text-1/10 hover:bg-cf-text-1/6 hover:text-cf-text-heading lg:px-4'
-                }
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <SearchDialog />
-          </div>
-        </div>
-      </header>
+      <SiteHeader activePath="/books" />
 
       {/* Hero */}
       <section className="border-b border-cf-text-1/10 bg-cf-bg-2 px-4 py-16 md:px-8 md:py-20">
@@ -173,14 +132,7 @@ export default async function BooksHubPage() {
         </div>
       </section>
 
-      <footer className="border-t border-cf-text-1/10 bg-cf-footer-bg px-4 py-8 md:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 text-sm text-cf-text-4 md:flex-row md:items-center">
-          <p>© 2005-2026 canfly. Литературная вселенная Адиома Тимура.</p>
-          <Link href="/" className="w-fit font-semibold text-cf-text-caption hover:text-cf-text-heading">
-            ← На главную
-          </Link>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   )
 }

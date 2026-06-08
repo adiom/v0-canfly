@@ -1,181 +1,135 @@
 # Canfly - Быстрый старт
 
-## 1. Финальная проверка
+## 1. Требования
 
-Все необходимые компоненты уже созданы. Просто убедитесь, что:
-
-✅ Supabase подключен (интеграция в v0)
-✅ Таблицы созданы в БД
-✅ Sample данные загружены (5 книг и 5 персонажей)
+- Node.js 18+
+- PostgreSQL 15+ (Neon, локальный, или Vercel Postgres)
+- pnpm
 
 ## 2. Запуск приложения
 
 ```bash
+pnpm install
 pnpm dev
 ```
 
 Приложение откроется на [http://localhost:3000](http://localhost:3000)
 
-## 3. Тестирование функциональности
+## 3. Переменные окружения
 
-### Главная страница
-- Слайдер с 5 избранными книгами
-- Табы ниже слайдера с названиями книг
-- Кнопки "Читать" и ссылки на магазины
-
-### Персонажи (`/characters`)
-- Граф взаимосвязей в центре
-- Сетка с карточками 5 персонажей
-- Клик на персонажа → полный профиль с описанием и связями
-
-### Магазин (`/shop`)
-- Сетка с 5 книгами/комиксами
-- Кнопка "В корзину" добавляет товар (хранится в localStorage)
-- Цены в рублях
-
-### Корзина (`/cart`)
-- Просмотр добавленных товаров
-- Изменение количества (+-) или удаление
-- Форма заявки: имя, email, телефон, адрес, заметки
-- При отправке заказ сохраняется в БД
-
-### Чтение онлайн (`/books/[slug]`)
-- Просмотр страниц книги
-- Навигация вперед/назад
-- Полноэкранный режим
-- Возможность добавить в корзину
-
-### Админ-панель (`/admin`)
-- Вход: email `admin@canfly.local`, пароль `admin123`
-- Табы: Книги, Персонажи, Заказы
-- Просмотр всех данных и полученных заказов
-
-## 4. Переменные окружения
-
-Скопируйте `.env.example` в `.env.local` и обновите значения Supabase:
+Скопируйте `.env.example` в `.env.local`:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
-SUPABASE_SERVICE_ROLE_KEY=xxx
+# Postgres (Neon / Vercel Postgres / локальный)
+DATABASE_URL=postgres://user:password@host/db?sslmode=require
+
+# next-auth v5
+AUTH_SECRET=xxx
+AUTH_YANDEX_ID=xxx
+AUTH_YANDEX_SECRET=xxx
+AUTH_GOOGLE_ID=xxx
+AUTH_GOOGLE_SECRET=xxx
+
+# OpenAI (чат с персонажами)
+OPENAI_API_KEY=sk-xxx
+
+# Vercel Blob (загрузка изображений)
+BLOB_READ_WRITE_TOKEN=xxx
+
+# App
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
-ADMIN_PASSWORD=admin123
 ```
 
-Ключи найдете в Supabase Dashboard → Settings → API.
+## 4. База данных
 
-## 5. Дополнение контента
+Миграции находятся в `postgres/`. Выполните в указанном порядке:
 
-### Добавить еще книг
+```bash
+psql $DATABASE_URL -f postgres/schema.sql
+psql $DATABASE_URL -f postgres/002_release_system.sql
+psql $DATABASE_URL -f postgres/003_add_audiorelease.sql
+psql $DATABASE_URL -f postgres/004_release_design.sql
+psql $DATABASE_URL -f postgres/highlights-migration.sql
+```
 
-SQL:
+Или откройте `postgres/schema.sql` в Neon Console → SQL Editor.
+
+### Тестовый вход
+
+После запуска зарегистрируйтесь через `/login` — первый пользователь получает роль `reader`. Роли (`author`, `editor`, `admin`) назначаются через SQL:
 ```sql
-INSERT INTO books (title, slug, type, description, cover_image, price, is_featured, display_order)
-VALUES (
-  'Название книги',
-  'slug-названия',
-  'comic', -- или 'book', 'audiobook'
-  'Описание...',
-  'https://link-to-image.jpg',
-  59999, -- цена в копейках
-  true,
-  6 -- порядок отображения
-);
+INSERT INTO user_roles (user_id, role) VALUES ('user-uuid', 'admin');
 ```
 
-### Добавить персонажа
+## 5. Основные маршруты
 
-SQL:
-```sql
-INSERT INTO characters (name, slug, avatar, bio, full_description)
-VALUES (
-  'Имя Персонажа',
-  'slug-имени',
-  'https://link-to-avatar.jpg',
-  'Краткое описание',
-  'Полное описание...'
-);
+| Страница | Путь | Авторизация |
+|---|---|---|
+| Главная | `/` | Нет |
+| Книги | `/books` | Нет |
+| Персонажи | `/characters` | Нет |
+| Магазин | `/shop` | Нет |
+| Корзина | `/cart` | Нет |
+| Читалка (Release) | `/release/[slug]` | Нет |
+| Профиль | `/profile` | Нужна |
+| Studio | `/studio` | author/editor/admin |
+| Админ-панель | `/admin` | admin |
+
+## 6. Публичные API endpoints
+
+- `GET /api/books` — все книги
+- `GET /api/books?featured=true` — избранные
+- `GET /api/characters` — все персонажи
+- `GET /api/characters/[slug]` — персонаж со связями
+- `POST /api/orders` — создать заказ
+- `GET /api/search?q=` — поиск
+
+## 7. Сборка
+
+```bash
+pnpm build
+pnpm start
 ```
-
-### Связать персонажей
-
-SQL:
-```sql
-INSERT INTO character_relationships (character_id, related_character_id, relationship_type, description)
-VALUES (
-  (SELECT id FROM characters WHERE slug = 'cipher'),
-  (SELECT id FROM characters WHERE slug = 'nova'),
-  'Союзник',
-  'Боец сопротивления присоединяется к Cipher'
-);
-```
-
-## 6. Развертывание на Vercel
-
-1. Создайте репозиторий на GitHub
-2. Подключите проект на Vercel
-3. Добавьте переменные окружения в Project Settings
-4. Разверните с помощью `git push`
-
-## 7. Проблемы и решения
-
-**Ошибка: "Таблицы не найдены"**
-→ Убедитесь, что SQL миграции выполнены в Supabase console
-
-**Ошибка: "NEXT_PUBLIC_SUPABASE_URL не определен"**
-→ Скопируйте `.env.example` в `.env.local` и добавьте реальные ключи
-
-**Админ-панель не загружается**
-→ Очистите localStorage: `localStorage.clear()` в консоли браузера
-
-**Корзина пуста после перезагрузки**
-→ Это нормально, корзина хранится в localStorage браузера (в продакшене используйте БД)
 
 ## 8. Структура файлов
 
 ```
-/app
-  /api
-    /admin
-      /login - вход админа
-      /orders - заказы
-    /books - получить книги
-    /characters - получить персонажей
-    /orders - создать заказ
-  /admin
-    /page.tsx - главная админ-панель
-    /login/page.tsx - форма входа
-  /books
-    /[slug]/page.tsx - читалка книги
-  /characters
-    /page.tsx - каталог персонажей
-    /[slug]/page.tsx - профиль персонажа
-  /shop/page.tsx - магазин
-  /cart/page.tsx - корзина
-  /page.tsx - главная
-/components
-  /books-carousel.tsx - слайдер на главной
-  /character-card.tsx - карточка персонажа
-  /character-graph.tsx - граф взаимосвязей
-/lib
-  /types.ts - TypeScript типы
-  /cart-context.tsx - контекст корзины
-  /supabase/
-    /client.ts - Supabase клиент (браузер)
-    /server.ts - Supabase клиент (сервер)
-    /middleware.ts - middleware для сессий
+app/
+├── (auth)/          # next-auth конфиг
+├── release/         # Release система (основная)
+├── books/           # Старая читалка
+├── characters/      # Персонажи
+├── shop/            # Магазин
+├── cart/            # Корзина
+├── search/          # Поиск
+├── studio/          # Studio для авторов
+├── admin/           # Админ-панель (legacy)
+└── profile/         # Профиль
+components/
+├── ui/              # shadcn/ui
+├── studio/          # Studio компоненты
+├── site-header.tsx  # Шапка
+└── site-footer.tsx  # Подвал
+lib/
+├── server/          # Серверные репозитории
+├── actions/         # Server actions
+├── db.ts            # pg Pool
+├── types.ts         # Типы
+└── api/
+    └── normalizers.ts  # Нормалайзеры API
 ```
 
-## 9. Что дальше?
+## 9. Полезные команды
 
-- Добавьте больше контента (книг, персонажей, связей)
-- Кастомизируйте дизайн в `globals.css`
-- Добавьте аутентификацию для пользователей (Supabase Auth)
-- Интегрируйте реальный платеж (Stripe)
-- Настройте рассылку уведомлений (заказы)
+```bash
+pnpm lint          # Линтинг
+pnpm test:smoke    # E2E smoke тесты
+pnpm test:e2e      # Все E2E тесты
+pnpm db:structure  # Структура БД
+```
 
 ---
 
-**Готово к использованию!** 🚀
+**Готово к использованию!**
 
-Вопросы? Смотрите SETUP.md для подробной документации.
+Вопросы? Смотрите `SETUP.md` для подробной документации.

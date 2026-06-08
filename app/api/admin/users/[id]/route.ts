@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireStudioAdminSession } from '@/lib/server/studio-auth'
 import { fetchUserById, setUserRoles, updateUserPassword } from '@/lib/server/users'
-import { UserRole } from '@/lib/types'
 import { apiHandler } from '@/lib/api-handler'
+import { normalizeRolesUpdate } from '@/lib/api/normalizers'
 
 export const dynamic = 'force-dynamic'
-
-function normalizeRoles(value: unknown): UserRole[] | null {
-  if (!Array.isArray(value)) return null
-
-  const roles = value.filter((role): role is UserRole =>
-    role === 'reader' || role === 'author' || role === 'editor' || role === 'admin',
-  )
-
-  return roles
-}
 
 async function updateAdminUser(
   request: NextRequest,
@@ -34,7 +24,7 @@ async function updateAdminUser(
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
-  const roles = normalizeRoles(body.roles)
+  const roles = normalizeRolesUpdate(body.roles)
 
   if (roles) {
     await setUserRoles(id, roles)
