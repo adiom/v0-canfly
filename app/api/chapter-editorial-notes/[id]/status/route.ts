@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUserFromCookie, getUserRoles } from '@/lib/server/users'
+import { getCurrentUser, getUserRoles } from '@/lib/server/session'
 import { updateEditorialNoteStatus } from '@/lib/server/chapter-highlights'
 import type { EditorialNoteStatus } from '@/lib/releases-types'
 import { apiHandler } from '@/lib/api-handler'
@@ -9,7 +9,7 @@ async function updateEditorialNoteStatusHandler(
   context: { params: Promise<Record<string, string>> },
 ) {
   const { id } = await context.params as { id: string }
-  const user = await getCurrentUserFromCookie()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const roles = await getUserRoles(user.id)

@@ -1,6 +1,16 @@
-import { cookies } from 'next/headers'
-
+import { randomBytes, pbkdf2 } from 'crypto'
 import { dbQuery, dbQueryOne } from '@/lib/db'
+import { getUserRoles } from '@/lib/server/session'
+
+function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(16)
+  return new Promise((resolve, reject) => {
+    pbkdf2(password, salt, 120000, 32, 'sha256', (err, key) => {
+      if (err) reject(err)
+      else resolve(`pbkdf2$120000$${salt.toString('base64url')}$${key.toString('base64url')}`)
+    })
+  })
+}
 import {
   AdminUserProfile,
   CharacterConversation,
@@ -9,99 +19,7 @@ import {
   UserProfile,
   UserRole,
 } from '@/lib/types'
-import {
-  createReaderToken,
-  hashPassword,
-  USER_SESSION_COOKIE,
-  verifyReaderToken,
-  verifyUserToken,
-} from '@/lib/user-auth'
 import { fetchUserHighlights } from './chapter-highlights'
-
-export const READER_PROFILE_COOKIE = 'canfly_reader_id'
-
-function createReaderHandle() {
-  return `reader-${crypto.randomUUID().slice(0, 8)}`
-}
-
-async function assignReaderRole(userId: string) {
-  await dbQuery(
-    `
-      INSERT INTO user_roles (user_id, role)
-      VALUES ($1, 'reader')
-      ON CONFLICT DO NOTHING
-    `,
-    [userId],
-  )
-}
-
-export async function getCurrentUserFromCookie() {
-  const cookieStore = await cookies()
-  const session = await verifyUserToken(cookieStore.get(USER_SESSION_COOKIE)?.value)
-
-  if (session) {
-    const sessionUser = await dbQueryOne<UserProfile>('SELECT * FROM users WHERE id = $1 LIMIT 1', [
-      session.userId,
-    ])
-
-    if (sessionUser) {
-      return sessionUser
-    }
-  }
-
-  const readerSession = await verifyReaderToken(cookieStore.get(READER_PROFILE_COOKIE)?.value)
-  const userId = readerSession?.userId
-
-  if (!userId) {
-    return null
-  }
-
-  return dbQueryOne<UserProfile>('SELECT * FROM users WHERE id = $1 LIMIT 1', [userId])
-}
-
-export async function ensureReaderUser() {
-  const cookieStore = await cookies()
-  const readerSession = await verifyReaderToken(cookieStore.get(READER_PROFILE_COOKIE)?.value)
-  const existingUserId = readerSession?.userId
-
-  if (existingUserId) {
-    const existingUser = await dbQueryOne<UserProfile>('SELECT * FROM users WHERE id = $1 LIMIT 1', [
-      existingUserId,
-    ])
-
-    if (existingUser) {
-      await assignReaderRole(existingUser.id)
-      return existingUser
-    }
-  }
-
-  const handle = createReaderHandle()
-  const user = await dbQueryOne<UserProfile>(
-    `
-      INSERT INTO users (handle, display_name)
-      VALUES ($1, $2)
-      RETURNING *
-    `,
-    [handle, 'Читатель canfly'],
-  )
-
-  if (!user) {
-    throw new Error('Failed to create reader profile')
-  }
-
-  await assignReaderRole(user.id)
-
-  const readerToken = await createReaderToken(user.id)
-  cookieStore.set(READER_PROFILE_COOKIE, readerToken, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 365,
-  })
-
-  return user
-}
 
 export function normalizeLogin(value: unknown) {
   return typeof value === 'string'
@@ -144,15 +62,6 @@ export async function createPasswordUser(data: {
   await setUserRoles(user.id, roles)
 
   return user
-}
-
-export async function getUserRoles(userId: string) {
-  const rows = await dbQuery<{ role: UserRole }>(
-    'SELECT role FROM user_roles WHERE user_id = $1 ORDER BY role ASC',
-    [userId],
-  )
-
-  return rows.map((row) => row.role)
 }
 
 export async function setUserRoles(userId: string, roles: UserRole[]) {

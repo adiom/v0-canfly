@@ -1,15 +1,16 @@
-import { getCurrentUserFromCookie, getUserRoles } from '@/lib/server/users'
-import type { UserProfile, UserRole } from '@/lib/types'
+import { getCurrentUser, getUserRoles } from '@/lib/server/session'
+import type { UserRole } from '@/lib/types'
+import type { SessionUser } from '@/lib/server/session'
 
 export interface StudioSession {
-  user: UserProfile
+  user: SessionUser
   roles: UserRole[]
 }
 
 const STUDIO_ROLES: UserRole[] = ['author', 'editor', 'admin']
 
 export async function requireStudioSession(): Promise<StudioSession | null> {
-  const user = await getCurrentUserFromCookie()
+  const user = await getCurrentUser()
   if (!user) return null
 
   const roles = await getUserRoles(user.id)
@@ -28,4 +29,3 @@ export async function requireStudioAdminSession(): Promise<StudioSession | null>
 export function isStudioAdmin(session: StudioSession | null | undefined) {
   return !!session?.roles.includes('admin')
 }
-

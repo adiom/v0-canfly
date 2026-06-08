@@ -6,7 +6,7 @@ import {
   createWallPost,
   fetchWallPosts,
 } from '@/lib/server/character-wall'
-import { getCurrentUserFromCookie } from '@/lib/server/users'
+import { getCurrentUser } from '@/lib/server/session'
 import { formatZodError, wallPostSchema } from '@/lib/schemas/character-post'
 import { apiHandler } from '@/lib/api-handler'
 
@@ -40,7 +40,7 @@ async function createCharacterWallPost(
     return NextResponse.json({ error: 'Character not found' }, { status: 404 })
   }
 
-  const user = await getCurrentUserFromCookie()
+  const user = await getCurrentUser()
   if (!user) {
     return NextResponse.json({ error: 'Необходимо войти' }, { status: 401 })
   }

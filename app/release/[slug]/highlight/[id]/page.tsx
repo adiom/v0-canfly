@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { fetchReleaseBySlug } from '@/lib/server/releases'
 import { fetchChapterById } from '@/lib/server/chapters'
 import { fetchChapterHighlightById } from '@/lib/server/chapter-highlights'
-import { getCurrentUserFromCookie } from '@/lib/server/users'
+import { getCurrentUser } from '@/lib/server/session'
 import { getPrimaryEdition } from '@/lib/utils/editions'
 import { ReleaseBookReader } from '@/components/release-book-reader'
 import { fetchEditionsByRelease } from '@/lib/server/editions'
@@ -68,7 +68,7 @@ export default async function HighlightSharePage({ params }: PageProps) {
   if (!ctx) notFound()
 
   const { release, highlight, chapter } = ctx
-  const user = await getCurrentUserFromCookie()
+  const user = await getCurrentUser()
   const editions = await fetchEditionsByRelease(release.id)
   const primaryEdition = getPrimaryEdition(editions)
 

@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fetchCharacterBySlug } from '@/lib/server/characters'
 import {
   deleteCharacterFriendship,
-  ensureReaderUser,
   getFriendship,
   upsertCharacterFriendship,
 } from '@/lib/server/users'
+import { getCurrentUser } from '@/lib/server/session'
 import { apiHandler } from '@/lib/api-handler'
 
 export const dynamic = 'force-dynamic'
@@ -21,7 +21,9 @@ async function getCharacterFriendship(
     return NextResponse.json({ error: 'Character not found' }, { status: 404 })
   }
 
-  const user = await ensureReaderUser()
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const friendship = await getFriendship(user.id, data.character.id)
 
   return NextResponse.json({ data: { user, friendship } })
@@ -38,7 +40,8 @@ async function createCharacterFriendship(
     return NextResponse.json({ error: 'Character not found' }, { status: 404 })
   }
 
-  const user = await ensureReaderUser()
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const friendship = await upsertCharacterFriendship(user.id, data.character.id)
 
   return NextResponse.json({ data: { user, friendship } }, { status: 201 })
@@ -55,7 +58,9 @@ async function removeCharacterFriendship(
     return NextResponse.json({ error: 'Character not found' }, { status: 404 })
   }
 
-  const user = await ensureReaderUser()
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   await deleteCharacterFriendship(user.id, data.character.id)
 
   return NextResponse.json({ data: { user, character: data.character } })

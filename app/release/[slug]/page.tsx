@@ -5,7 +5,7 @@ import { fetchEditionsByRelease } from '@/lib/server/editions'
 import { fetchPublishedChaptersByEdition } from '@/lib/server/chapters'
 import { fetchSeriesById } from '@/lib/server/series'
 import { fetchCharactersList } from '@/lib/server/characters'
-import { getCurrentUserFromCookie } from '@/lib/server/users'
+import { getCurrentUser } from '@/lib/server/session'
 import { fetchChapterHighlights } from '@/lib/server/chapter-highlights'
 import { ReleasePagePublic } from '@/components/release-page'
 import { ReleaseBookReader } from '@/components/release-book-reader'
@@ -51,7 +51,7 @@ export default async function ReleasePublicPage({ params }: { params: Promise<{ 
     const chapters = await fetchPublishedChaptersByEdition(primaryEdition.id)
 
     if (primaryEdition.format === 'book' || primaryEdition.format === 'magazine') {
-      const user = await getCurrentUserFromCookie()
+      const user = await getCurrentUser()
       const highlights = chapters.length > 0
         ? await fetchChapterHighlights({ chapterId: chapters[0].id, currentUserId: user?.id ?? null })
         : []

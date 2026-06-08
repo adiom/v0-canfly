@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUserFromCookie, getUserRoles } from '@/lib/server/users'
+import { getCurrentUser } from '@/lib/server/session'
 import { fetchChapterHighlights, createChapterHighlight } from '@/lib/server/chapter-highlights'
 import { apiHandler } from '@/lib/api-handler'
 
@@ -14,7 +14,7 @@ async function getChapterHighlights(request: NextRequest) {
     return NextResponse.json({ error: 'chapterId or userId is required' }, { status: 400 })
   }
 
-  const user = await getCurrentUserFromCookie()
+  const user = await getCurrentUser()
 
   const highlights = await fetchChapterHighlights({
     chapterId: chapterId ?? undefined,
@@ -28,7 +28,7 @@ async function getChapterHighlights(request: NextRequest) {
 }
 
 async function createChapterHighlightHandler(request: NextRequest) {
-  const user = await getCurrentUserFromCookie()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()

@@ -12,7 +12,7 @@ import {
 } from '@/lib/server/characters'
 import { listVisibleCharacterPosts } from '@/lib/server/character-posts'
 import { fetchWallPosts } from '@/lib/server/character-wall'
-import { getCurrentUserFromCookie, getUserRoles } from '@/lib/server/users'
+import { getCurrentUser, getUserRoles } from '@/lib/server/session'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,7 +68,7 @@ export default async function CharacterPage({ params, searchParams }: CharacterP
     fetchCharacterFriends(data.character.id, 12),
     listVisibleCharacterPosts(data.character.slug),
     fetchWallPosts(data.character.id, { includeHidden: false, limit: 50 }),
-    getCurrentUserFromCookie(),
+    getCurrentUser(),
   ])
 
   const isAdmin = currentUser

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUserFromCookie, getUserRoles } from '@/lib/server/users'
+import { getCurrentUser, getUserRoles } from '@/lib/server/session'
 import { fetchChapterEditorialNotes, createEditorialNote } from '@/lib/server/chapter-highlights'
 import { apiHandler } from '@/lib/api-handler'
 
@@ -8,7 +8,7 @@ async function getChapterEditorialNotes(request: NextRequest) {
   const chapterId = searchParams.get('chapterId')
   if (!chapterId) return NextResponse.json({ error: 'chapterId required' }, { status: 400 })
 
-  const user = await getCurrentUserFromCookie()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const roles = await getUserRoles(user.id)
@@ -20,7 +20,7 @@ async function getChapterEditorialNotes(request: NextRequest) {
 }
 
 async function createEditorialNoteHandler(request: NextRequest) {
-  const user = await getCurrentUserFromCookie()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const roles = await getUserRoles(user.id)

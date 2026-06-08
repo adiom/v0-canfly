@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { BookOpen, Library, Home, PenTool, Users } from 'lucide-react'
-import type { UserProfile } from '@/lib/types'
+import type { SessionUser } from '@/lib/server/session'
 import {
   Sidebar,
   SidebarContent,
@@ -27,7 +27,7 @@ const adminNav = [
   { title: 'Персонажи', href: '/studio/characters', icon: Users },
 ]
 
-export function StudioSidebar({ user, isAdmin = false }: { user: UserProfile; isAdmin?: boolean }) {
+export function StudioSidebar({ user, isAdmin = false }: { user: SessionUser; isAdmin?: boolean }) {
   const pathname = usePathname()
   const navItems = isAdmin ? [...baseNav, ...adminNav] : baseNav
 

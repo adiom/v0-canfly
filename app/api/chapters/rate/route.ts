@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { dbQuery, dbQueryOne } from '@/lib/db'
-import { getCurrentUserFromCookie } from '@/lib/server/users'
+import { getCurrentUser } from '@/lib/server/session'
 import { apiHandler } from '@/lib/api-handler'
 
 async function getChapterRatings(request: NextRequest) {
-  const user = await getCurrentUserFromCookie()
+  const user = await getCurrentUser()
   console.log('[GET /api/chapters/rate] user:', user?.id ?? 'null')
 
   if (!user) {
@@ -33,7 +33,7 @@ async function getChapterRatings(request: NextRequest) {
 }
 
 async function createChapterRating(request: NextRequest) {
-  const user = await getCurrentUserFromCookie()
+  const user = await getCurrentUser()
   console.log('[POST /api/chapters/rate] user:', user?.id ?? 'null')
 
   if (!user) {

@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache'
 
 import { deleteWallPost, fetchWallPostById } from '@/lib/server/character-wall'
 import { fetchCharacterById } from '@/lib/server/characters'
-import { getCurrentUserFromCookie, getUserRoles } from '@/lib/server/users'
+import { getCurrentUser, getUserRoles } from '@/lib/server/session'
 import { apiHandler } from '@/lib/api-handler'
 
 export const dynamic = 'force-dynamic'
@@ -14,7 +14,7 @@ async function deleteWallPostHandler(
 ) {
   const { id } = await context.params as { id: string }
 
-  const user = await getCurrentUserFromCookie()
+  const user = await getCurrentUser()
   if (!user) {
     return NextResponse.json({ error: 'Необходимо войти' }, { status: 401 })
   }

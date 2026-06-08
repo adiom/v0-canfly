@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { MessageCircle, UserRound } from 'lucide-react'
 import type { ChapterHighlight } from '@/lib/releases-types'
 
-import { getCurrentUserFromCookie, fetchReaderProfileSummary } from '@/lib/server/users'
+import { fetchReaderProfileSummary } from '@/lib/server/users'
+import { getCurrentUser } from '@/lib/server/session'
 import { Button } from '@/components/ui/button'
 
 export const dynamic = 'force-dynamic'
@@ -14,7 +15,7 @@ export const metadata = {
 }
 
 export default async function ProfilePage() {
-  const user = await getCurrentUserFromCookie()
+  const user = await getCurrentUser()
   const summary = user ? await fetchReaderProfileSummary(user.id) : null
 
   return (

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchCharacterBySlug } from '@/lib/server/characters'
 import {
-  ensureReaderUser,
   fetchConversationMessages,
   getOrCreateCharacterConversation,
   upsertCharacterFriendship,
 } from '@/lib/server/users'
+import { getCurrentUser } from '@/lib/server/session'
 import { apiHandler } from '@/lib/api-handler'
 
 export const dynamic = 'force-dynamic'
@@ -21,7 +21,9 @@ async function getCharacterConversation(
     return NextResponse.json({ error: 'Character not found' }, { status: 404 })
   }
 
-  const user = await ensureReaderUser()
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const friendship = await upsertCharacterFriendship(user.id, data.character.id)
   const conversation = await getOrCreateCharacterConversation(user.id, data.character.id)
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUserFromCookie } from '@/lib/server/users'
+import { getCurrentUser } from '@/lib/server/session'
 import { toggleHighlightLike } from '@/lib/server/chapter-highlights'
 import { apiHandler } from '@/lib/api-handler'
 
@@ -8,7 +8,7 @@ async function toggleChapterHighlightLike(
   context: { params: Promise<Record<string, string>> },
 ) {
   const { id } = await context.params as { id: string }
-  const user = await getCurrentUserFromCookie()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const result = await toggleHighlightLike(id, user.id)

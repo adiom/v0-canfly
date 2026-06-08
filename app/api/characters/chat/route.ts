@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ModelMessage, streamText } from 'ai'
 import {
   addCharacterMessage,
-  ensureReaderUser,
   fetchConversationMessages,
   getOrCreateCharacterConversation,
   upsertCharacterFriendship,
 } from '@/lib/server/users'
+import { getCurrentUser } from '@/lib/server/session'
 import { fetchCharacterBySlug } from '@/lib/server/characters'
 import { apiHandler } from '@/lib/api-handler'
 
@@ -47,7 +47,9 @@ async function postCharacterChat(request: NextRequest) {
     return new NextResponse('Character does not receive messages', { status: 403 })
   }
 
-  const user = await ensureReaderUser()
+  const user = await getCurrentUser()
+  if (!user) return new NextResponse('Unauthorized', { status: 401 })
+
   const friendship = await upsertCharacterFriendship(user.id, character.id)
   const conversation = await getOrCreateCharacterConversation(user.id, character.id)
 
