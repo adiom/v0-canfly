@@ -14,7 +14,7 @@ import { MobileNav } from '@/components/mobile-nav'
 import { SearchDialog } from '@/components/search/search-dialog'
 import { ThemeToggle } from '@/components/theme-toggle'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export const metadata = {
   title: 'canfly | культура твоего сознания',

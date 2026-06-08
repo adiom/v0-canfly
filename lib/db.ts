@@ -54,6 +54,8 @@ export function getPool() {
     cachedPool = new Pool({
       connectionString,
       ssl: isLocal ? false : { rejectUnauthorized: false },
+      max: 3,
+      idleTimeoutMillis: 10000,
     })
   }
 
