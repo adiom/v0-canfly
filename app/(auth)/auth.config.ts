@@ -4,7 +4,7 @@ import Credentials from 'next-auth/providers/credentials'
 import Yandex from 'next-auth/providers/yandex'
 import Google from 'next-auth/providers/google'
 
-import { dbQuery, dbQueryOne } from '@/lib/db'
+import { dbQueryOne } from '@/lib/db'
 import type { UserProfile } from '@/lib/types'
 
 export type UserType = 'regular'
