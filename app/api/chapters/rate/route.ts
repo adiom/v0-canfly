@@ -5,14 +5,12 @@ import { apiHandler } from '@/lib/api-handler'
 
 async function getChapterRatings(request: NextRequest) {
   const user = await getCurrentUser()
-  console.log('[GET /api/chapters/rate] user:', user?.id ?? 'null')
 
   if (!user) {
     return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
   }
 
   const bookId = request.nextUrl.searchParams.get('bookId')
-  console.log('[GET /api/chapters/rate] bookId:', bookId)
 
   if (!bookId) {
     return NextResponse.json({ error: 'bookId обязателен' }, { status: 400 })
@@ -22,7 +20,6 @@ async function getChapterRatings(request: NextRequest) {
     'SELECT chapter_index, rating FROM chapter_ratings WHERE book_id = $1 AND user_id = $2',
     [bookId, user.id],
   )
-  console.log('[GET /api/chapters/rate] ratings count:', ratings.length)
 
   const ratingsMap = ratings.reduce((acc, r) => {
     acc[r.chapter_index] = r.rating
@@ -34,14 +31,12 @@ async function getChapterRatings(request: NextRequest) {
 
 async function createChapterRating(request: NextRequest) {
   const user = await getCurrentUser()
-  console.log('[POST /api/chapters/rate] user:', user?.id ?? 'null')
 
   if (!user) {
     return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
   }
 
   const { bookId, chapterIndex, rating } = await request.json()
-  console.log('[POST /api/chapters/rate] params:', { bookId, chapterIndex, rating })
 
   if (!bookId || chapterIndex === undefined || !rating) {
     return NextResponse.json({ error: 'Не все параметры переданы' }, { status: 400 })
@@ -59,7 +54,6 @@ async function createChapterRating(request: NextRequest) {
      RETURNING *`,
     [bookId, chapterIndex, user.id, rating],
   )
-  console.log('[POST /api/chapters/rate] result:', result?.id ?? 'null')
 
   return NextResponse.json({ success: true, data: result })
 }

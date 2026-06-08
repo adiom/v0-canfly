@@ -53,5 +53,7 @@
   --color-cf-warm: var(--cf-warm);
   --color-cf-blue: var(--cf-blue);
   --color-cf-tan: var(--cf-tan);
+  --font-cormorant: var(--font-cormorant, 'Cormorant Garamond', Georgia, serif);
+  --font-cormorant-serif: var(--font-cormorant, 'Cormorant Garamond', Georgia, serif);
 }
 

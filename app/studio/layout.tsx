@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/sonner'
 
 export default async function StudioLayout({ children }: { children: React.ReactNode }) {
   const session = await requireStudioSession()
-  if (!session) redirect('/login')
+  if (!session) redirect('/studio-access-denied')
 
   const isAdmin = session.roles.includes('admin')
 

@@ -5,6 +5,13 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import Link from 'next/link'
 
+const ROLE_LABELS: Record<string, string> = {
+  reader: 'Читатель',
+  author: 'Автор',
+  editor: 'Редактор',
+  admin: 'Администратор',
+}
+
 export default function AdminLoginPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -25,6 +32,8 @@ export default function AdminLoginPage() {
     )
   }
 
+  const roleLabels = roles.map((r) => ROLE_LABELS[r] ?? r).join(', ')
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
@@ -39,13 +48,19 @@ export default function AdminLoginPage() {
           <h1 className="text-2xl font-bold text-white">Вход для администраторов</h1>
 
           {status === 'authenticated' && !isAdmin ? (
-            <div>
-              <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 text-red-200 text-sm mb-4">
-                Доступ запрещён. Ваша учётная запись не имеет прав администратора.
+            <div className="space-y-4">
+              <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 text-sm space-y-2">
+                <p className="text-red-200 font-semibold">Недостаточно прав</p>
+                <p className="text-red-300">
+                  Ваша роль: <span className="font-mono bg-red-900/50 px-1.5 py-0.5 rounded text-red-100">{roleLabels || 'нет ролей'}</span>
+                </p>
+                <p className="text-red-400 text-xs">
+                  Для входа в панель администратора требуется роль «Администратор».
+                </p>
               </div>
-              <Link href="/login">
-                <button className="w-full h-12 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-bold transition-colors">
-                  Выйти и войти заново
+              <Link href="/">
+                <button className="w-full h-12 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-bold transition-colors">
+                  На главную
                 </button>
               </Link>
             </div>

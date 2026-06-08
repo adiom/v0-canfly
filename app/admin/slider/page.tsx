@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signOut } from 'next-auth/react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
@@ -57,9 +58,8 @@ export default function AdminSliderPage() {
     setSlides((current) => current.filter((item) => item.id !== slide.id))
   }
 
-  const handleLogout = async () => {
-    await fetch('/api/admin/logout', { method: 'POST' })
-    router.push('/admin/login')
+  const handleLogout = () => {
+    signOut({ callbackUrl: '/login' })
   }
 
   if (loading) {

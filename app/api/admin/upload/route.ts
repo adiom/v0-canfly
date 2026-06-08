@@ -21,8 +21,6 @@ async function postUpload(request: NextRequest) {
     return NextResponse.json({ error: 'File must be an image' }, { status: 400 })
   }
 
-  console.log('[Upload] Uploading file:', file.name, 'size:', file.size, 'type:', file.type)
-
   const token = process.env.BLOB_READ_WRITE_TOKEN
   if (!token) {
     return NextResponse.json({ error: 'BLOB_READ_WRITE_TOKEN is not configured' }, { status: 500 })
@@ -33,8 +31,6 @@ async function postUpload(request: NextRequest) {
     addRandomSuffix: true,
     token,
   })
-
-  console.log('[Upload] Success:', blob.url)
 
   return NextResponse.json({
     url: blob.url,

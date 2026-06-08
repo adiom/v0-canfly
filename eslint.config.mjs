@@ -56,7 +56,6 @@ export default defineConfig([
     'node_modules/**',
     'public/**',
     'scripts/**',
-    'supabase/**',
     'postgres/**',
   ]),
 ])

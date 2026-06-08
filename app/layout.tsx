@@ -7,6 +7,7 @@ import { generateOrganizationSchema } from '@/lib/seo/schema'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { YandexMetrika } from '@/components/yandex-metrika'
+import { FeedbackWidget } from '@/components/feedback-widget'
 import './globals.css'
 
 const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
@@ -56,6 +57,7 @@ export default function RootLayout({
             <SpeedInsights/>
             <CartProvider>
               {children}
+              <FeedbackWidget />
             </CartProvider>
           </ThemeProvider>
         </SessionProvider>

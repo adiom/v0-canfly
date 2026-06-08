@@ -46,9 +46,35 @@ export async function proxy(request: NextRequest) {
 
     const roles = (token?.roles as string[]) || []
     if (!roles.includes('admin')) {
+      // Авторизован, но не админ — показываем страницу с объяснением, а не тихий редирект
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/login'
+      return NextResponse.redirect(url)
+    }
+
+    return NextResponse.next({ request })
+  }
+
+  // --- Защита /studio — требуется роль author | editor | admin ---
+  if (pathname.startsWith('/studio') && pathname !== '/studio-access-denied') {
+    const token = await getToken({
+      req: request,
+      secret: process.env.AUTH_SECRET,
+    })
+
+    if (!token) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       url.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(url)
+    }
+
+    const roles = (token?.roles as string[]) || []
+    const studioRoles = ['author', 'editor', 'admin']
+    if (!roles.some((r) => studioRoles.includes(r))) {
+      // Авторизован, но без нужной роли — показываем страницу с объяснением
+      const url = request.nextUrl.clone()
+      url.pathname = '/studio-access-denied'
       return NextResponse.redirect(url)
     }
 
@@ -71,5 +97,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/profile/:path*', '/admin/:path*', '/login'],
+  matcher: ['/profile/:path*', '/admin/:path*', '/studio/:path*', '/login'],
 }
