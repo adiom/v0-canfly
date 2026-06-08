@@ -4,7 +4,7 @@ import Credentials from 'next-auth/providers/credentials'
 import Yandex from 'next-auth/providers/yandex'
 import Google from 'next-auth/providers/google'
 
-import { dbQueryOne } from '@/lib/db'
+import { dbQuery, dbQueryOne } from '@/lib/db'
 import type { UserProfile } from '@/lib/types'
 
 export type UserType = 'regular'
@@ -16,6 +16,7 @@ declare module 'next-auth' {
       type: UserType
       login?: string | null
       handle?: string | null
+      roles?: string[]
     } & DefaultSession['user']
   }
 
@@ -34,6 +35,7 @@ declare module 'next-auth/jwt' {
     type: UserType
     login?: string | null
     handle?: string | null
+    roles?: string[]
   }
 }
 
@@ -158,7 +160,7 @@ export const authConfig = {
       return true
     },
 
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         if (user.id) token.id = user.id as string
         token.type = (user as { type?: UserType }).type ?? token.type ?? 'regular'
@@ -167,6 +169,14 @@ export const authConfig = {
       }
 
       if (!token.type) token.type = 'regular'
+
+      if (token.sub) {
+        const rows = await dbQuery<{ role: string }>(
+          'SELECT role FROM user_roles WHERE user_id = $1',
+          [token.sub],
+        )
+        token.roles = rows.map(r => r.role)
+      }
 
       return token
     },
@@ -177,6 +187,7 @@ export const authConfig = {
         session.user.type = (token.type as UserType) ?? 'regular'
         session.user.handle = token.handle ?? null
         session.user.login = token.login ?? null
+        session.user.roles = token.roles as string[] ?? []
       }
 
       return session

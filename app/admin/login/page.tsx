@@ -1,0 +1,71 @@
+'use client'
+
+import { useSession, signIn } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import Link from 'next/link'
+
+export default function AdminLoginPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const roles = (session?.user as { roles?: string[] } | undefined)?.roles ?? []
+  const isAdmin = roles.includes('admin')
+
+  useEffect(() => {
+    if (status === 'authenticated' && isAdmin) {
+      router.replace('/admin')
+    }
+  }, [status, isAdmin, router])
+
+  if (status === 'loading') {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        <p className="text-slate-400">Загрузка...</p>
+      </main>
+    )
+  }
+
+  return (
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <Link href="/" className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 inline-block">
+            Canfly
+          </Link>
+          <p className="text-slate-400 mt-2">Администраторская панель</p>
+        </div>
+
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-8 space-y-6">
+          <h1 className="text-2xl font-bold text-white">Вход для администраторов</h1>
+
+          {status === 'authenticated' && !isAdmin ? (
+            <div>
+              <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 text-red-200 text-sm mb-4">
+                Доступ запрещён. Ваша учётная запись не имеет прав администратора.
+              </div>
+              <Link href="/login">
+                <button className="w-full h-12 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-bold transition-colors">
+                  Выйти и войти заново
+                </button>
+              </Link>
+            </div>
+          ) : status === 'authenticated' && isAdmin ? (
+            <p className="text-green-400 text-sm">Перенаправление в панель...</p>
+          ) : (
+            <div>
+              <p className="text-slate-400 text-sm leading-relaxed mb-4">
+                Войдите через единую систему. После аутентификации вы будете перенаправлены в панель управления.
+              </p>
+              <button
+                onClick={() => signIn(undefined, { callbackUrl: '/admin' })}
+                className="w-full h-12 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-bold transition-colors"
+              >
+                Войти
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
+  )
+}

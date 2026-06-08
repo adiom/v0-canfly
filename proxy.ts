@@ -30,6 +30,31 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next({ request })
   }
 
+  // --- Защита /admin — требуется роль admin ---
+  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+    const token = await getToken({
+      req: request,
+      secret: process.env.AUTH_SECRET,
+    })
+
+    if (!token) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      url.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(url)
+    }
+
+    const roles = (token?.roles as string[]) || []
+    if (!roles.includes('admin')) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      url.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(url)
+    }
+
+    return NextResponse.next({ request })
+  }
+
   // --- Авторизованный пользователь на /login → редирект на главную ---
   if (pathname === '/login') {
     const token = await getToken({
@@ -46,5 +71,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/profile/:path*', '/login'],
+  matcher: ['/profile/:path*', '/admin/:path*', '/login'],
 }
