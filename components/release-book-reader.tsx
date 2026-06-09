@@ -16,6 +16,7 @@ interface ReleaseBookReaderProps {
   initialHighlights: ChapterHighlight[]
   userRole: UserRole | null
   userName: string | null
+  initialChapterIndex?: number
 }
 
 interface SelectionData {
@@ -28,18 +29,20 @@ interface SelectionData {
 
 export function ReleaseBookReader({
   release,
+  edition,
   chapters,
   currentUserId,
   initialHighlights,
   userRole,
   userName,
+  initialChapterIndex = 0,
 }: ReleaseBookReaderProps) {
   const accent = release.design_config?.accent_color ?? '#d52525'
   const bg = release.design_config?.bg_color ?? 'var(--cf-bg)'
   const textColor = release.design_config?.text_color ?? 'var(--cf-text-1)'
   const isEditor = userRole === 'editor' || userRole === 'admin'
 
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [currentIndex, setCurrentIndex] = useState(initialChapterIndex)
   const [showToc, setShowToc] = useState(false)
   const [fontSize, setFontSize] = useState(18)
   const [highlights, setHighlights] = useState<ChapterHighlight[]>(initialHighlights)
@@ -177,13 +180,14 @@ export function ReleaseBookReader({
     return () => { cancelled = true }
   }, [currentChapter?.id, chapterHighlights, chapterEditorialNotes, currentIndex, isEditor])
 
-  // Скролл наверх при смене главы
+  // Скролл наверх + синхронизация URL при смене главы
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
     window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.history.replaceState(null, '', `/release/${release.slug}/${edition.slug}/${currentIndex + 1}`)
     // eslint-disable-next-line react-hooks/set-state-in-effect -- clear selection on chapter change
     setSelection(null)
-  }, [currentIndex])
+  }, [currentIndex, release.slug, edition.slug])
 
   // Клавиатура
   useEffect(() => {
@@ -405,7 +409,7 @@ export function ReleaseBookReader({
       >
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 md:px-8">
           <Link
-            href="/"
+            href={`/release/${release.slug}`}
             className="flex items-center gap-2 text-sm font-medium transition-opacity hover:opacity-70"
             style={{ color: textColor }}
           >
@@ -533,7 +537,7 @@ export function ReleaseBookReader({
             <div className="flex flex-1 flex-col items-end justify-center gap-2 border py-4 px-5" style={{ borderColor: `${textColor}14` }}>
               <p className="text-[10px] uppercase tracking-[0.16em] opacity-40" style={{ color: textColor }}>Конец</p>
               <Link
-                href="/"
+                href="/releases"
                 className="text-sm font-black uppercase tracking-[0.12em] transition-opacity hover:opacity-70"
                 style={{ color: accent }}
               >
@@ -876,6 +880,15 @@ export function ReleaseBookReader({
                   </div>
                 </button>
               ))}
+              <Link
+                href={`/release/${release.slug}/${edition.slug}/full`}
+                onClick={() => setShowToc(false)}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.1em] transition-opacity hover:opacity-80"
+                style={{ color: accent }}
+              >
+                <Quote className="h-4 w-4" />
+                Читать одним файлом
+              </Link>
             </div>
           </aside>
         </div>

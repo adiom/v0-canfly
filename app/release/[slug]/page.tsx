@@ -5,13 +5,8 @@ import { fetchEditionsByRelease } from '@/lib/server/editions'
 import { fetchPublishedChaptersByEdition } from '@/lib/server/chapters'
 import { fetchSeriesById } from '@/lib/server/series'
 import { fetchCharactersList } from '@/lib/server/characters'
-import { getCurrentUser, getUserRoles } from '@/lib/server/session'
-import { fetchChapterHighlights } from '@/lib/server/chapter-highlights'
-import type { UserRole } from '@/lib/types'
+import { fetchPublicHighlightsByRelease } from '@/lib/server/chapter-highlights'
 import { ReleasePagePublic } from '@/components/release-page'
-import { ReleaseBookReader } from '@/components/release-book-reader'
-import { ReleaseComicReader } from '@/components/release-comic-reader'
-import { ReleaseAudioPlayer } from '@/components/release-audio-player'
 import { getPrimaryEdition } from '@/lib/utils/editions'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
@@ -47,48 +42,24 @@ export default async function ReleasePublicPage({ params }: { params: Promise<{ 
   const editions = await fetchEditionsByRelease(release.id)
   const primaryEdition = getPrimaryEdition(editions)
 
-  // Если есть главное издание — загружаем главы и рендерим ридер
+  // Мета по главному изданию (число глав, объём, время чтения)
+  let meta = { chapterCount: 0, wordCount: 0, readingMinutes: 0 }
   if (primaryEdition) {
     const chapters = await fetchPublishedChaptersByEdition(primaryEdition.id)
-
-    if (primaryEdition.format === 'book' || primaryEdition.format === 'magazine') {
-      const user = await getCurrentUser()
-      const roles: UserRole[] = user ? await getUserRoles(user.id) : []
-      const userRole = roles.find(r => ['editor', 'admin', 'author'].includes(r)) ?? (roles[0] ?? null)
-      const userName = user?.display_name ?? null
-      const highlights = chapters.length > 0
-        ? await fetchChapterHighlights({ chapterId: chapters[0].id, currentUserId: user?.id ?? null })
-        : []
-      return (
-        <ReleaseBookReader
-          release={release}
-          edition={primaryEdition}
-          chapters={chapters}
-          currentUserId={user?.id ?? null}
-          initialHighlights={highlights}
-          userRole={userRole}
-          userName={userName}
-        />
-      )
-    }
-
-    if (primaryEdition.format === 'comic') {
-      return <ReleaseComicReader release={release} edition={primaryEdition} chapters={chapters} />
-    }
-
-    if (
-      primaryEdition.format === 'audiobook' ||
-      primaryEdition.format === 'audiorelease' ||
-      primaryEdition.format === 'album'
-    ) {
-      return <ReleaseAudioPlayer release={release} edition={primaryEdition} chapters={chapters} />
+    const wordCount = chapters.reduce((sum, c) => sum + (c.word_count ?? 0), 0)
+    meta = {
+      chapterCount: chapters.length,
+      wordCount,
+      readingMinutes: wordCount > 0 ? Math.max(1, Math.round(wordCount / 200)) : 0,
     }
   }
 
-  // Fallback — страница-анонс с метаданными (нет опубликованных изданий или неизвестный формат)
-  const releaseChars = await fetchReleaseCharacters(release.id)
-  const allCharacters = await fetchCharactersList()
-  const seriesLinks = await fetchReleaseSeries(release.id)
+  const [releaseChars, allCharacters, seriesLinks, highlights] = await Promise.all([
+    fetchReleaseCharacters(release.id),
+    fetchCharactersList(),
+    fetchReleaseSeries(release.id),
+    fetchPublicHighlightsByRelease(release.id, 6),
+  ])
 
   const characters = releaseChars
     .map(rc => {
@@ -105,5 +76,15 @@ export default async function ReleasePublicPage({ params }: { params: Promise<{ 
     ? { series: seriesLink.series, phase_number: seriesLink.phase_number }
     : null
 
-  return <ReleasePagePublic release={release} editions={editions} characters={characters} seriesLink={validSeriesLink} />
+  return (
+    <ReleasePagePublic
+      release={release}
+      editions={editions}
+      primaryEditionSlug={primaryEdition?.slug ?? null}
+      characters={characters}
+      seriesLink={validSeriesLink}
+      highlights={highlights}
+      meta={meta}
+    />
+  )
 }

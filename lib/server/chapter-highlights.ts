@@ -71,6 +71,25 @@ export async function fetchChapterHighlights(options: FetchHighlightsOptions): P
   return rows.map(r => ({ ...r, is_liked_by_me: false }))
 }
 
+export async function fetchPublicHighlightsByRelease(releaseId: string, limit = 6): Promise<ChapterHighlight[]> {
+  const safeLimit = Math.max(1, Math.min(50, limit))
+  const rows = await dbQuery<ChapterHighlight>(
+    `SELECT ${highlightColumns},
+            r.slug AS release_slug,
+            ch.title AS chapter_title
+     FROM chapter_highlights h
+     LEFT JOIN users u ON u.id = h.user_id
+     JOIN chapters ch ON ch.id = h.chapter_id
+     JOIN editions e ON e.id = ch.edition_id
+     JOIN releases r ON r.id = e.release_id
+     WHERE e.release_id = $1 AND h.is_public = true
+     ORDER BY h.likes_count DESC, h.created_at DESC
+     LIMIT ${safeLimit}`,
+    [releaseId],
+  )
+  return rows.map(r => ({ ...r, is_liked_by_me: false }))
+}
+
 export async function fetchChapterHighlightById(id: string, currentUserId: string | null): Promise<ChapterHighlight | null> {
   const row = await dbQueryOne<ChapterHighlight>(
     `SELECT ${highlightColumns}
