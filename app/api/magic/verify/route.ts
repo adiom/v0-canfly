@@ -1,13 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { dbQueryOne } from '@/lib/db'
-
-interface MagicTokenRow {
-  id: string
-  token: string
-  email: string
-  expires_at: string
-  used: boolean
-}
+import { validateAndConsumeMagicToken } from '@/lib/server/magic-token'
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,27 +10,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?error=invalid_token', request.url))
     }
 
-    const record = await dbQueryOne<MagicTokenRow>(
-      'SELECT * FROM magic_tokens WHERE token = $1 LIMIT 1',
-      [token],
-    )
+    const data = await validateAndConsumeMagicToken(token)
 
-    if (!record) {
+    if (!data) {
       return NextResponse.redirect(new URL('/login?error=invalid_token', request.url))
     }
 
-    if (new Date(record.expires_at) < new Date()) {
-      return NextResponse.redirect(new URL('/login?error=expired_token', request.url))
-    }
-
-    if (record.used) {
-      return NextResponse.redirect(new URL('/login?error=used_token', request.url))
-    }
-
-    // Редиректим на /login; одноразовый токен потребляется только credentials-провайдером.
     const redirectUrl = new URL('/login', request.url)
-    redirectUrl.searchParams.set('magic_email', record.email)
-    redirectUrl.searchParams.set('magic_token', token)
+    redirectUrl.searchParams.set('magic_email', data.email)
 
     return NextResponse.redirect(redirectUrl)
   } catch (error) {

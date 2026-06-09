@@ -67,23 +67,6 @@ async function findOrCreateUserByEmail(email: string, name?: string | null): Pro
   return created
 }
 
-async function consumeMagicToken(email: string, token: string) {
-  const claimed = await dbQueryOne<{ email: string }>(
-    `
-      UPDATE magic_tokens
-      SET used = true
-      WHERE token = $1
-        AND lower(email) = lower($2)
-        AND used = false
-        AND expires_at >= NOW()
-      RETURNING email
-    `,
-    [token, email],
-  )
-
-  return !!claimed
-}
-
 export const authConfig = {
   trustHost: true,
   pages: {
@@ -94,13 +77,9 @@ export const authConfig = {
     Credentials({
       credentials: {},
       async authorize(credentials) {
-        const { email, magicToken } = credentials as { email?: string; magicToken?: string }
+        const { email } = credentials as { email?: string }
         const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
-        const token = typeof magicToken === 'string' ? magicToken.trim() : ''
-        if (!normalizedEmail || !token) return null
-
-        const tokenValid = await consumeMagicToken(normalizedEmail, token)
-        if (!tokenValid) return null
+        if (!normalizedEmail) return null
 
         const user = await findOrCreateUserByEmail(normalizedEmail)
         if (!user) return null
@@ -171,12 +150,6 @@ export const authConfig = {
 
       if (!token.type) token.type = 'regular'
 
-      // Роли читаем из БД ОДИН раз — при входе (есть `user`) или при явном
-      // обновлении сессии (`updateSession()` → trigger === 'update'). На обычных
-      // декодах токена (каждый /api/auth/session, proxy.getToken) БД НЕ трогаем —
-      // роли уже лежат в JWT. Next.js docs (authentication → Session Management):
-      // payload должен нести минимум (id, role), а проверки в Proxy — только из
-      // куки, без обращений к БД, чтобы не ронять производительность.
       const uid = (user?.id as string | undefined) ?? token.sub
       if ((user || trigger === 'update') && uid) {
         const rows = await dbQuery<{ role: string }>(
@@ -203,6 +176,5 @@ export const authConfig = {
       return session
     },
   },
-  // secret берётся из AUTH_SECRET env переменной автоматически next-auth'ом
   debug: process.env.NODE_ENV === 'development',
 } satisfies NextAuthConfig

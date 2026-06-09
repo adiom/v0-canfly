@@ -29,24 +29,23 @@ function LoginForm() {
   useEffect(() => {
     if (loginTriggered) return
     const magicEmail = searchParams.get('magic_email')
-    const magicToken = searchParams.get('magic_token')
-    if (!magicEmail || !magicToken) return
+    if (!magicEmail) return
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time magic link trigger
     setLoginTriggered(true)
 
     signIn('credentials', {
       email: magicEmail,
-      magicToken: magicToken,
       redirect: false,
     }).then((result) => {
       if (result?.error) {
         router.push('/login?error=invalid_token')
         return
       }
-      updateSession()
-      router.push('/profile')
-      router.refresh()
+      updateSession().then(() => {
+        router.push('/profile')
+        router.refresh()
+      })
     })
   }, [searchParams, signIn, updateSession, router, loginTriggered])
 

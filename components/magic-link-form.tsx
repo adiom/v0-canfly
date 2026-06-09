@@ -3,7 +3,7 @@
 import { useState, useActionState, startTransition } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { createMagicLink, type CreateMagicLinkState } from '@/app/(auth)/actions'
+import { createMagicLink, validateMagicCode, type CreateMagicLinkState, type ValidateCodeState } from '@/app/(auth)/actions'
 import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -47,15 +47,24 @@ export function MagicLinkForm({ onFocus, onBlur }: MagicLinkFormProps) {
     setCodeLoading(true)
 
     try {
-      // Код — это и есть одноразовый magicToken. Передаём его в credentials-провайдер,
-      // который атомарно гасит токен внутри authorize() (см. consumeMagicToken).
-      const result = await signIn('credentials', {
-        email,
-        magicToken: code.trim(),
+      const formData = new FormData()
+      formData.append('email', email)
+      formData.append('code', code.trim())
+
+      const result = await validateMagicCode({ status: 'idle' }, formData)
+
+      if (result.status !== 'success' || !result.email) {
+        setCodeError(result.message || 'Неверный или просроченный код')
+        setCodeLoading(false)
+        return
+      }
+
+      const signInResult = await signIn('credentials', {
+        email: result.email,
         redirect: false,
       })
 
-      if (result?.error) {
+      if (signInResult?.error) {
         setCodeError('Неверный или просроченный код')
         setCodeLoading(false)
         return

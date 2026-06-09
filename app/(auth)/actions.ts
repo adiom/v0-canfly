@@ -2,25 +2,22 @@
 
 import { z } from 'zod'
 import { dbQuery, dbQueryOne } from '@/lib/db'
-import { signIn } from './auth'
+import { validateAndConsumeMagicToken } from '@/lib/server/magic-token'
 
 const emailSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
 })
 
-const magicLoginSchema = emailSchema.extend({
-  magicToken: z.string().min(1),
-})
-
-export interface LoginActionState {
-  status: 'idle' | 'in_progress' | 'success' | 'failed' | 'invalid_data'
-  redirectTo?: string
-}
-
 export interface CreateMagicLinkState {
   status: 'idle' | 'in_progress' | 'success' | 'failed' | 'invalid_data'
   message?: string
   magicLink?: string
+}
+
+export interface ValidateCodeState {
+  status: 'idle' | 'in_progress' | 'success' | 'failed'
+  email?: string
+  message?: string
 }
 
 export const createMagicLink = async (
@@ -31,14 +28,12 @@ export const createMagicLink = async (
     const validated = emailSchema.parse({ email: formData.get('email') })
     const { email } = validated
 
-    // Чистим старые неиспользованные токены для этого email
     await dbQuery(
       `DELETE FROM magic_tokens
        WHERE email = $1 AND expires_at < NOW()`,
       [email],
     )
 
-    // Rate limit: не более 3 активных токенов за 15 минут
     const recent = await dbQueryOne<{ cnt: string }>(
       `SELECT COUNT(*) AS cnt FROM magic_tokens
        WHERE email = $1 AND created_at > NOW() - INTERVAL '15 minutes' AND used = false`,
@@ -52,9 +47,8 @@ export const createMagicLink = async (
       }
     }
 
-    // Генерируем 8-значный числовой код
     const token = Math.floor(10000000 + Math.random() * 90000000).toString()
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000) // 15 минут
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
 
     await dbQuery(
       `INSERT INTO magic_tokens (token, email, expires_at)
@@ -69,7 +63,6 @@ export const createMagicLink = async (
 
     const magicLinkUrl = `${baseUrl}/api/magic/verify?token=${token}`
 
-    // В dev-режиме возвращаем код прямо в ответе
     if (process.env.NODE_ENV === 'development') {
       console.log(`[magic-link] Код для ${email}: ${token}`)
       console.log(`[magic-link] Ссылка: ${magicLinkUrl}`)
@@ -82,9 +75,6 @@ export const createMagicLink = async (
     }
 
     console.log(`[magic-link] Код для ${email}: ${token}`)
-
-    // TODO: здесь подключить отправку email (Resend, Nodemailer и т.д.)
-    // await sendMagicLinkEmail({ to: email, token, magicLinkUrl })
 
     return {
       status: 'success',
@@ -101,27 +91,26 @@ export const createMagicLink = async (
   }
 }
 
-export const loginWithMagicLink = async (
-  _: LoginActionState,
+export const validateMagicCode = async (
+  _: ValidateCodeState,
   formData: FormData,
-): Promise<LoginActionState> => {
+): Promise<ValidateCodeState> => {
   try {
-    const validated = magicLoginSchema.parse({
-      email: formData.get('email'),
-      magicToken: formData.get('magicToken'),
-    })
+    const email = formData.get('email')?.toString().trim().toLowerCase()
+    const code = formData.get('code')?.toString().trim()
 
-    const result = await signIn('credentials', {
-      email: validated.email,
-      magicToken: validated.magicToken,
-      redirect: false,
-    })
+    if (!email || !code) {
+      return { status: 'failed', message: 'Неверный запрос' }
+    }
 
-    if (result?.error) return { status: 'failed' }
+    const data = await validateAndConsumeMagicToken(code)
+    if (!data || data.email !== email) {
+      return { status: 'failed', message: 'Неверный или просроченный код' }
+    }
 
-    return { status: 'success', redirectTo: '/profile' }
+    return { status: 'success', email }
   } catch (error) {
-    if (error instanceof z.ZodError) return { status: 'invalid_data' }
-    return { status: 'failed' }
+    console.error('[magic-code] Ошибка:', error)
+    return { status: 'failed', message: 'Внутренняя ошибка сервера' }
   }
 }
