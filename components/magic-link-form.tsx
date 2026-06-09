@@ -29,7 +29,6 @@ export function MagicLinkForm({ onFocus, onBlur }: MagicLinkFormProps) {
   const isSuccess = state.status === 'success'
   const isLoading = state.status === 'in_progress'
   const magicCode = state.magicLink
-  const isDev = process.env.NODE_ENV === 'development'
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,14 +70,16 @@ export function MagicLinkForm({ onFocus, onBlur }: MagicLinkFormProps) {
     }
   }
 
-  // Форма ввода кода (dev режим после получения кода)
+  // После успешного создания кода — показать кнопку "Ввести код"
   if (isSuccess && magicCode && !showCodeInput) {
     return (
       <div className="space-y-4">
-        <div className="border border-[#f4efe5]/10 bg-[#1b1c19] px-4 py-3 text-sm text-[#ded7cc]">
-          <span className="font-bold text-[#d7c6ad]">Код создан: </span>
-          <span className="font-mono text-[#f6d6a8] tracking-widest">{magicCode}</span>
-        </div>
+        {process.env.NODE_ENV === 'development' && (
+          <div className="border border-[#f4efe5]/10 bg-[#1b1c19] px-4 py-3 text-sm text-[#ded7cc]">
+            <span className="font-bold text-[#d7c6ad]">Код создан: </span>
+            <span className="font-mono text-[#f6d6a8] tracking-widest">{magicCode}</span>
+          </div>
+        )}
 
         <Button
           onClick={() => setShowCodeInput(true)}
@@ -142,26 +143,6 @@ export function MagicLinkForm({ onFocus, onBlur }: MagicLinkFormProps) {
           className="w-full h-11 border-[#f4efe5]/10 text-sm font-bold uppercase text-[#ded7cc] hover:bg-[#f4efe5]/5"
         >
           Назад
-        </Button>
-      </div>
-    )
-  }
-
-  // Успешная отправка (prod — без кода)
-  if (isSuccess && !isDev) {
-    return (
-      <div className="space-y-4">
-        <div className="border border-[#f4efe5]/10 bg-[#1b1c19] px-4 py-3 text-sm text-[#ded7cc]">
-          Ссылка для входа отправлена на <span className="text-[#f4efe5] font-bold">{email}</span>.
-          Проверьте почту.
-        </div>
-
-        <Button
-          variant="outline"
-          onClick={() => window.location.reload()}
-          className="w-full h-11 border-[#f4efe5]/10 text-sm font-bold uppercase text-[#ded7cc] hover:bg-[#f4efe5]/5"
-        >
-          Отправить снова
         </Button>
       </div>
     )

@@ -1,14 +1,12 @@
 'use client'
 
-import { Suspense, useEffect, useState, startTransition } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn, useSession } from 'next-auth/react'
 
 import { MagicLinkForm } from '@/components/magic-link-form'
 import { Button } from '@/components/ui/button'
-import { loginWithMagicLink, type LoginActionState } from '@/app/(auth)/actions'
-import { useActionState } from 'react'
 
 function LoginForm() {
   const router = useRouter()
@@ -16,11 +14,6 @@ function LoginForm() {
   const { status, update: updateSession } = useSession()
   const [loginTriggered, setLoginTriggered] = useState(false)
   const [successHandled, setSuccessHandled] = useState(false)
-
-  const [magicState, magicFormAction] = useActionState<LoginActionState, FormData>(
-    loginWithMagicLink,
-    { status: 'idle' },
-  )
 
   // Редирект если уже авторизован
   useEffect(() => {
@@ -41,24 +34,21 @@ function LoginForm() {
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time magic link trigger
     setLoginTriggered(true)
-    const formData = new FormData()
-    formData.append('email', magicEmail)
-    formData.append('magicToken', magicToken)
-    startTransition(() => {
-      magicFormAction(formData)
-    })
-  }, [searchParams, magicFormAction, loginTriggered])
 
-  // После успешного входа через credentials
-  useEffect(() => {
-    if (magicState.status === 'success' && !successHandled) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- redirect after successful login
-      setSuccessHandled(true)
+    signIn('credentials', {
+      email: magicEmail,
+      magicToken: magicToken,
+      redirect: false,
+    }).then((result) => {
+      if (result?.error) {
+        router.push('/login?error=invalid_token')
+        return
+      }
       updateSession()
-      const redirect = magicState.redirectTo || searchParams.get('redirect') || '/profile'
-      router.push(redirect)
-    }
-  }, [magicState.status, magicState.redirectTo, updateSession, router, successHandled, searchParams])
+      router.push('/profile')
+      router.refresh()
+    })
+  }, [searchParams, signIn, updateSession, router, loginTriggered])
 
   const errorParam = searchParams.get('error')
   const errorMessages: Record<string, string> = {

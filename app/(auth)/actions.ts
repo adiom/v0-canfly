@@ -89,6 +89,7 @@ export const createMagicLink = async (
     return {
       status: 'success',
       message: 'Ссылка отправлена на ваш email',
+      magicLink: token,
     }
   } catch (error) {
     if (error instanceof z.ZodError) {

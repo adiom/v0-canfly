@@ -21,6 +21,7 @@ export async function proxy(request: NextRequest) {
     })
 
     if (!token) {
+      console.log(`[proxy] /profile redirect to /login — no token for path: ${pathname}`)
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       url.searchParams.set('redirect', pathname)
@@ -38,6 +39,7 @@ export async function proxy(request: NextRequest) {
     })
 
     if (!token) {
+      console.log(`[proxy] /admin redirect to /login — no token for path: ${pathname}`)
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       url.searchParams.set('redirect', pathname)
@@ -63,6 +65,7 @@ export async function proxy(request: NextRequest) {
     })
 
     if (!token) {
+      console.log(`[proxy] /studio redirect to /login — no token for path: ${pathname}`)
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       url.searchParams.set('redirect', pathname)
