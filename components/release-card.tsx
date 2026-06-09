@@ -14,14 +14,19 @@ const FORMAT_LABELS: Record<EditionFormat, string> = {
 interface ReleaseCardProps {
   release: Release & { formats: EditionFormat[] }
   priority?: boolean
+  index?: number
 }
 
-export function ReleaseCard({ release, priority = false }: ReleaseCardProps) {
+export function ReleaseCard({ release, priority = false, index }: ReleaseCardProps) {
   const primaryFormat = release.formats[0]
   const formatLabel = primaryFormat ? FORMAT_LABELS[primaryFormat] : null
 
   return (
-    <Link href={`/release/${release.slug}`} className="group block">
+    <Link
+      href={`/release/${release.slug}`}
+      className="group block animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both"
+      style={index !== undefined ? { animationDelay: `${index * 55}ms` } : undefined}
+    >
       <div className="relative aspect-[2/3] overflow-hidden border border-cf-text-1/10 bg-cf-footer-bg transition-colors duration-300 group-hover:border-cf-warm/45">
         {release.cover_image ? (
           <Image
@@ -44,6 +49,16 @@ export function ReleaseCard({ release, priority = false }: ReleaseCardProps) {
             {formatLabel}
           </span>
         )}
+        <div className="absolute inset-x-0 bottom-0 translate-y-full bg-cf-bg/92 px-3 py-3 backdrop-blur-sm transition-transform duration-300 ease-out group-hover:translate-y-0">
+          {release.annotation && (
+            <p className="line-clamp-3 text-[10px] leading-relaxed text-cf-text-caption">
+              {release.annotation}
+            </p>
+          )}
+          <span className="mt-2 block text-[9px] font-black uppercase tracking-[0.16em] text-cf-accent">
+            Читать →
+          </span>
+        </div>
       </div>
       <p className="mt-2 line-clamp-2 text-xs font-black uppercase leading-tight text-cf-text-heading">
         {release.title}

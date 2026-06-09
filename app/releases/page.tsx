@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import { fetchReleasesWithEditions } from '@/lib/server/releases'
 import type { Release, EditionFormat } from '@/lib/releases-types'
 import { ReleaseCatalog } from '@/components/releases-catalog'
+import { ReleasesPageBookmate } from '@/components/releases-page-bookmate'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 
@@ -45,7 +46,7 @@ function HeroBanner({ release }: { release: ReleaseWithFormats }) {
             {!accentColor && <span className="text-cf-accent">Новый релиз</span>}
             {accentColor && 'Новый релиз'}
           </p>
-          <h1 className="text-5xl font-black uppercase leading-[0.88] text-cf-text-heading md:text-7xl">
+          <h1 className="font-[family-name:var(--font-cormorant)] text-6xl font-bold italic leading-[0.85] text-cf-text-heading md:text-8xl">
             {release.title}
           </h1>
           {release.annotation && (
@@ -65,12 +66,6 @@ function HeroBanner({ release }: { release: ReleaseWithFormats }) {
             >
               Читать
             </Link>
-            <Link
-              href={`/release/${release.slug}`}
-              className="inline-flex h-12 items-center border border-cf-text-1/18 px-6 text-sm font-bold uppercase tracking-[0.08em] text-cf-text-1 transition-colors hover:bg-cf-text-1/8"
-            >
-              Подробнее
-            </Link>
           </div>
         </div>
       </div>
@@ -78,8 +73,15 @@ function HeroBanner({ release }: { release: ReleaseWithFormats }) {
   )
 }
 
-export default async function ReleasesPage() {
+export default async function ReleasesPage(props: {
+  searchParams: Promise<{ ab?: string }>
+}) {
+  const { ab } = await props.searchParams
   const releases = await fetchReleasesWithEditions({ status: 'published' })
+
+  if (ab === 'bookmate') {
+    return <ReleasesPageBookmate releases={releases} />
+  }
 
   const featured = releases[0] ?? null
 

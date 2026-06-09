@@ -4,12 +4,13 @@ import Link from 'next/link'
 import { fetchReleaseBySlug } from '@/lib/server/releases'
 import { fetchChapterById } from '@/lib/server/chapters'
 import { fetchChapterHighlightById } from '@/lib/server/chapter-highlights'
-import { getCurrentUser } from '@/lib/server/session'
+import { getCurrentUser, getUserRoles } from '@/lib/server/session'
 import { getPrimaryEdition } from '@/lib/utils/editions'
 import { ReleaseBookReader } from '@/components/release-book-reader'
 import { fetchEditionsByRelease } from '@/lib/server/editions'
 import { fetchPublishedChaptersByEdition } from '@/lib/server/chapters'
 import { fetchChapterHighlights } from '@/lib/server/chapter-highlights'
+import type { UserRole } from '@/lib/types'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
 
@@ -69,6 +70,9 @@ export default async function HighlightSharePage({ params }: PageProps) {
 
   const { release, highlight, chapter } = ctx
   const user = await getCurrentUser()
+  const roles: UserRole[] = user ? await getUserRoles(user.id) : []
+  const userRole = roles.find(r => ['editor', 'admin', 'author'].includes(r)) ?? (roles[0] ?? null)
+  const userName = user?.display_name ?? null
   const editions = await fetchEditionsByRelease(release.id)
   const primaryEdition = getPrimaryEdition(editions)
 
@@ -108,6 +112,8 @@ export default async function HighlightSharePage({ params }: PageProps) {
             chapters={chapters}
             currentUserId={user?.id ?? null}
             initialHighlights={allHighlights}
+            userRole={userRole}
+            userName={userName}
           />
         ) : (
           <div className="p-8 text-center text-cf-text-3">Издание недоступно</div>

@@ -1,15 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import type { Chapter } from '@/lib/releases-types'
+import type { Chapter, ChapterEditorialNote } from '@/lib/releases-types'
 import { publishChapterAction, deleteChapterAction } from '@/lib/actions/studio'
 import { TelegraphEditor } from '@/components/studio/telegraph-editor'
 import { VersionHistory } from '@/components/studio/version-history'
 import { EditorialNotesPanel } from '@/components/studio/editorial-notes-panel'
+import { EditorialNotesOverlay } from '@/components/studio/editorial-notes-overlay'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -28,6 +29,79 @@ import { ArrowLeft, Globe, Trash2, Check, Loader2, AlertCircle } from 'lucide-re
 export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; editionId: string }) {
   const router = useRouter()
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [editorialNotes, setEditorialNotes] = useState<ChapterEditorialNote[]>([])
+  const editorRef = useRef<HTMLDivElement | null>(null)
+  const [, setContentVersion] = useState(0)
+
+  const handleNoteFocus = useCallback((note: ChapterEditorialNote) => {
+    const container = editorRef.current
+    if (!container || !note.text_content) return
+
+    const proseMirror = container.querySelector('.ProseMirror')
+    if (!proseMirror) return
+
+    const paragraphs: HTMLElement[] = []
+    const walker = document.createTreeWalker(proseMirror, NodeFilter.SHOW_ELEMENT, {
+      acceptNode: (node) => {
+        if (!(node instanceof HTMLElement)) return NodeFilter.FILTER_REJECT
+        const tag = node.tagName.toLowerCase()
+        if (['p', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'li'].includes(tag)) {
+          return NodeFilter.FILTER_ACCEPT
+        }
+        return NodeFilter.FILTER_SKIP
+      },
+    })
+    let n: Node | null = walker.nextNode()
+    while (n) {
+      paragraphs.push(n as HTMLElement)
+      n = walker.nextNode()
+    }
+
+    let target: HTMLElement | null = null
+
+    // 1. Точное совпадение: параграф содержит text_content
+    for (const p of paragraphs) {
+      const text = p.textContent ?? ''
+      if (text.includes(note.text_content)) {
+        target = p
+        break
+      }
+    }
+
+    // 2. Fallback: context_before совпадает
+    if (!target && note.context_before) {
+      for (const p of paragraphs) {
+        const text = p.textContent ?? ''
+        if (text.includes(note.context_before)) {
+          target = p
+          break
+        }
+      }
+    }
+
+    // 3. Fallback: paragraph_index (последний шанс)
+    if (!target && note.paragraph_index != null) {
+      target = paragraphs[note.paragraph_index]
+    }
+
+    if (!target) return
+
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+    const statusColor = note.status === 'open' ? '#e97316' : note.status === 'resolved' ? '#16a34a' : '#6b7280'
+    target.style.transition = 'background-color 0.3s ease-out'
+    target.style.backgroundColor = `${statusColor}33`
+    setTimeout(() => {
+      target.style.backgroundColor = `${statusColor}18`
+      setTimeout(() => {
+        target.style.backgroundColor = ''
+      }, 1500)
+    }, 1500)
+  }, [])
+
+  const handleContentUpdate = useCallback(() => {
+    setContentVersion(v => v + 1)
+  }, [])
 
   async function handlePublish() {
     try {
@@ -106,17 +180,28 @@ export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; ed
 
       <div className="mx-auto max-w-6xl px-4 md:px-8 py-8">
         <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-          <div>
+          <div className="relative">
+            <EditorialNotesOverlay
+              editorContainer={editorRef.current}
+              notes={editorialNotes}
+            />
             <TelegraphEditor
+              ref={editorRef}
               chapterId={chapter.id}
               initialTitle={chapter.title}
               initialContent={chapter.content}
               onSaveStatus={setSaveStatus}
+              onContentUpdate={handleContentUpdate}
             />
           </div>
           <aside className="lg:sticky lg:top-20 lg:self-start">
             <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-4">
-              <EditorialNotesPanel chapterId={chapter.id} />
+              <EditorialNotesPanel
+                chapterId={chapter.id}
+                onNoteFocus={handleNoteFocus}
+                editorialNotes={editorialNotes}
+                onNotesUpdate={setEditorialNotes}
+              />
             </div>
           </aside>
         </div>

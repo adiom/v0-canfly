@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { sanitizeChapterHtml } from '@/lib/sanitize'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, X, AlignJustify, Heart, Quote } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, AlignJustify, Heart, Quote, MessageCircle, Check } from 'lucide-react'
 import { toast } from 'sonner'
-import type { Release, Edition, Chapter, ChapterHighlight } from '@/lib/releases-types'
+import type { Release, Edition, Chapter, ChapterHighlight, ChapterEditorialNote, EditorialNoteStatus } from '@/lib/releases-types'
+import type { UserRole } from '@/lib/types'
 
 interface ReleaseBookReaderProps {
   release: Release
@@ -13,6 +14,8 @@ interface ReleaseBookReaderProps {
   chapters: Chapter[]
   currentUserId: string | null
   initialHighlights: ChapterHighlight[]
+  userRole: UserRole | null
+  userName: string | null
 }
 
 interface SelectionData {
@@ -28,20 +31,25 @@ export function ReleaseBookReader({
   chapters,
   currentUserId,
   initialHighlights,
+  userRole,
+  userName,
 }: ReleaseBookReaderProps) {
   const accent = release.design_config?.accent_color ?? '#d52525'
   const bg = release.design_config?.bg_color ?? 'var(--cf-bg)'
   const textColor = release.design_config?.text_color ?? 'var(--cf-text-1)'
+  const isEditor = userRole === 'editor' || userRole === 'admin'
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showToc, setShowToc] = useState(false)
   const [fontSize, setFontSize] = useState(18)
   const [highlights, setHighlights] = useState<ChapterHighlight[]>(initialHighlights)
+  const [editorialNotes, setEditorialNotes] = useState<ChapterEditorialNote[]>([])
   const [selection, setSelection] = useState<SelectionData | null>(null)
   const [isPublic, setIsPublic] = useState(false)
   const [note, setNote] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [activeHighlight, setActiveHighlight] = useState<ChapterHighlight | null>(null)
+  const [activeEditorialNote, setActiveEditorialNote] = useState<ChapterEditorialNote | null>(null)
 
   const contentRef = useRef<HTMLDivElement>(null)
   const floatingMenuRef = useRef<HTMLDivElement>(null)
@@ -55,6 +63,12 @@ export function ReleaseBookReader({
   const chapterHighlights = useMemo(
     () => highlights.filter(h => h.chapter_id === currentChapter?.id),
     [highlights, currentChapter],
+  )
+
+  // Editorial notes текущей главы
+  const chapterEditorialNotes = useMemo(
+    () => editorialNotes.filter(n => n.chapter_id === currentChapter?.id),
+    [editorialNotes, currentChapter],
   )
 
   // Подгружаем highlights при смене главы
@@ -75,6 +89,24 @@ export function ReleaseBookReader({
     return () => { cancelled = true }
   }, [currentChapter?.id])
 
+  // Подгружаем editorial notes при смене главы (editor/admin)
+  useEffect(() => {
+    if (!currentChapter || !isEditor) return
+    if (editorialNotes.some(n => n.chapter_id === currentChapter.id)) return
+    let cancelled = false
+    fetch(`/api/chapter-editorial-notes?chapterId=${currentChapter.id}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (cancelled || !data?.data) return
+        setEditorialNotes(prev => {
+          const ids = new Set(prev.map(n => n.id))
+          return [...prev, ...data.data.filter((n: ChapterEditorialNote) => !ids.has(n.id))]
+        })
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [currentChapter?.id, isEditor])
+
   // Применяем подсветки к DOM после рендера
   useEffect(() => {
     const root = contentRef.current
@@ -82,16 +114,14 @@ export function ReleaseBookReader({
 
     let cancelled = false
 
-    // Снимаем старые подсветки
-    root.querySelectorAll('mark[data-cf-hl]').forEach(el => {
+    // Снимаем старые подсветки (highlights + editorial notes)
+    root.querySelectorAll('mark[data-cf-hl], mark[data-cf-en]').forEach(el => {
       const parent = el.parentNode
       if (!parent) return
       while (el.firstChild) parent.insertBefore(el.firstChild, el)
       parent.removeChild(el)
       parent.normalize()
     })
-
-    if (chapterHighlights.length === 0) return
 
     // Собираем параграфы в порядке DOM
     const paragraphs: HTMLElement[] = []
@@ -113,22 +143,39 @@ export function ReleaseBookReader({
     if (cancelled) return
 
     // Группируем highlights по параграфу
-    const byParagraph = new Map<number, ChapterHighlight[]>()
+    const hlByParagraph = new Map<number, ChapterHighlight[]>()
     for (const hl of chapterHighlights) {
       if (hl.paragraph_index == null) continue
-      const arr = byParagraph.get(hl.paragraph_index) ?? []
+      const arr = hlByParagraph.get(hl.paragraph_index) ?? []
       arr.push(hl)
-      byParagraph.set(hl.paragraph_index, arr)
+      hlByParagraph.set(hl.paragraph_index, arr)
     }
 
     paragraphs.forEach((p, idx) => {
-      const list = byParagraph.get(idx)
+      const list = hlByParagraph.get(idx)
       if (!list) return
       for (const hl of list) wrapHighlight(p, hl)
     })
 
+    // Группируем editorial notes по параграфу (editor/admin only)
+    if (isEditor && chapterEditorialNotes.length > 0) {
+      const enByParagraph = new Map<number, ChapterEditorialNote[]>()
+      for (const en of chapterEditorialNotes) {
+        if (en.paragraph_index == null) continue
+        const arr = enByParagraph.get(en.paragraph_index) ?? []
+        arr.push(en)
+        enByParagraph.set(en.paragraph_index, arr)
+      }
+
+      paragraphs.forEach((p, idx) => {
+        const list = enByParagraph.get(idx)
+        if (!list) return
+        for (const en of list) wrapEditorialNote(p, en)
+      })
+    }
+
     return () => { cancelled = true }
-  }, [currentChapter?.id, chapterHighlights, currentIndex])
+  }, [currentChapter?.id, chapterHighlights, chapterEditorialNotes, currentIndex, isEditor])
 
   // Скролл наверх при смене главы
   useEffect(() => {
@@ -149,20 +196,26 @@ export function ReleaseBookReader({
     return () => window.removeEventListener('keydown', handler)
   }, [currentIndex, chapters.length])
 
-  // Клик по подсвеченному highlight — открываем попап
+  // Клик по подсвеченному highlight/editorial note — открываем попап
   useEffect(() => {
     const root = contentRef.current
     if (!root) return
     const onClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      if (target.tagName !== 'MARK' || !target.dataset.cfHl) return
-      const hlId = target.dataset.cfHl
-      const hl = chapterHighlights.find(h => h.id === hlId)
-      if (hl) setActiveHighlight(hl)
+      if (target.tagName !== 'MARK') return
+      if (target.dataset.cfHl) {
+        const hlId = target.dataset.cfHl
+        const hl = chapterHighlights.find(h => h.id === hlId)
+        if (hl) setActiveHighlight(hl)
+      } else if (target.dataset.cfEn) {
+        const enId = target.dataset.cfEn
+        const en = chapterEditorialNotes.find(n => n.id === enId)
+        if (en) setActiveEditorialNote(en)
+      }
     }
     root.addEventListener('click', onClick)
     return () => root.removeEventListener('click', onClick)
-  }, [chapterHighlights])
+  }, [chapterHighlights, chapterEditorialNotes])
 
   const handleMouseUp = useCallback(() => {
     if (floatingMenuRef.current?.contains(document.activeElement)) return
@@ -229,34 +282,84 @@ export function ReleaseBookReader({
     }
     setIsSaving(true)
     try {
-      const res = await fetch('/api/chapter-highlights', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chapter_id: currentChapter.id,
-          text_content: selection.text,
-          paragraph_index: selection.paragraphIndex,
-          context_before: selection.contextBefore,
-          context_after: selection.contextAfter,
-          note: note || null,
-          is_public: isPublic,
-        }),
-      })
-      const data = await res.json()
-      if (res.ok && data.data) {
-        setHighlights([data.data, ...highlights])
-        toast.success(isPublic ? 'Публичная цитата сохранена' : 'Цитата сохранена')
-        setSelection(null)
-        setNote('')
-        setIsPublic(false)
-        window.getSelection()?.removeAllRanges()
+      if (isEditor) {
+        if (!note.trim()) {
+          toast.error('Добавьте комментарий к замечанию')
+          setIsSaving(false)
+          return
+        }
+        const res = await fetch('/api/chapter-editorial-notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chapter_id: currentChapter.id,
+            text_content: selection.text,
+            paragraph_index: selection.paragraphIndex,
+            context_before: selection.contextBefore,
+            context_after: selection.contextAfter,
+            note: note.trim(),
+          }),
+        })
+        const data = await res.json()
+        if (res.ok && data.data) {
+          setEditorialNotes([data.data, ...editorialNotes])
+          toast.success('Замечание отправлено')
+          setSelection(null)
+          setNote('')
+          window.getSelection()?.removeAllRanges()
+        } else {
+          toast.error(data.error ?? 'Ошибка сохранения')
+        }
       } else {
-        toast.error(data.error ?? 'Ошибка сохранения')
+        const res = await fetch('/api/chapter-highlights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chapter_id: currentChapter.id,
+            text_content: selection.text,
+            paragraph_index: selection.paragraphIndex,
+            context_before: selection.contextBefore,
+            context_after: selection.contextAfter,
+            note: note || null,
+            is_public: isPublic,
+          }),
+        })
+        const data = await res.json()
+        if (res.ok && data.data) {
+          setHighlights([data.data, ...highlights])
+          toast.success(isPublic ? 'Публичная цитата сохранена' : 'Цитата сохранена')
+          setSelection(null)
+          setNote('')
+          setIsPublic(false)
+          window.getSelection()?.removeAllRanges()
+        } else {
+          toast.error(data.error ?? 'Ошибка сохранения')
+        }
       }
     } catch {
       toast.error('Сетевая ошибка')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const updateEditorialNoteStatus = async (id: string, status: EditorialNoteStatus) => {
+    const res = await fetch(`/api/chapter-editorial-notes/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setEditorialNotes(editorialNotes.map(n =>
+        n.id === id ? data.data : n,
+      ))
+      if (activeEditorialNote?.id === id) {
+        setActiveEditorialNote(data.data)
+      }
+      toast.success(status === 'resolved' ? 'Замечание решено' : 'Замечание проигнорировано')
+    } else {
+      toast.error('Ошибка')
     }
   }
 
@@ -457,59 +560,112 @@ export function ReleaseBookReader({
             color: textColor,
           }}
         >
-          <div className="flex items-center gap-2">
-            <Quote className="h-3.5 w-3.5" style={{ color: accent }} />
-            <p className="text-[10px] uppercase tracking-[0.16em] opacity-50">Новая цитата</p>
-          </div>
-          <p className="text-xs italic opacity-70 line-clamp-3 border-l-2 pl-2" style={{ borderColor: `${accent}80` }}>
-            «{selection.text}»
-          </p>
-
-          {currentUserId ? (
+          {isEditor ? (
             <>
-              <textarea
-                value={note}
-                onChange={e => setNote(e.target.value)}
-                placeholder="Заметка (опционально)"
-                rows={2}
-                className="w-full text-xs bg-transparent border rounded p-2 outline-none focus:border-current"
-                style={{ borderColor: `${textColor}20`, color: textColor }}
-              />
-              <label className="flex items-center gap-2 text-xs cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isPublic}
-                  onChange={e => setIsPublic(e.target.checked)}
-                  className="h-3.5 w-3.5"
-                />
-                <span className="opacity-70">Сделать публичной</span>
-              </label>
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={() => { setSelection(null); setNote(''); setIsPublic(false); window.getSelection()?.removeAllRanges() }}
-                  className="flex-1 h-8 text-xs border transition-opacity hover:opacity-60"
-                  style={{ borderColor: `${textColor}20` }}
-                >
-                  Отмена
-                </button>
-                <button
-                  onClick={saveHighlight}
-                  disabled={isSaving}
-                  className="flex-1 h-8 text-xs font-black uppercase tracking-[0.1em] disabled:opacity-50"
-                  style={{ backgroundColor: accent, color: bg }}
-                >
-                  {isSaving ? '...' : 'Сохранить'}
-                </button>
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-3.5 w-3.5" style={{ color: '#e97316' }} />
+                <p className="text-[10px] uppercase tracking-[0.16em] opacity-50">Редакторское замечание</p>
               </div>
+              <p className="text-xs italic opacity-70 line-clamp-3 border-l-2 pl-2" style={{ borderColor: '#e9731680' }}>
+                «{selection.text}»
+              </p>
+
+              {currentUserId ? (
+                <>
+                  <textarea
+                    value={note}
+                    onChange={e => setNote(e.target.value)}
+                    placeholder="Комментарий — что нужно исправить (обязательно)"
+                    rows={3}
+                    className="w-full text-xs bg-transparent border rounded p-2 outline-none focus:border-current"
+                    style={{ borderColor: `${textColor}20`, color: textColor }}
+                  />
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => { setSelection(null); setNote(''); window.getSelection()?.removeAllRanges() }}
+                      className="flex-1 h-8 text-xs border transition-opacity hover:opacity-60"
+                      style={{ borderColor: `${textColor}20` }}
+                    >
+                      Отмена
+                    </button>
+                    <button
+                      onClick={saveHighlight}
+                      disabled={isSaving || !note.trim()}
+                      className="flex-1 h-8 text-xs font-black uppercase tracking-[0.1em] disabled:opacity-50"
+                      style={{ backgroundColor: '#e97316', color: bg }}
+                    >
+                      {isSaving ? '...' : 'Отправить замечание'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <Link
+                  href={`/login?redirect=/release/${release.slug}`}
+                  className="text-center text-xs py-2 font-black uppercase tracking-[0.1em]"
+                  style={{ backgroundColor: '#e97316', color: bg }}
+                >
+                  Войти
+                </Link>
+              )}
             </>
           ) : (
-            <Link
-              href={`/login?redirect=/release/${release.slug}`}
-              className="text-center text-xs py-2 font-black uppercase tracking-[0.1em]"
-              style={{ backgroundColor: accent, color: bg }}
-            >
-              Войти
-            </Link>
+            <>
+              <div className="flex items-center gap-2">
+                <Quote className="h-3.5 w-3.5" style={{ color: accent }} />
+                <p className="text-[10px] uppercase tracking-[0.16em] opacity-50">Новая цитата</p>
+              </div>
+              <p className="text-xs italic opacity-70 line-clamp-3 border-l-2 pl-2" style={{ borderColor: `${accent}80` }}>
+                «{selection.text}»
+              </p>
+
+              {currentUserId ? (
+                <>
+                  <textarea
+                    value={note}
+                    onChange={e => setNote(e.target.value)}
+                    placeholder="Заметка (опционально)"
+                    rows={2}
+                    className="w-full text-xs bg-transparent border rounded p-2 outline-none focus:border-current"
+                    style={{ borderColor: `${textColor}20`, color: textColor }}
+                  />
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isPublic}
+                      onChange={e => setIsPublic(e.target.checked)}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span className="opacity-70">Сделать публичной</span>
+                  </label>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => { setSelection(null); setNote(''); setIsPublic(false); window.getSelection()?.removeAllRanges() }}
+                      className="flex-1 h-8 text-xs border transition-opacity hover:opacity-60"
+                      style={{ borderColor: `${textColor}20` }}
+                    >
+                      Отмена
+                    </button>
+                    <button
+                      onClick={saveHighlight}
+                      disabled={isSaving}
+                      className="flex-1 h-8 text-xs font-black uppercase tracking-[0.1em] disabled:opacity-50"
+                      style={{ backgroundColor: accent, color: bg }}
+                    >
+                      {isSaving ? '...' : 'Сохранить'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <Link
+                  href={`/login?redirect=/release/${release.slug}`}
+                  className="text-center text-xs py-2 font-black uppercase tracking-[0.1em]"
+                  style={{ backgroundColor: accent, color: bg }
+                  }
+                >
+                  Войти
+                </Link>
+              )}
+            </>
           )}
         </div>
       )}
@@ -581,6 +737,82 @@ export function ReleaseBookReader({
                 Поделиться
               </Link>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Editorial note detail popup */}
+      {activeEditorialNote && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={() => setActiveEditorialNote(null)}
+        >
+          <div className="absolute inset-0 bg-black/40" />
+          <div
+            className="relative max-w-md w-full border p-6 shadow-2xl"
+            style={{ backgroundColor: bg, borderColor: '#e9731640', color: textColor }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setActiveEditorialNote(null)}
+              className="absolute top-3 right-3 p-1 opacity-40 hover:opacity-100"
+              aria-label="Закрыть"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-center gap-2 mb-3">
+              <MessageCircle className="h-4 w-4" style={{ color: '#e97316' }} />
+              <span className="text-[10px] uppercase tracking-[0.16em] font-black" style={{ color: '#e97316' }}>
+                {activeEditorialNote.status === 'open' ? 'Открытое замечание' :
+                 activeEditorialNote.status === 'resolved' ? 'Решённое замечание' :
+                 'Проигнорированное замечание'}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3 mb-4">
+              {activeEditorialNote.author_avatar ? (
+                <img src={activeEditorialNote.author_avatar} alt={activeEditorialNote.author_name ?? ''} className="h-10 w-10 rounded-full object-cover" />
+              ) : (
+                <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e9731633', color: '#e97316' }}>
+                  <span className="font-black text-sm">{(activeEditorialNote.author_name ?? '?')[0]}</span>
+                </div>
+              )}
+              <div>
+                <p className="font-bold text-sm">{activeEditorialNote.author_name ?? 'Редактор'}</p>
+                <p className="text-[10px] opacity-50">
+                  {new Date(activeEditorialNote.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              </div>
+            </div>
+
+            <blockquote
+              className="text-sm leading-relaxed italic border-l-2 pl-3 opacity-80"
+              style={{ borderColor: '#e97316' }}
+            >
+              «{activeEditorialNote.text_content}»
+            </blockquote>
+
+            <p className="mt-4 text-sm leading-relaxed">{activeEditorialNote.note}</p>
+
+            {isEditor && activeEditorialNote.status === 'open' && (
+              <div className="mt-5 flex gap-2">
+                <button
+                  onClick={() => updateEditorialNoteStatus(activeEditorialNote.id, 'resolved')}
+                  className="flex-1 h-8 text-xs font-black uppercase tracking-[0.1em] flex items-center justify-center gap-1.5"
+                  style={{ backgroundColor: '#16a34a', color: bg }}
+                >
+                  <Check className="h-3 w-3" /> Решено
+                </button>
+                <button
+                  onClick={() => updateEditorialNoteStatus(activeEditorialNote.id, 'ignored')}
+                  className="flex-1 h-8 text-xs border transition-opacity hover:opacity-60"
+                  style={{ borderColor: `${textColor}20` }}
+                >
+                  Игнорировать
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -704,6 +936,58 @@ function wrapHighlight(paragraph: HTMLElement, hl: ChapterHighlight) {
       return // один highlight за раз
     } catch {
       // не получилось окружить — пропускаем
+    }
+  }
+}
+
+function wrapEditorialNote(paragraph: HTMLElement, en: ChapterEditorialNote) {
+  const text = en.text_content
+  if (!text) return
+
+  const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT, null)
+  const textNodes: Text[] = []
+  let n: Node | null = walker.nextNode()
+  while (n) {
+    textNodes.push(n as Text)
+    n = walker.nextNode()
+  }
+
+  for (const node of textNodes) {
+    if (node.parentElement?.tagName === 'MARK') continue
+    const nodeText = node.textContent ?? ''
+    let idx = nodeText.indexOf(text)
+    if (idx === -1 && en.context_before) {
+      const foundAt = nodeText.indexOf(en.context_before)
+      if (foundAt >= 0) {
+        const tail = nodeText.slice(foundAt + en.context_before.length, foundAt + en.context_before.length + text.length + 10)
+        if (tail.startsWith(text.slice(0, 20))) {
+          idx = foundAt + en.context_before.length
+        }
+      }
+    }
+    if (idx === -1) continue
+
+    try {
+      const range = document.createRange()
+      range.setStart(node, idx)
+      range.setEnd(node, idx + text.length)
+      const mark = document.createElement('mark')
+      mark.dataset.cfEn = en.id
+
+      const statusColor = en.status === 'open' ? '#e97316' : en.status === 'resolved' ? '#16a34a' : '#6b7280'
+      const bgOpacity = en.status === 'open' ? '44' : en.status === 'resolved' ? '28' : '18'
+      mark.style.backgroundColor = `${statusColor}${bgOpacity}`
+      mark.style.cursor = 'pointer'
+      mark.style.borderRadius = '2px'
+      mark.style.padding = '0 1px'
+      mark.style.transition = 'background-color 0.15s'
+      mark.addEventListener('mouseenter', () => { mark.style.backgroundColor = `${statusColor}88` })
+      mark.addEventListener('mouseleave', () => { mark.style.backgroundColor = `${statusColor}${bgOpacity}` })
+
+      range.surroundContents(mark)
+      return
+    } catch {
+      // skip
     }
   }
 }

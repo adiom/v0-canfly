@@ -66,7 +66,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next({ request })
   }
 
-  // --- Защита /studio — требуется роль author | editor | admin ---
+  // --- Защита /studio — требуется авторизация (роль проверяется в layout через DB) ---
   if (pathname.startsWith('/studio') && pathname !== '/studio-access-denied') {
     const token = await getToken({
       req: request,
@@ -82,17 +82,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    const roles = (token?.roles as string[]) || []
-    const studioRoles = ['author', 'editor', 'admin']
-    if (!roles.some((r) => studioRoles.includes(r))) {
-      console.log(`[proxy] /studio access denied`, { userId: token.sub, roles })
-      // Авторизован, но без нужной роли — показываем страницу с объяснением
-      const url = request.nextUrl.clone()
-      url.pathname = '/studio-access-denied'
-      return NextResponse.redirect(url)
-    }
-
-    console.log(`[proxy] /studio allowed`, { userId: token.sub, roles })
+    console.log(`[proxy] /studio authenticated`, { userId: token.sub })
     return NextResponse.next({ request })
   }
 

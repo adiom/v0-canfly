@@ -5,8 +5,9 @@ import { fetchEditionsByRelease } from '@/lib/server/editions'
 import { fetchPublishedChaptersByEdition } from '@/lib/server/chapters'
 import { fetchSeriesById } from '@/lib/server/series'
 import { fetchCharactersList } from '@/lib/server/characters'
-import { getCurrentUser } from '@/lib/server/session'
+import { getCurrentUser, getUserRoles } from '@/lib/server/session'
 import { fetchChapterHighlights } from '@/lib/server/chapter-highlights'
+import type { UserRole } from '@/lib/types'
 import { ReleasePagePublic } from '@/components/release-page'
 import { ReleaseBookReader } from '@/components/release-book-reader'
 import { ReleaseComicReader } from '@/components/release-comic-reader'
@@ -52,11 +53,12 @@ export default async function ReleasePublicPage({ params }: { params: Promise<{ 
 
     if (primaryEdition.format === 'book' || primaryEdition.format === 'magazine') {
       const user = await getCurrentUser()
+      const roles: UserRole[] = user ? await getUserRoles(user.id) : []
+      const userRole = roles.find(r => ['editor', 'admin', 'author'].includes(r)) ?? (roles[0] ?? null)
+      const userName = user?.display_name ?? null
       const highlights = chapters.length > 0
         ? await fetchChapterHighlights({ chapterId: chapters[0].id, currentUserId: user?.id ?? null })
         : []
-      // Для всех глав сразу (для кросс-главной навигации — но мы рендерим по одной, так что достаточно первой)
-      // TODO: при смене главы подгружать highlights текущей главы
       return (
         <ReleaseBookReader
           release={release}
@@ -64,6 +66,8 @@ export default async function ReleasePublicPage({ params }: { params: Promise<{ 
           chapters={chapters}
           currentUserId={user?.id ?? null}
           initialHighlights={highlights}
+          userRole={userRole}
+          userName={userName}
         />
       )
     }

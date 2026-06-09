@@ -1,37 +1,49 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { toast } from 'sonner'
 import { Plus, Check, X, MessageCircle, RefreshCw } from 'lucide-react'
 import type { ChapterEditorialNote, EditorialNoteStatus } from '@/lib/releases-types'
 
 interface EditorialNotesPanelProps {
   chapterId: string
+  onNoteFocus?: (note: ChapterEditorialNote) => void
+  editorialNotes?: ChapterEditorialNote[]
+  onNotesUpdate?: (notes: ChapterEditorialNote[]) => void
 }
 
-export function EditorialNotesPanel({ chapterId }: EditorialNotesPanelProps) {
+export function EditorialNotesPanel({ chapterId, onNoteFocus, editorialNotes: externalNotes, onNotesUpdate }: EditorialNotesPanelProps) {
   const [notes, setNotes] = useState<ChapterEditorialNote[]>([])
   const [loading, setLoading] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [selection, setSelection] = useState<{ text: string; paragraphIndex: number; contextBefore: string; contextAfter: string } | null>(null)
   const [noteText, setNoteText] = useState('')
   const [filter, setFilter] = useState<EditorialNoteStatus | 'all'>('open')
+  const hasLoadedRef = useRef(false)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch(`/api/chapter-editorial-notes?chapterId=${chapterId}`)
       const data = await res.json()
-      if (res.ok) setNotes(data.data ?? [])
+      if (res.ok) {
+        const loaded = data.data ?? []
+        setNotes(loaded)
+        onNotesUpdate?.(loaded)
+        hasLoadedRef.current = true
+      }
     } catch {
       toast.error('Ошибка загрузки')
     } finally {
       setLoading(false)
     }
-  }, [chapterId])
+  }, [chapterId, onNotesUpdate])
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetching pattern
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    if (externalNotes && hasLoadedRef.current) setNotes(externalNotes)
+  }, [externalNotes])
 
   const handleMouseUp = useCallback(() => {
     const sel = window.getSelection()
@@ -90,7 +102,9 @@ export function EditorialNotesPanel({ chapterId }: EditorialNotesPanelProps) {
       })
       const data = await res.json()
       if (res.ok && data.data) {
-        setNotes([data.data, ...notes])
+        const updated = [data.data, ...notes]
+        setNotes(updated)
+        onNotesUpdate?.(updated)
         toast.success('Правка добавлена')
         setSelection(null)
         setNoteText('')
@@ -112,7 +126,9 @@ export function EditorialNotesPanel({ chapterId }: EditorialNotesPanelProps) {
     })
     if (res.ok) {
       const data = await res.json()
-      setNotes(notes.map(n => n.id === id ? data.data : n))
+      const updated = notes.map(n => n.id === id ? data.data : n)
+      setNotes(updated)
+      onNotesUpdate?.(updated)
       toast.success(status === 'resolved' ? 'Решено' : 'Проигнорировано')
     } else {
       toast.error('Ошибка')
@@ -204,10 +220,11 @@ export function EditorialNotesPanel({ chapterId }: EditorialNotesPanelProps) {
           filtered.map(n => (
             <div
               key={n.id}
-              className={`border rounded p-3 space-y-2 ${
-                n.status === 'open' ? 'border-orange-300 bg-orange-50' :
-                n.status === 'resolved' ? 'border-green-300 bg-green-50 opacity-60' :
-                'border-gray-300 bg-gray-50 opacity-50'
+              onClick={() => onNoteFocus?.(n)}
+              className={`border rounded p-3 space-y-2 cursor-pointer transition-colors ${
+                n.status === 'open' ? 'border-orange-300 bg-orange-50 hover:bg-orange-100' :
+                n.status === 'resolved' ? 'border-green-300 bg-green-50 opacity-60 hover:bg-green-100' :
+                'border-gray-300 bg-gray-50 opacity-50 hover:bg-gray-100'
               }`}
             >
               <blockquote className="text-xs italic border-l-2 border-current/30 pl-2 line-clamp-3">

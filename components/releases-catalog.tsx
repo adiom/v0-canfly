@@ -83,8 +83,8 @@ export function ReleaseCatalog({ releases }: ReleaseCatalogProps) {
 
         {filtered.length > 0 ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {filtered.map((r) => (
-              <ReleaseCard key={r.id} release={r} />
+            {filtered.map((r, i) => (
+              <ReleaseCard key={r.id} release={r} index={i} />
             ))}
           </div>
         ) : (
