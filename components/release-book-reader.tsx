@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { sanitizeChapterHtml } from '@/lib/sanitize'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, X, AlignJustify, Heart, Quote, MessageCircle, Check, Bookmark, Feather, Globe, Lock, BookmarkPlus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, AlignJustify, Heart, Quote, MessageCircle, Check, Bookmark, BookmarkPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Release, Edition, Chapter, ChapterHighlight, ChapterEditorialNote, EditorialNoteStatus } from '@/lib/releases-types'
 import type { UserRole } from '@/lib/types'
 import { BookmarksPanel } from '@/components/bookmarks-panel'
+import { HighlightArtifact } from '@/components/highlight-artifact'
 
 interface ReleaseBookReaderProps {
   release: Release
@@ -49,15 +50,11 @@ export function ReleaseBookReader({
   const [highlights, setHighlights] = useState<ChapterHighlight[]>(initialHighlights)
   const [editorialNotes, setEditorialNotes] = useState<ChapterEditorialNote[]>([])
   const [selection, setSelection] = useState<SelectionData | null>(null)
-  const [isPublic, setIsPublic] = useState(false)
-  const [note, setNote] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
   const [activeHighlight, setActiveHighlight] = useState<ChapterHighlight | null>(null)
   const [activeEditorialNote, setActiveEditorialNote] = useState<ChapterEditorialNote | null>(null)
   const [showBookmarks, setShowBookmarks] = useState(false)
-  // 'pill' = тулбар над выделением; 'sheet' = раскрытая форма снизу
-  const [selectionMode, setSelectionMode] = useState<'pill' | 'sheet'>('pill')
-  const [sheetType, setSheetType] = useState<'highlight' | 'editorial'>('highlight')
+  const [artifactOpen, setArtifactOpen] = useState(false)
+  const [artifactRect, setArtifactRect] = useState<DOMRect | null>(null)
 
   const contentRef = useRef<HTMLDivElement>(null)
   const floatingMenuRef = useRef<HTMLDivElement>(null)
@@ -200,9 +197,8 @@ export function ReleaseBookReader({
     contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
     window.scrollTo({ top: 0, behavior: 'smooth' })
     window.history.replaceState(null, '', `/release/${release.slug}/${edition.slug}/${currentIndex + 1}`)
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear selection on chapter change
     setSelection(null)
-    setSelectionMode('pill')
+    setArtifactOpen(false)
   }, [currentIndex, release.slug, edition.slug])
 
   // Клавиатура
@@ -312,72 +308,28 @@ export function ReleaseBookReader({
     }
   }, [])
 
-  const saveHighlight = async () => {
+  const saveEditorialFromArtifact = async (noteText: string) => {
     if (!selection || !currentChapter) return
-    if (!currentUserId) {
-      toast.error('Войдите чтобы сохранять цитаты')
-      return
-    }
-    setIsSaving(true)
-    try {
-      if (isEditor) {
-        if (!note.trim()) {
-          toast.error('Добавьте комментарий к замечанию')
-          setIsSaving(false)
-          return
-        }
-        const res = await fetch('/api/chapter-editorial-notes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chapter_id: currentChapter.id,
-            text_content: selection.text,
-            paragraph_index: selection.paragraphIndex,
-            context_before: selection.contextBefore,
-            context_after: selection.contextAfter,
-            note: note.trim(),
-          }),
-        })
-        const data = await res.json()
-        if (res.ok && data.data) {
-          setEditorialNotes([data.data, ...editorialNotes])
-          toast.success('Замечание отправлено')
-          setSelection(null); setSelectionMode('pill')
-          setNote('')
-          window.getSelection()?.removeAllRanges()
-        } else {
-          toast.error(data.error ?? 'Ошибка сохранения')
-        }
-      } else {
-        const res = await fetch('/api/chapter-highlights', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chapter_id: currentChapter.id,
-            text_content: selection.text,
-            paragraph_index: selection.paragraphIndex,
-            context_before: selection.contextBefore,
-            context_after: selection.contextAfter,
-            note: note || null,
-            is_public: isPublic,
-          }),
-        })
-        const data = await res.json()
-        if (res.ok && data.data) {
-          setHighlights([data.data, ...highlights])
-          toast.success(isPublic ? 'Публичная цитата сохранена' : 'Цитата сохранена')
-          setSelection(null); setSelectionMode('pill')
-          setNote('')
-          setIsPublic(false)
-          window.getSelection()?.removeAllRanges()
-        } else {
-          toast.error(data.error ?? 'Ошибка сохранения')
-        }
-      }
-    } catch {
-      toast.error('Сетевая ошибка')
-    } finally {
-      setIsSaving(false)
+    const res = await fetch('/api/chapter-editorial-notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chapter_id: currentChapter.id,
+        text_content: selection.text,
+        paragraph_index: selection.paragraphIndex,
+        context_before: selection.contextBefore,
+        context_after: selection.contextAfter,
+        note: noteText,
+      }),
+    })
+    const data = await res.json()
+    if (res.ok && data.data) {
+      setEditorialNotes([data.data, ...editorialNotes])
+      toast.success('Замечание отправлено')
+      setSelection(null)
+      window.getSelection()?.removeAllRanges()
+    } else {
+      toast.error(data.error ?? 'Ошибка сохранения')
     }
   }
 
@@ -601,7 +553,7 @@ export function ReleaseBookReader({
       </main>
 
       {/* === PHASE 1: Pill toolbar above selection === */}
-      {selection && selectionMode === 'pill' && (
+      {selection && !artifactOpen && (
         <div
           ref={floatingMenuRef}
           className="fixed z-[100] flex items-center overflow-hidden rounded-full shadow-2xl"
@@ -621,35 +573,18 @@ export function ReleaseBookReader({
             {selection.text.length > 28 ? selection.text.slice(0, 28) + '…' : selection.text}
           </span>
 
-          {/* Разделитель */}
           <span className="h-5 w-px" style={{ backgroundColor: 'rgba(244,239,229,0.12)' }} />
 
-          {/* Кнопка: сохранить цитату */}
+          {/* Открыть артефакт */}
           <button
-            onClick={() => { setSheetType('highlight'); setSelectionMode('sheet') }}
+            onClick={() => { setArtifactRect(selection.rect); setArtifactOpen(true) }}
             className="flex items-center gap-1.5 px-3.5 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] transition-colors hover:bg-white/5"
             style={{ color: accent }}
-            title="Сохранить цитату"
+            title="Артефакт"
           >
             <BookmarkPlus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Цитата</span>
+            <span className="hidden sm:inline">Артефакт</span>
           </button>
-
-          {/* Кнопка: редакторское замечание (только editor/admin) */}
-          {isEditor && (
-            <>
-              <span className="h-5 w-px" style={{ backgroundColor: 'rgba(244,239,229,0.12)' }} />
-              <button
-                onClick={() => { setSheetType('editorial'); setSelectionMode('sheet') }}
-                className="flex items-center gap-1.5 px-3.5 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] transition-colors hover:bg-white/5"
-                style={{ color: '#e97316' }}
-                title="Редакторское замечание"
-              >
-                <Feather className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Замечание</span>
-              </button>
-            </>
-          )}
 
           {/* Закрыть */}
           <span className="h-5 w-px" style={{ backgroundColor: 'rgba(244,239,229,0.12)' }} />
@@ -663,161 +598,37 @@ export function ReleaseBookReader({
         </div>
       )}
 
-      {/* === PHASE 2: Bottom sheet === */}
-      {selection && selectionMode === 'sheet' && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-[99]"
-            style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
-            onClick={() => { setSelection(null); setSelectionMode('pill'); setNote(''); setIsPublic(false); window.getSelection()?.removeAllRanges() }}
-          />
-
-          {/* Sheet */}
-          <div
-            ref={floatingMenuRef}
-            className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col"
-            style={{
-              backgroundColor: bg,
-              borderTop: `2px solid ${sheetType === 'editorial' ? '#e97316' : accent}`,
-              borderRadius: '16px 16px 0 0',
-              maxHeight: '80vh',
-              boxShadow: '0 -24px 60px rgba(0,0,0,0.5)',
-              animation: 'cf-sheet-up 0.28s cubic-bezier(0.32,0.72,0,1)',
-            }}
-            onMouseDown={e => { if ((e.target as HTMLElement).tagName !== 'TEXTAREA') e.preventDefault() }}
-          >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="h-1 w-10 rounded-full" style={{ backgroundColor: `${textColor}20` }} />
-            </div>
-
-            <div className="overflow-y-auto px-6 pb-8 pt-2">
-              {/* Заголовок */}
-              <div className="mb-5 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {sheetType === 'editorial' ? (
-                    <Feather className="h-4 w-4" style={{ color: '#e97316' }} />
-                  ) : (
-                    <Quote className="h-4 w-4" style={{ color: accent }} />
-                  )}
-                  <span
-                    className="text-[10px] font-black uppercase tracking-[0.22em]"
-                    style={{ color: sheetType === 'editorial' ? '#e97316' : accent }}
-                  >
-                    {sheetType === 'editorial' ? 'Замечание редактора' : 'Новая цитата'}
-                  </span>
-                </div>
-                <button
-                  onClick={() => { setSelection(null); setSelectionMode('pill'); setNote(''); setIsPublic(false); window.getSelection()?.removeAllRanges() }}
-                  className="p-1 opacity-30 transition-opacity hover:opacity-80"
-                  style={{ color: textColor }}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              {/* Выделенный текст */}
-              <div
-                className="mb-5 rounded-sm px-4 py-3"
-                style={{ backgroundColor: `${sheetType === 'editorial' ? '#e97316' : accent}0f`, borderLeft: `3px solid ${sheetType === 'editorial' ? '#e97316' : accent}50` }}
-              >
-                <p
-                  className="font-[family-name:var(--font-cormorant)] text-[18px] italic leading-snug line-clamp-5"
-                  style={{ color: textColor }}
-                >
-                  «{selection.text}»
-                </p>
-              </div>
-
-              {currentUserId ? (
-                <>
-                  {/* Поле заметки */}
-                  <textarea
-                    value={note}
-                    onChange={e => setNote(e.target.value)}
-                    placeholder={sheetType === 'editorial' ? 'Что нужно исправить (обязательно)' : 'Личная заметка (опционально)'}
-                    rows={3}
-                    autoFocus
-                    className="w-full resize-none bg-transparent text-sm leading-7 outline-none placeholder:opacity-30"
-                    style={{
-                      color: textColor,
-                      borderBottom: `1px solid ${textColor}18`,
-                      paddingBottom: '8px',
-                      marginBottom: '20px',
-                    }}
-                  />
-
-                  {/* Тоггл публичности — только для цитат */}
-                  {sheetType === 'highlight' && (
-                    <div className="mb-6">
-                      <button
-                        type="button"
-                        onClick={() => setIsPublic(p => !p)}
-                        className="flex w-full items-center justify-between rounded-sm px-4 py-3 transition-colors"
-                        style={{ backgroundColor: `${textColor}07` }}
-                      >
-                        <div className="flex items-center gap-3">
-                          {isPublic ? (
-                            <Globe className="h-4 w-4" style={{ color: accent }} />
-                          ) : (
-                            <Lock className="h-4 w-4" style={{ color: `${textColor}50` }} />
-                          )}
-                          <div className="text-left">
-                            <p className="text-sm font-semibold" style={{ color: isPublic ? textColor : `${textColor}70` }}>
-                              {isPublic ? 'Публичная цитата' : 'Только для меня'}
-                            </p>
-                            <p className="text-[11px] opacity-40" style={{ color: textColor }}>
-                              {isPublic ? 'Видна всем читателям на странице книги' : 'Видна только вам в закладках'}
-                            </p>
-                          </div>
-                        </div>
-                        {/* Переключатель-таблетка */}
-                        <div
-                          className="relative h-6 w-11 flex-shrink-0 rounded-full transition-colors duration-200"
-                          style={{ backgroundColor: isPublic ? accent : `${textColor}20` }}
-                        >
-                          <span
-                            className="absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all duration-200"
-                            style={{ left: isPublic ? '24px' : '4px' }}
-                          />
-                        </div>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Кнопка сохранения */}
-                  <button
-                    onClick={saveHighlight}
-                    disabled={isSaving || (sheetType === 'editorial' && !note.trim())}
-                    className="flex w-full items-center justify-center gap-2 py-4 text-sm font-black uppercase tracking-[0.14em] transition-opacity disabled:opacity-40"
-                    style={{ backgroundColor: sheetType === 'editorial' ? '#e97316' : accent, color: '#fff', borderRadius: '4px' }}
-                  >
-                    {isSaving ? (
-                      <>
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                        Сохраняем…
-                      </>
-                    ) : (
-                      <>
-                        <Check className="h-4 w-4" />
-                        {sheetType === 'editorial' ? 'Отправить замечание' : 'Сохранить цитату'}
-                      </>
-                    )}
-                  </button>
-                </>
-              ) : (
-                <Link
-                  href={`/login?redirect=/release/${release.slug}`}
-                  className="flex w-full items-center justify-center py-4 text-sm font-black uppercase tracking-[0.14em]"
-                  style={{ backgroundColor: accent, color: '#fff', borderRadius: '4px' }}
-                >
-                  Войти, чтобы сохранить
-                </Link>
-              )}
-            </div>
-          </div>
-        </>
+      {/* === Артефакт-карточка === */}
+      {selection && currentChapter && (
+        <HighlightArtifact
+          open={artifactOpen}
+          text={selection.text}
+          chapterTitle={currentChapter.title}
+          anchorRect={artifactRect}
+          releaseSlug={release.slug}
+          chapterId={currentChapter.id}
+          paragraphIndex={selection.paragraphIndex}
+          contextBefore={selection.contextBefore}
+          contextAfter={selection.contextAfter}
+          currentUserId={currentUserId}
+          onSaved={hl => {
+            setHighlights(prev => [hl, ...prev])
+            setSelection(null)
+            setArtifactOpen(false)
+            window.getSelection()?.removeAllRanges()
+            toast.success(`Артефакт #${hl.id.slice(0, 6).toUpperCase()} — теперь твой`)
+          }}
+          onClose={() => {
+            setArtifactOpen(false)
+            setSelection(null)
+            window.getSelection()?.removeAllRanges()
+          }}
+          accent={accent}
+          bg={bg}
+          textColor={textColor}
+          isEditor={isEditor}
+          onSaveEditorial={saveEditorialFromArtifact}
+        />
       )}
 
       {/* Highlight detail popup */}
