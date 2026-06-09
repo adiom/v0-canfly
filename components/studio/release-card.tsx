@@ -1,62 +1,98 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
-import type { Release } from '@/lib/releases-types'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { BookOpen, Eye, ExternalLink } from 'lucide-react'
+import type { Release, EditionFormat } from '@/lib/releases-types'
+import { ExternalLink } from 'lucide-react'
 
-const statusLabels: Record<string, string> = {
-  draft: 'Черновик',
-  published: 'Опубликован',
-  archived: 'Архив',
+type StudioRelease = Release & { formats: EditionFormat[]; edition_count: number }
+
+const FORMAT_LABELS: Partial<Record<EditionFormat, string>> = {
+  book: 'Книга',
+  comic: 'Комикс',
+  audiobook: 'Аудио',
+  audiorelease: 'Аудио',
+  magazine: 'Журнал',
+  album: 'Альбом',
 }
 
-const statusBadgeStyles: Record<string, string> = {
-  draft: 'bg-amber-50 text-amber-600 border-amber-200/80',
-  published: 'bg-emerald-50 text-emerald-600 border-emerald-200/80',
-  archived: 'bg-gray-100 text-gray-500 border-gray-200/80',
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  draft: { label: 'Черновик', className: 'text-cf-text-3 border-cf-text-1/20' },
+  published: { label: 'Опубликован', className: 'text-cf-warm border-cf-warm/40' },
+  archived: { label: 'Архив', className: 'text-cf-text-4 border-cf-text-1/15' },
 }
 
-export function ReleaseCard({ release }: { release: Release }) {
+function pluralEditions(n: number) {
+  if (n === 0) return 'нет изданий'
+  if (n === 1) return '1 издание'
+  if (n >= 2 && n <= 4) return `${n} издания`
+  return `${n} изданий`
+}
+
+export function ReleaseCard({ release }: { release: StudioRelease }) {
+  const status = STATUS_CONFIG[release.status] ?? STATUS_CONFIG.draft
+  const uniqueFormats = [...new Set(release.formats)]
+
   return (
-    <div className="group bg-white/60 backdrop-blur-md border border-white/70 shadow-sm shadow-black/5 rounded-2xl transition-all duration-300 hover:bg-white/80 hover:shadow-md hover:shadow-black/8 hover:-translate-y-0.5 hover:border-white/90">
-      <div className="flex gap-4 p-4 md:p-5">
-        <Link href={`/studio/releases/${release.id}`} className="flex gap-4 flex-1 min-w-0">
+    <div className="group flex items-center gap-4 py-4 px-1 transition-colors duration-200 hover:bg-cf-text-1/[0.03]">
+      {/* Cover */}
+      <Link href={`/studio/releases/${release.id}`} className="flex-shrink-0">
+        <div className="relative h-16 w-11 overflow-hidden border border-cf-text-1/10 bg-cf-footer-bg transition-colors group-hover:border-cf-warm/40">
           {release.cover_image ? (
-            <img
+            <Image
               src={release.cover_image}
               alt={release.title}
-              className="h-24 w-16 rounded-xl object-cover border border-white/70 shadow-sm"
+              fill
+              sizes="44px"
+              className="object-cover"
             />
           ) : (
-            <div className="flex h-24 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-violet-50 to-rose-50 border border-white/70">
-              <BookOpen className="h-6 w-6 text-violet-400/60" />
+            <div className="flex h-full items-center justify-center">
+              <span className="text-[7px] font-black uppercase tracking-[0.1em] text-cf-text-4">cf</span>
             </div>
           )}
-          <div className="flex flex-1 flex-col justify-between min-w-0">
-            <div>
-              <h3 className="font-bold text-gray-900 group-hover:text-violet-700 transition-colors duration-200 truncate">{release.title}</h3>
-              {release.genre && (
-                <p className="mt-1 text-sm text-gray-500">{release.genre}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className={`border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] rounded-lg ${statusBadgeStyles[release.status]}`}>
-                {statusLabels[release.status]}
-              </Badge>
-              <span className="flex items-center gap-1 text-xs text-gray-400">
-                <Eye className="h-3 w-3" />
-                {release.view_count}
+        </div>
+      </Link>
+
+      {/* Main info */}
+      <Link href={`/studio/releases/${release.id}`} className="flex min-w-0 flex-1 flex-col gap-1">
+        <h3 className="truncate text-sm font-black uppercase leading-none tracking-[0.04em] text-cf-text-heading transition-colors group-hover:text-cf-accent">
+          {release.title}
+        </h3>
+        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-cf-text-3">
+          {[release.genre, pluralEditions(release.edition_count)]
+            .filter(Boolean)
+            .join(' · ')}
+          {release.view_count > 0 && ` · ${release.view_count} просм.`}
+        </p>
+      </Link>
+
+      {/* Formats + status */}
+      <div className="flex flex-shrink-0 items-center gap-2">
+        {uniqueFormats.length > 0 && (
+          <div className="hidden items-center gap-1 sm:flex">
+            {uniqueFormats.map((fmt) => (
+              <span
+                key={fmt}
+                className="border border-cf-text-1/15 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-cf-text-3"
+              >
+                {FORMAT_LABELS[fmt] ?? fmt}
               </span>
-            </div>
+            ))}
           </div>
-        </Link>
-        <Link href={`/release/${release.slug}`} target="_blank">
-          <Button className="shrink-0 h-8 bg-white/70 backdrop-blur-sm border border-white/70 px-3 text-xs font-semibold text-gray-600 rounded-xl shadow-sm transition-all duration-200 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200 hover:shadow-md">
-            <ExternalLink className="mr-1.5 h-3 w-3" />
-            Перейти
-          </Button>
+        )}
+
+        <span className={`border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] ${status.className}`}>
+          {status.label}
+        </span>
+
+        <Link
+          href={`/release/${release.slug}`}
+          target="_blank"
+          className="flex h-7 w-7 items-center justify-center border border-cf-text-1/10 text-cf-text-3 transition-colors hover:border-cf-text-1/30 hover:text-cf-text-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ExternalLink className="h-3 w-3" />
         </Link>
       </div>
     </div>

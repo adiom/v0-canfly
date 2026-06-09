@@ -26,6 +26,14 @@ export async function getMyReleases() {
   return releasesDb.listReleasesByAuthor(session.user.id)
 }
 
+export async function getMyReleasesWithEditions() {
+  const session = await requireAuth()
+  if (session.roles.includes('admin')) {
+    return releasesDb.listAllReleasesWithEditions()
+  }
+  return releasesDb.listReleasesByAuthorWithEditions(session.user.id)
+}
+
 export async function getRelease(id: string) {
   await requireAuth()
   return releasesDb.fetchReleaseById(id)

@@ -183,6 +183,45 @@ export async function listAllReleases() {
   )
 }
 
+type ReleaseWithEditionsMeta = Release & { formats: EditionFormat[]; edition_count: number }
+
+const editionsMetaSelect = `
+  COALESCE(
+    json_agg(DISTINCT e.format) FILTER (WHERE e.format IS NOT NULL AND e.status != 'archived'),
+    '[]'::json
+  ) AS formats,
+  (COUNT(e.id) FILTER (WHERE e.status != 'archived'))::integer AS edition_count
+`
+
+export async function listAllReleasesWithEditions() {
+  return dbQuery<ReleaseWithEditionsMeta>(
+    `SELECT r.id, r.title, r.slug, r.description, r.cover_image, r.genre,
+            r.release_date, r.isbn, r.authors, r.annotation, r.editor_notes,
+            r.view_count, r.status, r.design_config, r.created_at, r.updated_at,
+            ${editionsMetaSelect}
+     FROM releases r
+     LEFT JOIN editions e ON e.release_id = r.id
+     GROUP BY r.id
+     ORDER BY r.updated_at DESC`,
+  )
+}
+
+export async function listReleasesByAuthorWithEditions(userId: string) {
+  return dbQuery<ReleaseWithEditionsMeta>(
+    `SELECT r.id, r.title, r.slug, r.description, r.cover_image, r.genre,
+            r.release_date, r.isbn, r.authors, r.annotation, r.editor_notes,
+            r.view_count, r.status, r.design_config, r.created_at, r.updated_at,
+            ${editionsMetaSelect}
+     FROM releases r
+     JOIN release_collaborators rc ON rc.release_id = r.id
+     LEFT JOIN editions e ON e.release_id = r.id
+     WHERE rc.user_id = $1
+     GROUP BY r.id
+     ORDER BY r.updated_at DESC`,
+    [userId],
+  )
+}
+
 // --- Releases with edition formats (catalog) ---
 
 export async function fetchReleasesWithEditions(opts: { status?: ReleaseStatus } = {}) {

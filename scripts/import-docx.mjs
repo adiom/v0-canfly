@@ -139,6 +139,7 @@ Options:
   --edition-slug=...   Custom slug for the edition
   --publish            Set chapters to 'published' status
   --include-preamble   Include content before first heading as a prologue
+  --strip-images       Remove all <img> tags from the HTML
   --dry-run            Preview only, no DB writes
 
 Example:
@@ -158,6 +159,7 @@ Example:
     else if (arg.startsWith('--edition-slug=')) options.editionSlug = arg.split('=')[1]
     else if (arg === '--publish') options.publish = true
     else if (arg === '--include-preamble') options.includePreamble = true
+    else if (arg === '--strip-images') options.stripImages = true
     else if (arg === '--dry-run') options.dryRun = true
   }
 
@@ -168,7 +170,7 @@ Example:
 
 async function main() {
   const { docxPath, releaseId, options } = parseArgs()
-  const { headingLevel = 1, editionSlug, publish, includePreamble, dryRun } = options
+  const { headingLevel = 1, editionSlug, publish, includePreamble, stripImages, dryRun } = options
 
   console.log(`📄 DOCX: ${docxPath}`)
   console.log(`🔗 Release ID: ${releaseId}`)
@@ -187,12 +189,20 @@ async function main() {
   // 2. Convert DOCX to HTML
   console.log('\n⏳ Converting DOCX to HTML...')
   const result = await mammoth.convertToHtml({ path: docxPath })
-  const html = result.value
+  let html = result.value
   if (result.messages.length > 0) {
     for (const msg of result.messages) {
       console.log(`  ⚠ mammoth: ${msg.type} — ${msg.message}`)
     }
   }
+  if (stripImages) {
+    const imgCount = (html.match(/<img[^>]*>/gi) || []).length
+    if (imgCount > 0) {
+      console.log(`  🗑  Removing ${imgCount} image(s)`)
+    }
+    html = html.replace(/<img[^>]*>/gi, '')
+  }
+
   console.log(`  HTML length: ${html.length} chars`)
 
   // 3. Split by headings

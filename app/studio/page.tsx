@@ -1,78 +1,111 @@
 import Link from 'next/link'
-import { getMyReleases } from '@/lib/actions/studio'
+import { getMyReleasesWithEditions } from '@/lib/actions/studio'
 import { requireStudioSession } from '@/lib/server/studio-auth'
 import { ReleaseCard } from '@/components/studio/release-card'
-import { Button } from '@/components/ui/button'
-import { Plus, BookOpen, Globe, Eye, Sparkles } from 'lucide-react'
-
-function StatCard({ label, value, icon: Icon, gradient }: { label: string; value: number | string; icon: React.ElementType; gradient: string }) {
-  return (
-    <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl p-5 shadow-sm shadow-black/5 transition-all duration-300 hover:bg-white/80 hover:shadow-md hover:shadow-black/8">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">{label}</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{value}</p>
-        </div>
-        <div className={`flex items-center justify-center h-10 w-10 rounded-xl ${gradient} shadow-sm`}>
-          <Icon className="h-5 w-5 text-white" />
-        </div>
-      </div>
-    </div>
-  )
-}
+import { Plus } from 'lucide-react'
 
 export default async function StudioDashboard() {
   const session = await requireStudioSession()
   const isAdmin = session?.roles.includes('admin') ?? false
-  const releases = await getMyReleases()
+  const releases = await getMyReleasesWithEditions()
 
-  const published = releases.filter(r => r.status === 'published')
+  const published = releases.filter((r) => r.status === 'published')
+  const drafts = releases.filter((r) => r.status === 'draft')
   const totalViews = releases.reduce((sum, r) => sum + r.view_count, 0)
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-12">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{isAdmin ? 'Все релизы' : 'Мои релизы'}</h1>
-          <p className="mt-1 text-gray-500">{isAdmin ? 'Все произведения на платформе' : 'Управляйте своими произведениями'}</p>
-        </div>
-        <Link href="/studio/releases/new">
-          <Button className="h-11 px-5 bg-gradient-to-r from-violet-600 to-violet-500 text-white font-semibold rounded-xl shadow-md shadow-violet-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-violet-500/30 hover:from-violet-700 hover:to-violet-600">
-            <Plus className="mr-2 h-4 w-4" />
-            Новый релиз
-          </Button>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-cf-bg">
+      <div className="mx-auto max-w-4xl px-4 py-10 md:px-8 md:py-14">
 
-      {releases.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
-          <StatCard label="Всего релизов" value={releases.length} icon={BookOpen} gradient="bg-gradient-to-br from-violet-500 to-violet-700" />
-          <StatCard label="Опубликовано" value={published.length} icon={Globe} gradient="bg-gradient-to-br from-emerald-500 to-emerald-700" />
-          <StatCard label="Просмотры" value={totalViews} icon={Eye} gradient="bg-gradient-to-br from-amber-500 to-amber-700" />
-        </div>
-      )}
-
-      {releases.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200/80 bg-white/30 backdrop-blur-sm py-20">
-          <div className="flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-br from-violet-100 to-rose-100 mb-4">
-            <Sparkles className="h-8 w-8 text-violet-400" />
+        {/* Header */}
+        <div className="mb-10 flex items-start justify-between border-b border-cf-text-1/10 pb-8">
+          <div>
+            <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-cf-accent">
+              {isAdmin ? 'Все релизы' : 'Мои релизы'}
+            </p>
+            <h1 className="font-[family-name:var(--font-cormorant)] text-5xl font-bold italic leading-[0.9] text-cf-text-heading md:text-6xl">
+              Студия
+            </h1>
           </div>
-          <p className="text-lg font-semibold text-gray-700">Пока нет релизов</p>
-          <p className="mt-1 text-sm text-gray-400">Создайте свой первый релиз</p>
-          <Link href="/studio/releases/new" className="mt-6">
-            <Button className="h-11 px-6 bg-gradient-to-r from-violet-600 to-violet-500 text-white font-semibold rounded-xl shadow-md shadow-violet-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-violet-500/30 hover:from-violet-700 hover:to-violet-600">
-              <Plus className="mr-2 h-4 w-4" />
-              Создать первый релиз
-            </Button>
+          <Link
+            href="/studio/releases/new"
+            className="inline-flex h-11 items-center gap-2 bg-cf-accent px-5 text-sm font-black uppercase tracking-[0.08em] text-white transition-colors hover:bg-[#b81e1e]"
+          >
+            <Plus className="h-4 w-4" />
+            Новый
           </Link>
         </div>
-      ) : (
-        <div className="grid gap-3">
-          {releases.map(release => (
-            <ReleaseCard key={release.id} release={release} />
-          ))}
-        </div>
-      )}
+
+        {/* Stats */}
+        {releases.length > 0 && (
+          <div className="mb-10 grid grid-cols-3 divide-x divide-cf-text-1/10 border border-cf-text-1/10">
+            {[
+              { value: releases.length, label: 'Релизов' },
+              { value: published.length, label: 'Опубликовано' },
+              { value: totalViews.toLocaleString('ru-RU'), label: 'Просмотров' },
+            ].map(({ value, label }) => (
+              <div key={label} className="flex flex-col items-center py-6">
+                <span className="font-[family-name:var(--font-cormorant)] text-5xl font-bold leading-none text-cf-text-heading md:text-6xl">
+                  {value}
+                </span>
+                <span className="mt-2 font-mono text-[9px] uppercase tracking-[0.2em] text-cf-text-3">
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Release list */}
+        {releases.length === 0 ? (
+          <div className="flex flex-col items-center justify-center border border-dashed border-cf-text-1/10 py-20">
+            <span className="flex h-12 w-20 items-center justify-center bg-cf-accent text-sm font-black uppercase tracking-[-0.04em] text-white">
+              canfly
+            </span>
+            <p className="mt-6 text-sm font-black uppercase tracking-[0.12em] text-cf-text-2">
+              Пока нет релизов
+            </p>
+            <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-cf-text-3">
+              Создайте первый
+            </p>
+            <Link
+              href="/studio/releases/new"
+              className="mt-6 inline-flex h-11 items-center gap-2 bg-cf-accent px-6 text-sm font-black uppercase tracking-[0.08em] text-white transition-colors hover:bg-[#b81e1e]"
+            >
+              <Plus className="h-4 w-4" />
+              Создать релиз
+            </Link>
+          </div>
+        ) : (
+          <div>
+            {drafts.length > 0 && (
+              <section className="mb-2">
+                <p className="mb-1 font-mono text-[9px] uppercase tracking-[0.2em] text-cf-text-3">
+                  В работе — {drafts.length}
+                </p>
+                <div className="divide-y divide-cf-text-1/10 border-y border-cf-text-1/10">
+                  {drafts.map((r) => (
+                    <ReleaseCard key={r.id} release={r} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {published.length > 0 && (
+              <section className={drafts.length > 0 ? 'mt-8' : ''}>
+                <p className="mb-1 font-mono text-[9px] uppercase tracking-[0.2em] text-cf-text-3">
+                  Опубликовано — {published.length}
+                </p>
+                <div className="divide-y divide-cf-text-1/10 border-y border-cf-text-1/10">
+                  {published.map((r) => (
+                    <ReleaseCard key={r.id} release={r} />
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
