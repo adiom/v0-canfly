@@ -81,6 +81,8 @@ export const createMagicLink = async (
       }
     }
 
+    console.log(`[magic-link] Код для ${email}: ${token}`)
+
     // TODO: здесь подключить отправку email (Resend, Nodemailer и т.д.)
     // await sendMagicLinkEmail({ to: email, token, magicLinkUrl })
 
