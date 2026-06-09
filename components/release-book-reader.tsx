@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { sanitizeChapterHtml } from '@/lib/sanitize'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, X, AlignJustify, Heart, Quote, MessageCircle, Check, Bookmark } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, AlignJustify, Heart, Quote, MessageCircle, Check, Bookmark, Feather, Globe, Lock, BookmarkPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Release, Edition, Chapter, ChapterHighlight, ChapterEditorialNote, EditorialNoteStatus } from '@/lib/releases-types'
 import type { UserRole } from '@/lib/types'
@@ -55,6 +55,9 @@ export function ReleaseBookReader({
   const [activeHighlight, setActiveHighlight] = useState<ChapterHighlight | null>(null)
   const [activeEditorialNote, setActiveEditorialNote] = useState<ChapterEditorialNote | null>(null)
   const [showBookmarks, setShowBookmarks] = useState(false)
+  // 'pill' = тулбар над выделением; 'sheet' = раскрытая форма снизу
+  const [selectionMode, setSelectionMode] = useState<'pill' | 'sheet'>('pill')
+  const [sheetType, setSheetType] = useState<'highlight' | 'editorial'>('highlight')
 
   const contentRef = useRef<HTMLDivElement>(null)
   const floatingMenuRef = useRef<HTMLDivElement>(null)
@@ -199,6 +202,7 @@ export function ReleaseBookReader({
     window.history.replaceState(null, '', `/release/${release.slug}/${edition.slug}/${currentIndex + 1}`)
     // eslint-disable-next-line react-hooks/set-state-in-effect -- clear selection on chapter change
     setSelection(null)
+    setSelectionMode('pill')
   }, [currentIndex, release.slug, edition.slug])
 
   // Клавиатура
@@ -338,7 +342,7 @@ export function ReleaseBookReader({
         if (res.ok && data.data) {
           setEditorialNotes([data.data, ...editorialNotes])
           toast.success('Замечание отправлено')
-          setSelection(null)
+          setSelection(null); setSelectionMode('pill')
           setNote('')
           window.getSelection()?.removeAllRanges()
         } else {
@@ -362,7 +366,7 @@ export function ReleaseBookReader({
         if (res.ok && data.data) {
           setHighlights([data.data, ...highlights])
           toast.success(isPublic ? 'Публичная цитата сохранена' : 'Цитата сохранена')
-          setSelection(null)
+          setSelection(null); setSelectionMode('pill')
           setNote('')
           setIsPublic(false)
           window.getSelection()?.removeAllRanges()
@@ -596,130 +600,224 @@ export function ReleaseBookReader({
         </div>
       </main>
 
-      {/* Floating selection menu */}
-      {selection && (
+      {/* === PHASE 1: Pill toolbar above selection === */}
+      {selection && selectionMode === 'pill' && (
         <div
           ref={floatingMenuRef}
-          onMouseDown={e => { if ((e.target as HTMLElement).tagName !== 'TEXTAREA' && (e.target as HTMLElement).tagName !== 'INPUT') e.preventDefault() }}
-          className="fixed z-[100] border shadow-2xl p-3 flex flex-col gap-2 w-[calc(100vw-2rem)] max-w-[320px]"
+          className="fixed z-[100] flex items-center overflow-hidden rounded-full shadow-2xl"
           style={{
-            backgroundColor: bg,
-            borderColor: `${textColor}18`,
-            top: window.innerWidth >= 768 ? Math.max(10, selection.rect.top - 200) : undefined,
-            left: window.innerWidth >= 768 ? Math.max(10, Math.min(window.innerWidth - 330, selection.rect.left + selection.rect.width / 2 - 160)) : undefined,
-            bottom: window.innerWidth < 768 ? '1rem' : undefined,
-            right: window.innerWidth < 768 ? '1rem' : undefined,
-            color: textColor,
+            top: Math.max(60, selection.rect.top + window.scrollY - 52),
+            left: Math.max(8, Math.min(window.innerWidth - 200, selection.rect.left + selection.rect.width / 2 - 96)),
+            backgroundColor: '#0e0d0c',
+            border: '1px solid rgba(244,239,229,0.12)',
           }}
+          onMouseDown={e => e.preventDefault()}
         >
-          {isEditor ? (
-            <>
-              <div className="flex items-center gap-2">
-                <MessageCircle className="h-3.5 w-3.5" style={{ color: '#e97316' }} />
-                <p className="text-[10px] uppercase tracking-[0.16em] opacity-50">Редакторское замечание</p>
-              </div>
-              <p className="text-xs italic opacity-70 line-clamp-3 border-l-2 pl-2" style={{ borderColor: '#e9731680' }}>
-                «{selection.text}»
-              </p>
+          {/* Метка цитаты */}
+          <span
+            className="pl-4 pr-2 font-[family-name:var(--font-cormorant)] text-[13px] italic opacity-50 select-none"
+            style={{ color: '#f4efe5' }}
+          >
+            {selection.text.length > 28 ? selection.text.slice(0, 28) + '…' : selection.text}
+          </span>
 
-              {currentUserId ? (
-                <>
-                  <textarea
-                    value={note}
-                    onChange={e => setNote(e.target.value)}
-                    placeholder="Комментарий — что нужно исправить (обязательно)"
-                    rows={3}
-                    className="w-full text-xs bg-transparent border rounded p-2 outline-none focus:border-current"
-                    style={{ borderColor: `${textColor}20`, color: textColor }}
-                  />
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      onClick={() => { setSelection(null); setNote(''); window.getSelection()?.removeAllRanges() }}
-                      className="flex-1 h-8 text-xs border transition-opacity hover:opacity-60"
-                      style={{ borderColor: `${textColor}20` }}
-                    >
-                      Отмена
-                    </button>
-                    <button
-                      onClick={saveHighlight}
-                      disabled={isSaving || !note.trim()}
-                      className="flex-1 h-8 text-xs font-black uppercase tracking-[0.1em] disabled:opacity-50"
-                      style={{ backgroundColor: '#e97316', color: bg }}
-                    >
-                      {isSaving ? '...' : 'Отправить замечание'}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <Link
-                  href={`/login?redirect=/release/${release.slug}`}
-                  className="text-center text-xs py-2 font-black uppercase tracking-[0.1em]"
-                  style={{ backgroundColor: '#e97316', color: bg }}
-                >
-                  Войти
-                </Link>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="flex items-center gap-2">
-                <Quote className="h-3.5 w-3.5" style={{ color: accent }} />
-                <p className="text-[10px] uppercase tracking-[0.16em] opacity-50">Новая цитата</p>
-              </div>
-              <p className="text-xs italic opacity-70 line-clamp-3 border-l-2 pl-2" style={{ borderColor: `${accent}80` }}>
-                «{selection.text}»
-              </p>
+          {/* Разделитель */}
+          <span className="h-5 w-px" style={{ backgroundColor: 'rgba(244,239,229,0.12)' }} />
 
-              {currentUserId ? (
-                <>
-                  <textarea
-                    value={note}
-                    onChange={e => setNote(e.target.value)}
-                    placeholder="Заметка (опционально)"
-                    rows={2}
-                    className="w-full text-xs bg-transparent border rounded p-2 outline-none focus:border-current"
-                    style={{ borderColor: `${textColor}20`, color: textColor }}
-                  />
-                  <label className="flex items-center gap-2 text-xs cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isPublic}
-                      onChange={e => setIsPublic(e.target.checked)}
-                      className="h-3.5 w-3.5"
-                    />
-                    <span className="opacity-70">Сделать публичной</span>
-                  </label>
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      onClick={() => { setSelection(null); setNote(''); setIsPublic(false); window.getSelection()?.removeAllRanges() }}
-                      className="flex-1 h-8 text-xs border transition-opacity hover:opacity-60"
-                      style={{ borderColor: `${textColor}20` }}
-                    >
-                      Отмена
-                    </button>
-                    <button
-                      onClick={saveHighlight}
-                      disabled={isSaving}
-                      className="flex-1 h-8 text-xs font-black uppercase tracking-[0.1em] disabled:opacity-50"
-                      style={{ backgroundColor: accent, color: bg }}
-                    >
-                      {isSaving ? '...' : 'Сохранить'}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <Link
-                  href={`/login?redirect=/release/${release.slug}`}
-                  className="text-center text-xs py-2 font-black uppercase tracking-[0.1em]"
-                  style={{ backgroundColor: accent, color: bg }
-                  }
-                >
-                  Войти
-                </Link>
-              )}
+          {/* Кнопка: сохранить цитату */}
+          <button
+            onClick={() => { setSheetType('highlight'); setSelectionMode('sheet') }}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] transition-colors hover:bg-white/5"
+            style={{ color: accent }}
+            title="Сохранить цитату"
+          >
+            <BookmarkPlus className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Цитата</span>
+          </button>
+
+          {/* Кнопка: редакторское замечание (только editor/admin) */}
+          {isEditor && (
+            <>
+              <span className="h-5 w-px" style={{ backgroundColor: 'rgba(244,239,229,0.12)' }} />
+              <button
+                onClick={() => { setSheetType('editorial'); setSelectionMode('sheet') }}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] transition-colors hover:bg-white/5"
+                style={{ color: '#e97316' }}
+                title="Редакторское замечание"
+              >
+                <Feather className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Замечание</span>
+              </button>
             </>
           )}
+
+          {/* Закрыть */}
+          <span className="h-5 w-px" style={{ backgroundColor: 'rgba(244,239,229,0.12)' }} />
+          <button
+            onClick={() => { setSelection(null); window.getSelection()?.removeAllRanges() }}
+            className="flex items-center justify-center px-3 py-2.5 opacity-40 transition-opacity hover:opacity-80"
+            style={{ color: '#f4efe5' }}
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
+      )}
+
+      {/* === PHASE 2: Bottom sheet === */}
+      {selection && selectionMode === 'sheet' && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-[99]"
+            style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+            onClick={() => { setSelection(null); setSelectionMode('pill'); setNote(''); setIsPublic(false); window.getSelection()?.removeAllRanges() }}
+          />
+
+          {/* Sheet */}
+          <div
+            ref={floatingMenuRef}
+            className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col"
+            style={{
+              backgroundColor: bg,
+              borderTop: `2px solid ${sheetType === 'editorial' ? '#e97316' : accent}`,
+              borderRadius: '16px 16px 0 0',
+              maxHeight: '80vh',
+              boxShadow: '0 -24px 60px rgba(0,0,0,0.5)',
+              animation: 'cf-sheet-up 0.28s cubic-bezier(0.32,0.72,0,1)',
+            }}
+            onMouseDown={e => { if ((e.target as HTMLElement).tagName !== 'TEXTAREA') e.preventDefault() }}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="h-1 w-10 rounded-full" style={{ backgroundColor: `${textColor}20` }} />
+            </div>
+
+            <div className="overflow-y-auto px-6 pb-8 pt-2">
+              {/* Заголовок */}
+              <div className="mb-5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {sheetType === 'editorial' ? (
+                    <Feather className="h-4 w-4" style={{ color: '#e97316' }} />
+                  ) : (
+                    <Quote className="h-4 w-4" style={{ color: accent }} />
+                  )}
+                  <span
+                    className="text-[10px] font-black uppercase tracking-[0.22em]"
+                    style={{ color: sheetType === 'editorial' ? '#e97316' : accent }}
+                  >
+                    {sheetType === 'editorial' ? 'Замечание редактора' : 'Новая цитата'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => { setSelection(null); setSelectionMode('pill'); setNote(''); setIsPublic(false); window.getSelection()?.removeAllRanges() }}
+                  className="p-1 opacity-30 transition-opacity hover:opacity-80"
+                  style={{ color: textColor }}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Выделенный текст */}
+              <div
+                className="mb-5 rounded-sm px-4 py-3"
+                style={{ backgroundColor: `${sheetType === 'editorial' ? '#e97316' : accent}0f`, borderLeft: `3px solid ${sheetType === 'editorial' ? '#e97316' : accent}50` }}
+              >
+                <p
+                  className="font-[family-name:var(--font-cormorant)] text-[18px] italic leading-snug line-clamp-5"
+                  style={{ color: textColor }}
+                >
+                  «{selection.text}»
+                </p>
+              </div>
+
+              {currentUserId ? (
+                <>
+                  {/* Поле заметки */}
+                  <textarea
+                    value={note}
+                    onChange={e => setNote(e.target.value)}
+                    placeholder={sheetType === 'editorial' ? 'Что нужно исправить (обязательно)' : 'Личная заметка (опционально)'}
+                    rows={3}
+                    autoFocus
+                    className="w-full resize-none bg-transparent text-sm leading-7 outline-none placeholder:opacity-30"
+                    style={{
+                      color: textColor,
+                      borderBottom: `1px solid ${textColor}18`,
+                      paddingBottom: '8px',
+                      marginBottom: '20px',
+                    }}
+                  />
+
+                  {/* Тоггл публичности — только для цитат */}
+                  {sheetType === 'highlight' && (
+                    <div className="mb-6">
+                      <button
+                        type="button"
+                        onClick={() => setIsPublic(p => !p)}
+                        className="flex w-full items-center justify-between rounded-sm px-4 py-3 transition-colors"
+                        style={{ backgroundColor: `${textColor}07` }}
+                      >
+                        <div className="flex items-center gap-3">
+                          {isPublic ? (
+                            <Globe className="h-4 w-4" style={{ color: accent }} />
+                          ) : (
+                            <Lock className="h-4 w-4" style={{ color: `${textColor}50` }} />
+                          )}
+                          <div className="text-left">
+                            <p className="text-sm font-semibold" style={{ color: isPublic ? textColor : `${textColor}70` }}>
+                              {isPublic ? 'Публичная цитата' : 'Только для меня'}
+                            </p>
+                            <p className="text-[11px] opacity-40" style={{ color: textColor }}>
+                              {isPublic ? 'Видна всем читателям на странице книги' : 'Видна только вам в закладках'}
+                            </p>
+                          </div>
+                        </div>
+                        {/* Переключатель-таблетка */}
+                        <div
+                          className="relative h-6 w-11 flex-shrink-0 rounded-full transition-colors duration-200"
+                          style={{ backgroundColor: isPublic ? accent : `${textColor}20` }}
+                        >
+                          <span
+                            className="absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all duration-200"
+                            style={{ left: isPublic ? '24px' : '4px' }}
+                          />
+                        </div>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Кнопка сохранения */}
+                  <button
+                    onClick={saveHighlight}
+                    disabled={isSaving || (sheetType === 'editorial' && !note.trim())}
+                    className="flex w-full items-center justify-center gap-2 py-4 text-sm font-black uppercase tracking-[0.14em] transition-opacity disabled:opacity-40"
+                    style={{ backgroundColor: sheetType === 'editorial' ? '#e97316' : accent, color: '#fff', borderRadius: '4px' }}
+                  >
+                    {isSaving ? (
+                      <>
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        Сохраняем…
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-4 w-4" />
+                        {sheetType === 'editorial' ? 'Отправить замечание' : 'Сохранить цитату'}
+                      </>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href={`/login?redirect=/release/${release.slug}`}
+                  className="flex w-full items-center justify-center py-4 text-sm font-black uppercase tracking-[0.14em]"
+                  style={{ backgroundColor: accent, color: '#fff', borderRadius: '4px' }}
+                >
+                  Войти, чтобы сохранить
+                </Link>
+              )}
+            </div>
+          </div>
+        </>
       )}
 
       {/* Highlight detail popup */}
