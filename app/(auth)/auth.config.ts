@@ -117,31 +117,61 @@ export const authConfig = {
     strategy: 'jwt',
   },
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
+      const provider = account?.provider
+      console.log('[auth] signIn', {
+        provider,
+        userEmail: user?.email,
+        userName: user?.name,
+        userId: user?.id,
+        profileData: provider !== 'credentials' ? { email: profile?.email, name: profile?.name } : undefined,
+      })
+
       if (account?.provider !== 'credentials') {
-        if (!user?.email) return false
+        if (!user?.email) {
+          console.warn('[auth] signIn rejected: no email', {
+            provider,
+            user,
+            profile,
+          })
+          return false
+        }
 
         try {
           const dbUser = await findOrCreateUserByEmail(user.email, user.name)
-          if (!dbUser) return false
+          if (!dbUser) {
+            console.warn('[auth] signIn rejected: user not created', { email: user.email })
+            return false
+          }
 
           user.id = dbUser.id
           ;(user as { type: UserType }).type = 'regular'
           ;(user as { handle?: string | null }).handle = dbUser.handle
           ;(user as { login?: string | null }).login = dbUser.login
 
+          console.log('[auth] signIn success', { provider, userId: dbUser.id, email: user.email })
           return true
         } catch (error) {
-          console.error('[auth] signIn OAuth failed', error)
+          console.error('[auth] signIn OAuth failed', {
+            provider,
+            email: user.email,
+            error: error instanceof Error ? error.message : String(error),
+          })
           return false
         }
       }
 
+      console.log('[auth] signIn credentials success', { userId: user?.id })
       return true
     },
 
     async jwt({ token, user, trigger }) {
       if (user) {
+        console.log('[auth] jwt update', {
+          trigger,
+          userId: user.id,
+          userType: (user as { type?: UserType }).type,
+        })
         if (user.id) token.id = user.id as string
         token.type = (user as { type?: UserType }).type ?? token.type ?? 'regular'
         token.handle = (user as { handle?: string | null }).handle ?? token.handle
@@ -152,11 +182,19 @@ export const authConfig = {
 
       const uid = (user?.id as string | undefined) ?? token.sub
       if ((user || trigger === 'update') && uid) {
-        const rows = await dbQuery<{ role: string }>(
-          'SELECT role FROM user_roles WHERE user_id = $1',
-          [uid],
-        )
-        token.roles = rows.map(r => r.role)
+        try {
+          const rows = await dbQuery<{ role: string }>(
+            'SELECT role FROM user_roles WHERE user_id = $1',
+            [uid],
+          )
+          token.roles = rows.map(r => r.role)
+          console.log('[auth] jwt roles fetched', { userId: uid, roles: token.roles })
+        } catch (error) {
+          console.error('[auth] jwt role fetch failed', {
+            userId: uid,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
       }
 
       if (!token.roles) token.roles = []
@@ -166,6 +204,10 @@ export const authConfig = {
 
     session({ session, token }) {
       if (session.user) {
+        console.log('[auth] session', {
+          userId: token.id ?? token.sub,
+          roles: token.roles,
+        })
         if (token.id) session.user.id = token.id
         session.user.type = (token.type as UserType) ?? 'regular'
         session.user.handle = token.handle ?? null
