@@ -1,5 +1,7 @@
+/** @deprecated Books system retired. Use Release system instead. */
 export type BookType = 'comic' | 'book' | 'audiobook';
 
+/** @deprecated Books system retired. Use Release system instead. */
 export interface BookChapter {
   title: string;
   content: string;
@@ -7,6 +9,7 @@ export interface BookChapter {
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'completed' | 'cancelled';
 export type HomepageSlideTheme = 'atelier' | 'night-city' | 'pvz' | 'volga' | 'dreams';
 
+/** @deprecated Books system retired. Use Release system instead. */
 export interface Book {
   id: string;
   title: string;
@@ -37,6 +40,7 @@ export interface NewsPost {
   created_at: string;
 }
 
+/** @deprecated Books system retired. */
 export interface BookCharacterLink {
   id: string;
   name: string;
@@ -45,6 +49,7 @@ export interface BookCharacterLink {
   bio: string | null;
 }
 
+/** @deprecated Books system retired. */
 export interface BookWithCharacters extends Book {
   characters?: BookCharacterLink[];
   character_ids?: string[];
@@ -73,6 +78,7 @@ export type UserRole = 'reader' | 'author' | 'editor' | 'admin';
 export type CharacterReplyMode = 'ai_auto' | 'manual' | 'hybrid' | 'disabled';
 export type CharacterFriendshipStatus = 'pending' | 'accepted' | 'blocked';
 export type CharacterMessageRole = 'user' | 'character' | 'system';
+/** @deprecated Books system retired. */
 export type BookCharacterRole = 'main' | 'supporting' | 'cameo' | 'mentioned';
 
 export interface UserProfile {
@@ -121,6 +127,7 @@ export interface CharacterMessage {
   created_at: string;
 }
 
+/** @deprecated Books system retired. */
 export interface CharacterBookAppearance {
   id: string;
   title: string;
@@ -217,6 +224,7 @@ export interface Order {
   updated_at: string;
 }
 
+/** @deprecated Books system retired. Cart system needs migration to Release. */
 export interface CartItem {
   bookId: string;
   title: string;
@@ -231,6 +239,7 @@ export type HighlightStatus = 'pending' | 'resolved' | 'ignored';
 
 export interface Highlight {
   id: string;
+  /** @deprecated book_id from retired books system */
   book_id: string;
   user_id: string;
   chapter_index: number;
@@ -246,6 +255,7 @@ export interface Highlight {
 
 export interface ChapterRating {
   id: string;
+  /** @deprecated book_id from retired books system */
   book_id: string;
   chapter_index: number;
   user_id: string;
@@ -253,6 +263,7 @@ export interface ChapterRating {
   created_at: string;
 }
 
+/** @deprecated Books system retired. */
 export interface BookReview {
   id: string;
   book_id: string;

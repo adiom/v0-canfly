@@ -47,7 +47,7 @@ export function optionalString(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null
 }
 
-/** Normalize chapters array with validation */
+/** @deprecated Books system retired. Used only by admin museum. */
 export function normalizeChapters(
   value: unknown,
 ): BookChapter[] | { error: string } {
@@ -80,6 +80,7 @@ export function normalizeChapters(
   }))
 }
 
+/** @deprecated Books system retired. */
 export const BOOK_TYPES: BookType[] = ['comic', 'book', 'audiobook']
 
 interface NormalizedBookResult {
@@ -99,7 +100,7 @@ interface NormalizedBookResult {
   characterIds: string[]
 }
 
-/** Normalize a book payload from admin API */
+/** @deprecated Books system retired. Used only by admin museum. */
 export function normalizeBookPayload(
   body: Record<string, unknown>,
 ): { error: string } | NormalizedBookResult {
@@ -150,6 +151,7 @@ export function normalizeBookPayload(
   }
 }
 
+/** Normalize a character payload from admin API */
 interface NormalizedCharacterResult {
   data: {
     name: string

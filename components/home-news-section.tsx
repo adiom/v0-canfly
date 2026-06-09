@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { fetchNewsPosts } from '@/lib/server/books'
+import { fetchNewsPosts } from '@/lib/server/news'
 
 export async function HomeNewsSection() {
   const news = await fetchNewsPosts(3)

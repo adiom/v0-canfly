@@ -4,10 +4,8 @@ import { Search } from 'lucide-react'
 import type { Metadata } from 'next'
 
 import { searchAll } from '@/lib/server/search'
-import { fetchBooks } from '@/lib/server/books'
 import { fetchCharactersList } from '@/lib/server/characters'
 import { SearchResultSection } from '@/components/search/search-result-section'
-import { SearchResultBookRow } from '@/components/search/search-result-book'
 import { SearchResultCharacterRow } from '@/components/search/search-result-character'
 import { SearchResultNewsRow } from '@/components/search/search-result-news'
 import { SearchNoResults } from '@/components/search/search-no-results'
@@ -38,19 +36,11 @@ export default async function SearchPage({
 
   const results = query.length >= 2 ? await searchAll(query) : null
 
-  // Browse state: fetch latest books + characters when no query
-  let browseBooks: { id: string; title: string; slug: string; cover_image: string | null; type: string }[] = []
+  // Browse state: fetch characters when no query
   let browseCharacters: { id: string; name: string; slug: string; avatar: string | null }[] = []
   if (!results) {
     try {
-      const [books, characters] = await Promise.all([fetchBooks(), fetchCharactersList()])
-      browseBooks = books.slice(0, 4).map((b) => ({
-        id: b.id,
-        title: b.title,
-        slug: b.slug,
-        cover_image: b.cover_image,
-        type: b.type,
-      }))
+      const characters = await fetchCharactersList()
       browseCharacters = characters.slice(0, 3).map((c) => ({
         id: c.id,
         name: c.name,
@@ -88,27 +78,6 @@ export default async function SearchPage({
             <p className="mb-8 text-sm text-cf-text-3">
               Введите запрос, чтобы найти книги, персонажей или новости вселенной canfly.
             </p>
-            {browseBooks.length > 0 && (
-              <section className="mb-10">
-                <h2 className="mb-4 text-xs font-black uppercase tracking-[0.22em] text-cf-accent">Книги</h2>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {browseBooks.map((book) => (
-                    <Link key={book.id} href={`/books/${book.slug}`} className="group block">
-                      <div className="relative mb-2 aspect-[2/3] w-full overflow-hidden rounded-sm bg-cf-bg-2">
-                        {book.cover_image ? (
-                          <Image src={book.cover_image} alt={book.title} fill sizes="(max-width:768px) 50vw, 25vw" className="object-cover transition-transform group-hover:scale-105" />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-cf-accent/20">
-                            <span className="text-lg font-black text-cf-accent">CF</span>
-                          </div>
-                        )}
-                      </div>
-                      <p className="truncate text-xs font-bold text-cf-text-2 group-hover:text-cf-text-heading">{book.title}</p>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
             {browseCharacters.length > 0 && (
               <section>
                 <h2 className="mb-4 text-xs font-black uppercase tracking-[0.22em] text-cf-accent">Персонажи</h2>
@@ -136,20 +105,12 @@ export default async function SearchPage({
         {/* Results */}
         {results && results.total === 0 && <SearchNoResults query={query} />}
 
-        {results && results.total > 0 && (
+          {results && results.total > 0 && (
           <div>
             <p className="mb-8 text-xs text-cf-text-3">
               Найдено {results.total} {results.total === 1 ? 'результат' : results.total < 5 ? 'результата' : 'результатов'} по запросу{' '}
               <span className="text-cf-text-2">«{query}»</span>
             </p>
-
-            {results.books.length > 0 && (
-              <SearchResultSection title={`Книги (${results.books.length})`}>
-                {results.books.map((book) => (
-                  <SearchResultBookRow key={book.id} book={book} />
-                ))}
-              </SearchResultSection>
-            )}
 
             {results.characters.length > 0 && (
               <SearchResultSection title={`Персонажи (${results.characters.length})`}>

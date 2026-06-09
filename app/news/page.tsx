@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 
-import { fetchNewsPosts } from '@/lib/server/books'
+import { fetchNewsPosts } from '@/lib/server/news'
 import { ThemeToggle } from '@/components/theme-toggle'
 
 export const dynamic = 'force-dynamic'

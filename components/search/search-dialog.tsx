@@ -85,7 +85,6 @@ export function SearchDialog() {
     [query, router],
   )
 
-  const books = results.filter((r) => r.kind === 'book')
   const characters = results.filter((r) => r.kind === 'character')
   const news = results.filter((r) => r.kind === 'news')
 
@@ -121,32 +120,6 @@ export function SearchDialog() {
               <Search className="mr-2 h-4 w-4 flex-shrink-0" />
               <span>Искать «{query}» — все результаты</span>
             </CommandItem>
-          </CommandGroup>
-        )}
-
-        {books.length > 0 && (
-          <CommandGroup heading="Книги">
-            {books.map((item) => (
-              <CommandItem
-                key={item.id}
-                value={`book-${item.id}`}
-                onSelect={() => handleSelect(item.href)}
-              >
-                <div className="relative mr-3 h-9 w-6 flex-shrink-0 overflow-hidden rounded-sm bg-cf-bg-2">
-                  {item.image ? (
-                    <Image src={item.image} alt={item.title} fill className="object-cover" sizes="24px" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-[#d52525]/20">
-                      <span className="text-[8px] font-black text-[#d52525]">CF</span>
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-bold">{item.title}</span>
-                  <span className="text-xs text-cf-text-3">{item.subtitle}</span>
-                </div>
-              </CommandItem>
-            ))}
           </CommandGroup>
         )}
 

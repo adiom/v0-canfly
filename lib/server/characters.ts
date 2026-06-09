@@ -1,7 +1,6 @@
 import { dbQuery, dbQueryOne } from '@/lib/db'
 import {
   Character,
-  CharacterBookAppearance,
   CharacterFriendSummary,
   CharacterRelationship,
   CharacterStats,
@@ -27,7 +26,6 @@ export async function fetchRelationshipsForCharacters(
 export async function fetchCharacterBySlug(slug: string): Promise<{
   character: Character
   relationships: CharacterRelationship[]
-  books: CharacterBookAppearance[]
 } | null> {
   const character = await dbQueryOne<Character>('SELECT * FROM characters WHERE slug = $1 LIMIT 1', [
     slug,
@@ -42,48 +40,10 @@ export async function fetchCharacterBySlug(slug: string): Promise<{
     [character.id],
   )
 
-  let books: CharacterBookAppearance[] = []
-
-  try {
-    books = await fetchBooksForCharacter(character.id)
-  } catch (error) {
-    console.warn('Character book appearances are unavailable:', error)
-  }
-
   return {
     character,
     relationships,
-    books,
   }
-}
-
-export async function fetchBooksForCharacter(characterId: string) {
-  return dbQuery<CharacterBookAppearance>(
-    `
-      SELECT
-        b.id,
-        b.title,
-        b.slug,
-        b.type,
-        b.cover_image,
-        bc.role,
-        bc.importance_score
-      FROM book_characters bc
-      JOIN books b ON b.id = bc.book_id
-      WHERE bc.character_id = $1
-      ORDER BY
-        CASE bc.role
-          WHEN 'main' THEN 1
-          WHEN 'supporting' THEN 2
-          WHEN 'cameo' THEN 3
-          ELSE 4
-        END,
-        bc.importance_score DESC,
-        b.display_order ASC,
-        b.created_at DESC
-    `,
-    [characterId],
-  )
 }
 
 export async function fetchCharacterById(id: string) {
@@ -91,7 +51,7 @@ export async function fetchCharacterById(id: string) {
 }
 
 export async function fetchCharacterStats(characterId: string): Promise<CharacterStats> {
-  const [friendsRow, postsRow, booksRow] = await Promise.all([
+  const [friendsRow, postsRow] = await Promise.all([
     dbQueryOne<{ count: string }>(
       `SELECT COUNT(*)::text AS count
        FROM character_friendships
@@ -105,18 +65,12 @@ export async function fetchCharacterStats(characterId: string): Promise<Characte
          AND (scheduled_at IS NULL OR scheduled_at <= NOW())`,
       [characterId],
     ),
-    dbQueryOne<{ count: string }>(
-      `SELECT COUNT(*)::text AS count
-       FROM book_characters
-       WHERE character_id = $1`,
-      [characterId],
-    ),
   ])
 
   return {
     friends: friendsRow ? Number(friendsRow.count) : 0,
     posts: postsRow ? Number(postsRow.count) : 0,
-    books: booksRow ? Number(booksRow.count) : 0,
+    books: 0,
   }
 }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireStudioAdminSession } from '@/lib/server/studio-auth'
-import { createNewsPost, listAdminNewsPosts } from '@/lib/server/books'
+import { createNewsPost, listAdminNewsPosts } from '@/lib/server/news'
 import { apiHandler } from '@/lib/api-handler'
 import { normalizeNewsPayload } from '@/lib/api/normalizers'
 

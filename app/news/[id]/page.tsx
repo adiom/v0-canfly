@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { fetchNewsPostById } from '@/lib/server/books'
+import { fetchNewsPostById } from '@/lib/server/news'
 
 export const dynamic = 'force-dynamic'
 

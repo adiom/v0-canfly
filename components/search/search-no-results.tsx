@@ -18,12 +18,6 @@ export function SearchNoResults({ query }: SearchNoResultsProps) {
       </p>
       <div className="flex justify-center gap-4">
         <Link
-          href="/books"
-          className="flex h-10 items-center border border-[#f4efe5]/12 px-5 text-xs font-black uppercase tracking-[0.12em] text-[#ded7cc] transition-colors hover:bg-[#f4efe5]/8 hover:text-white"
-        >
-          Все книги
-        </Link>
-        <Link
           href="/characters"
           className="flex h-10 items-center border border-[#f4efe5]/12 px-5 text-xs font-black uppercase tracking-[0.12em] text-[#ded7cc] transition-colors hover:bg-[#f4efe5]/8 hover:text-white"
         >

@@ -110,9 +110,33 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // --- Редиректы со старой системы книг на Release ---
+  if (pathname === '/books') {
+    return NextResponse.redirect(new URL('/release/', request.url))
+  }
+
+  if (pathname.startsWith('/books/')) {
+    // /books/[slug]/[chapter] или /books/[slug]/full -> /release/[slug]
+    const slug = pathname.split('/')[2]
+    return NextResponse.redirect(new URL(`/release/${slug}`, request.url))
+  }
+
+  // --- Редиректы Shop/Cart на Release ---
+  if (pathname.startsWith('/shop') || pathname.startsWith('/cart')) {
+    return NextResponse.redirect(new URL('/releases/', request.url))
+  }
+
   return NextResponse.next({ request })
 }
 
 export const config = {
-  matcher: ['/profile/:path*', '/admin/:path*', '/studio/:path*', '/login'],
+  matcher: [
+    '/profile/:path*',
+    '/admin/:path*',
+    '/studio/:path*',
+    '/login',
+    '/books/:path*',
+    '/shop/:path*',
+    '/cart/:path*',
+  ],
 }

@@ -1,25 +1,22 @@
 import Link from 'next/link'
-import Image from 'next/image'
 
 import { CharacterPostsFeed } from '@/components/character-posts-feed'
 import { CharacterWall } from '@/components/character-wall'
 import type {
   Character,
-  CharacterBookAppearance,
   CharacterFriendSummary,
   CharacterPostWithCharacter,
   CharacterRelationship,
   CharacterWallPostWithUser,
 } from '@/lib/types'
 
-type Tab = 'feed' | 'about' | 'relations' | 'books' | 'wall'
+type Tab = 'feed' | 'about' | 'relations' | 'wall'
 
 interface CharacterProfileTabsProps {
   slug: string
   activeTab: Tab
   character: Character
   relationships: CharacterRelationship[]
-  books: CharacterBookAppearance[]
   posts: CharacterPostWithCharacter[]
   friends: CharacterFriendSummary[]
   wall: CharacterWallPostWithUser[]
@@ -31,7 +28,6 @@ const tabs: { key: Tab; label: string }[] = [
   { key: 'feed', label: 'Лента' },
   { key: 'about', label: 'О герое' },
   { key: 'relations', label: 'Связи' },
-  { key: 'books', label: 'Книги' },
   { key: 'wall', label: 'Стена' },
 ]
 
@@ -40,7 +36,6 @@ export function CharacterProfileTabs({
   activeTab,
   character,
   relationships,
-  books,
   friends,
   wall,
   currentUserId,
@@ -72,7 +67,6 @@ export function CharacterProfileTabs({
         {activeTab === 'feed' && <CharacterPostsFeed characterSlug={slug} />}
         {activeTab === 'about' && <AboutTab character={character} friends={friends} />}
         {activeTab === 'relations' && <RelationsTab relationships={relationships} />}
-        {activeTab === 'books' && <BooksTab books={books} />}
         {activeTab === 'wall' && (
           <CharacterWall
             slug={slug}
@@ -223,78 +217,5 @@ function RelationsTab({ relationships }: { relationships: CharacterRelationship[
         </div>
       ))}
     </div>
-  )
-}
-
-function BooksTab({ books }: { books: CharacterBookAppearance[] }) {
-  if (books.length === 0) {
-    return <p className="text-center text-[#ded7cc]/60 py-8">Книг с этим персонажем пока нет</p>
-  }
-  const main = books.filter((b) => b.role === 'main')
-  const rest = books.filter((b) => b.role !== 'main')
-  return (
-    <div className="space-y-8">
-      {main.length > 0 && (
-        <section>
-          <h2 className="mb-4 text-xs font-black uppercase tracking-[0.22em] text-[#f6d6a8]">
-            Главные роли
-          </h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            {main.map((book) => (
-              <BookCard key={book.id} book={book} subtitle="Главная роль" />
-            ))}
-          </div>
-        </section>
-      )}
-      {rest.length > 0 && (
-        <section>
-          <h2 className="mb-4 text-xs font-black uppercase tracking-[0.22em] text-[#ded7cc]">
-            Второстепенные появления
-          </h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            {rest.map((book) => (
-              <BookCard
-                key={book.id}
-                book={book}
-                subtitle={
-                  book.role === 'cameo'
-                    ? 'Камео'
-                    : book.role === 'mentioned'
-                      ? 'Упоминание'
-                      : 'Вторая роль'
-                }
-              />
-            ))}
-          </div>
-        </section>
-      )}
-    </div>
-  )
-}
-
-function BookCard({
-  book,
-  subtitle,
-}: {
-  book: CharacterBookAppearance
-  subtitle: string
-}) {
-  return (
-    <Link
-      href={`/books/${book.slug}`}
-      className="group flex gap-4 border border-[#f4efe5]/10 bg-[#1b1c19] p-4 transition-colors hover:border-[#f6d6a8]/45"
-    >
-      {book.cover_image ? (
-        <div className="relative h-20 w-14 shrink-0 overflow-hidden border border-[#f4efe5]/10">
-          <Image src={book.cover_image} alt={book.title} fill sizes="56px" className="object-cover" />
-        </div>
-      ) : null}
-      <div>
-        <h4 className="font-black uppercase text-[#f4efe5] group-hover:text-[#f6d6a8]">
-          {book.title}
-        </h4>
-        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#ded7cc]/60">{subtitle}</p>
-      </div>
-    </Link>
   )
 }

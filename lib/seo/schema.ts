@@ -10,15 +10,15 @@ export type SchemaType =
   | ReturnType<typeof generateOrganizationSchema>
 
 /**
- * Schema для Book/CreativeWork
- * Используется для: Google Books, Яндекс, соцсети
+ * Schema для организации (сайт целиком)
  */
+/** @deprecated Books system retired. Used only by old books pages (museum). */
 export function generateBookSchema(
   book: BookWithCharacters,
   baseUrl: string
 ) {
   const bookUrl = `${baseUrl}/books/${book.slug}`
-  
+
   return {
     '@context': 'https://schema.org',
     '@type': book.type === 'audiobook' ? 'AudioBook' : 'Book',
@@ -48,10 +48,8 @@ export function generateBookSchema(
       'Contemporary Fiction',
       'Literature',
     ],
-    // Для Google Books
     bookEdition: book.type === 'comic' ? 'Comic Edition' : 'Digital Edition',
     inLanguage: 'ru-RU',
-    // Цена и предложение
     ...(book.price && {
       offers: {
         '@type': 'Offer',
@@ -65,7 +63,6 @@ export function generateBookSchema(
         },
       },
     }),
-    // Персонажи
     ...(book.characters && book.characters.length > 0 && {
       character: book.characters.map((char) => ({
         '@type': 'Person',
@@ -74,18 +71,9 @@ export function generateBookSchema(
         image: char.avatar,
       })),
     }),
-    // Рейтинг (если есть)
-    // aggregateRating: {
-    //   '@type': 'AggregateRating',
-    //   ratingValue: '4.5',
-    //   ratingCount: '89',
-    // },
   }
 }
 
-/**
- * Schema для организации (сайт целиком)
- */
 export function generateOrganizationSchema(baseUrl: string) {
   return {
     '@context': 'https://schema.org',
@@ -131,9 +119,7 @@ export function generateBreadcrumbSchema(
   }
 }
 
-/**
- * Schema для Список книг
- */
+/** @deprecated Books system retired. Used only by old books pages (museum). */
 export function generateBooksCollectionSchema(
   books: BookWithCharacters[],
   baseUrl: string

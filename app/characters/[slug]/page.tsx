@@ -14,8 +14,6 @@ import { listVisibleCharacterPosts } from '@/lib/server/character-posts'
 import { fetchWallPosts } from '@/lib/server/character-wall'
 import { getCurrentUser, getUserRoles } from '@/lib/server/session'
 
-export const dynamic = 'force-dynamic'
-
 interface CharacterPageProps {
   params: Promise<{ slug: string }>
   searchParams: Promise<{ tab?: string }>
@@ -40,7 +38,7 @@ export async function generateMetadata({ params }: CharacterPageProps) {
   }
 }
 
-const VALID_TABS = ['feed', 'about', 'relations', 'books', 'wall'] as const
+const VALID_TABS = ['feed', 'about', 'relations', 'wall'] as const
 type Tab = (typeof VALID_TABS)[number]
 
 function normalizeTab(value: string | undefined): Tab {
@@ -88,7 +86,6 @@ export default async function CharacterPage({ params, searchParams }: CharacterP
           activeTab={activeTab}
           character={data.character}
           relationships={data.relationships ?? []}
-          books={data.books ?? []}
           posts={posts}
           friends={friends}
           wall={wall}

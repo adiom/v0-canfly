@@ -1,17 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { fetchBooks } from '@/lib/server/books'
-import { BookWithCharacters } from '@/lib/types'
-import { apiHandler } from '@/lib/api-handler'
+import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-async function getBooks(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const featured = searchParams.get('featured') === 'true'
-
-  const books = await fetchBooks({ featured })
-
-  return NextResponse.json(books as BookWithCharacters[])
+export async function GET() {
+  return NextResponse.json({
+    status: 'retired',
+    message: 'Этот endpoint отправился на пенсию и теперь пьёт чай в беседке. Книги переехали в /release/ вселенной canfly.',
+    suggestion: '/api/releases',
+  })
 }
 
-export const GET = apiHandler(getBooks)
+export async function POST() {
+  return NextResponse.json({
+    status: 'retired',
+    message: 'Этот endpoint ушёл в прошлое вместе с бумажными каталогами.',
+    suggestion: '/api/releases',
+  })
+}

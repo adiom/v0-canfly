@@ -4,7 +4,7 @@ import {
   deleteNewsPost,
   fetchNewsPostById,
   updateNewsPost,
-} from '@/lib/server/books'
+} from '@/lib/server/news'
 import { apiHandler } from '@/lib/api-handler'
 import { normalizeNewsPayload } from '@/lib/api/normalizers'
 
