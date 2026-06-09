@@ -61,7 +61,7 @@ export const createMagicLink = async (
       process.env.NEXTAUTH_URL ||
       'http://localhost:3000'
 
-    const magicLinkUrl = `${baseUrl}/api/magic/verify?token=${token}`
+    const magicLinkUrl = `${baseUrl}/hi/${token}`
 
     if (process.env.NODE_ENV === 'development') {
       console.log(`[magic-link] Код для ${email}: ${token}`)
