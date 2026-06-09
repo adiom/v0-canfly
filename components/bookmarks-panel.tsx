@@ -1,0 +1,346 @@
+'use client'
+
+import { useState } from 'react'
+import { X, Trash2, Eye, EyeOff, Heart, ChevronRight } from 'lucide-react'
+import type { ChapterHighlight } from '@/lib/releases-types'
+
+interface BookmarksPanelProps {
+  open: boolean
+  onClose: () => void
+  highlights: ChapterHighlight[]
+  currentChapterId: string
+  onDelete: (id: string) => void
+  onScrollTo: (paragraphIndex: number, chapterId: string) => void
+  accent: string
+  bg: string
+  textColor: string
+}
+
+export function BookmarksPanel({
+  open,
+  onClose,
+  highlights,
+  currentChapterId,
+  onDelete,
+  onScrollTo,
+  accent,
+  bg,
+  textColor,
+}: BookmarksPanelProps) {
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const currentChapterHighlights = highlights.filter(h => h.chapter_id === currentChapterId)
+  const otherHighlights = highlights.filter(h => h.chapter_id !== currentChapterId)
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id)
+    try {
+      await onDelete(id)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const handleScrollTo = (h: ChapterHighlight) => {
+    if (h.chapter_id !== currentChapterId) return
+    onScrollTo(h.paragraph_index ?? 0, h.chapter_id)
+    onClose()
+  }
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-[49] transition-opacity duration-300"
+        style={{
+          background: 'rgba(0,0,0,0.5)',
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? 'auto' : 'none',
+        }}
+        onClick={onClose}
+      />
+
+      {/* Panel */}
+      <aside
+        className="fixed right-0 top-0 z-50 flex h-full w-[340px] flex-col overflow-hidden transition-transform duration-300 ease-out md:w-[380px]"
+        style={{
+          backgroundColor: bg,
+          transform: open ? 'translateX(0)' : 'translateX(100%)',
+          borderLeft: `1px solid ${textColor}12`,
+          boxShadow: open ? `-24px 0 60px rgba(0,0,0,0.5)` : 'none',
+        }}
+      >
+        {/* Верхняя полоса — «переплёт» */}
+        <div
+          className="h-1 w-full shrink-0"
+          style={{ backgroundColor: accent }}
+        />
+
+        {/* Шапка */}
+        <div
+          className="flex shrink-0 items-end justify-between px-6 pb-4 pt-6"
+          style={{ borderBottom: `1px solid ${textColor}0f` }}
+        >
+          <div>
+            <p
+              className="mb-0.5 text-[10px] font-black uppercase tracking-[0.22em]"
+              style={{ color: accent }}
+            >
+              Пометки
+            </p>
+            <h2
+              className="font-[family-name:var(--font-cormorant)] text-3xl italic leading-none"
+              style={{ color: textColor }}
+            >
+              {highlights.length === 0
+                ? 'Пусто'
+                : highlights.length === 1
+                ? '1 цитата'
+                : `${highlights.length} цитаты`}
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="mb-1 flex h-8 w-8 items-center justify-center rounded-full transition-opacity hover:opacity-60"
+            style={{ backgroundColor: `${textColor}10`, color: textColor }}
+            aria-label="Закрыть"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Скроллируемый контент */}
+        <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
+          {highlights.length === 0 ? (
+            <div className="flex flex-col items-center justify-center px-8 py-20 text-center">
+              {/* Декоративная «пустая страница» */}
+              <div
+                className="relative mb-6 h-24 w-16"
+                aria-hidden
+              >
+                <div
+                  className="absolute inset-0 rounded-sm"
+                  style={{ backgroundColor: `${textColor}08`, border: `1px solid ${textColor}12` }}
+                />
+                <div
+                  className="absolute right-0 top-0 h-6 w-6"
+                  style={{
+                    background: `linear-gradient(225deg, ${bg} 50%, ${textColor}12 50%)`,
+                  }}
+                />
+                {[1, 2, 3].map(i => (
+                  <div
+                    key={i}
+                    className="absolute left-3 right-3 h-px"
+                    style={{ top: `${28 + i * 14}px`, backgroundColor: `${textColor}12` }}
+                  />
+                ))}
+              </div>
+              <p
+                className="font-[family-name:var(--font-cormorant)] text-xl italic leading-relaxed opacity-50"
+                style={{ color: textColor }}
+              >
+                Выделите текст,<br />чтобы оставить пометку
+              </p>
+            </div>
+          ) : (
+            <div className="px-4 pt-4">
+              {/* === Текущая глава === */}
+              {currentChapterHighlights.length > 0 && (
+                <section className="mb-6">
+                  <p
+                    className="mb-3 px-2 text-[9px] font-black uppercase tracking-[0.24em] opacity-40"
+                    style={{ color: textColor }}
+                  >
+                    В этой главе
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {currentChapterHighlights.map(h => (
+                      <BookmarkCard
+                        key={h.id}
+                        highlight={h}
+                        isCurrent
+                        isDeleting={deletingId === h.id}
+                        accent={accent}
+                        bg={bg}
+                        textColor={textColor}
+                        onScrollTo={() => handleScrollTo(h)}
+                        onDelete={() => handleDelete(h.id)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* === Другие главы === */}
+              {otherHighlights.length > 0 && (
+                <section>
+                  <p
+                    className="mb-3 px-2 text-[9px] font-black uppercase tracking-[0.24em] opacity-40"
+                    style={{ color: textColor }}
+                  >
+                    В других главах
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {otherHighlights.map(h => (
+                      <BookmarkCard
+                        key={h.id}
+                        highlight={h}
+                        isCurrent={false}
+                        isDeleting={deletingId === h.id}
+                        accent={accent}
+                        bg={bg}
+                        textColor={textColor}
+                        onScrollTo={() => {}}
+                        onDelete={() => handleDelete(h.id)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Нижняя подпись */}
+        <div
+          className="shrink-0 px-6 py-3 text-center"
+          style={{ borderTop: `1px solid ${textColor}0a` }}
+        >
+          <p
+            className="font-[family-name:var(--font-cormorant)] text-xs italic opacity-25"
+            style={{ color: textColor }}
+          >
+            Только вы видите свои закладки
+          </p>
+        </div>
+      </aside>
+    </>
+  )
+}
+
+function BookmarkCard({
+  highlight: h,
+  isCurrent,
+  isDeleting,
+  accent,
+  bg,
+  textColor,
+  onScrollTo,
+  onDelete,
+}: {
+  highlight: ChapterHighlight
+  isCurrent: boolean
+  isDeleting: boolean
+  accent: string
+  bg: string
+  textColor: string
+  onScrollTo: () => void
+  onDelete: () => void
+}) {
+  const [hovered, setHovered] = useState(false)
+  const [showDelete, setShowDelete] = useState(false)
+
+  const borderColor = h.is_public ? accent : `${textColor}30`
+
+  return (
+    <div
+      className="group relative overflow-hidden rounded-sm"
+      style={{
+        borderLeft: `3px solid ${borderColor}`,
+        backgroundColor: hovered ? `${textColor}07` : `${textColor}04`,
+        transform: hovered ? 'translateX(-2px)' : 'translateX(0)',
+        transition: 'all 0.18s ease',
+        boxShadow: hovered ? `2px 4px 20px rgba(0,0,0,0.3)` : 'none',
+        opacity: isDeleting ? 0.4 : 1,
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setShowDelete(false) }}
+    >
+      {/* Fold corner */}
+      <div
+        className="pointer-events-none absolute right-0 top-0 h-5 w-5"
+        aria-hidden
+        style={{
+          background: `linear-gradient(225deg, ${bg} 50%, ${textColor}10 50%)`,
+        }}
+      />
+
+      {/* Основной контент */}
+      <button
+        className="w-full px-4 pb-3 pt-3 text-left"
+        onClick={isCurrent ? onScrollTo : undefined}
+        style={{ cursor: isCurrent ? 'pointer' : 'default' }}
+        disabled={!isCurrent || isDeleting}
+        aria-label={isCurrent ? 'Перейти к цитате' : undefined}
+      >
+        <p
+          className="font-[family-name:var(--font-cormorant)] text-[15px] italic leading-snug line-clamp-4"
+          style={{ color: textColor }}
+        >
+          «{h.text_content}»
+        </p>
+
+        {h.note && (
+          <p
+            className="mt-2 text-[11px] leading-snug opacity-60 line-clamp-2"
+            style={{ color: textColor }}
+          >
+            {h.note}
+          </p>
+        )}
+
+        <div className="mt-2.5 flex items-center gap-3">
+          {/* Публичность */}
+          <span
+            className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.18em]"
+            style={{ color: h.is_public ? accent : `${textColor}35` }}
+          >
+            {h.is_public ? (
+              <Eye className="h-2.5 w-2.5" />
+            ) : (
+              <EyeOff className="h-2.5 w-2.5" />
+            )}
+            {h.is_public ? 'публичная' : 'приватная'}
+          </span>
+
+          {/* Лайки */}
+          {h.likes_count > 0 && (
+            <span
+              className="inline-flex items-center gap-1 text-[9px] opacity-50"
+              style={{ color: textColor }}
+            >
+              <Heart className="h-2.5 w-2.5" />
+              {h.likes_count}
+            </span>
+          )}
+
+          {/* Стрелка «перейти» для текущей главы */}
+          {isCurrent && (
+            <span
+              className="ml-auto transition-opacity"
+              style={{ color: accent, opacity: hovered ? 0.8 : 0 }}
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </span>
+          )}
+        </div>
+      </button>
+
+      {/* Кнопка удаления — появляется при hover */}
+      <button
+        onClick={e => { e.stopPropagation(); onDelete() }}
+        disabled={isDeleting}
+        className="absolute bottom-2.5 right-2.5 flex h-6 w-6 items-center justify-center rounded-full transition-all"
+        style={{
+          backgroundColor: `${textColor}10`,
+          color: textColor,
+          opacity: hovered ? 0.5 : 0,
+        }}
+        aria-label="Удалить закладку"
+      >
+        <Trash2 className="h-3 w-3" />
+      </button>
+    </div>
+  )
+}

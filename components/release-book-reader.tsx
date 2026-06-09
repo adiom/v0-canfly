@@ -3,10 +3,11 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { sanitizeChapterHtml } from '@/lib/sanitize'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, X, AlignJustify, Heart, Quote, MessageCircle, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, AlignJustify, Heart, Quote, MessageCircle, Check, Bookmark } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Release, Edition, Chapter, ChapterHighlight, ChapterEditorialNote, EditorialNoteStatus } from '@/lib/releases-types'
 import type { UserRole } from '@/lib/types'
+import { BookmarksPanel } from '@/components/bookmarks-panel'
 
 interface ReleaseBookReaderProps {
   release: Release
@@ -53,6 +54,7 @@ export function ReleaseBookReader({
   const [isSaving, setIsSaving] = useState(false)
   const [activeHighlight, setActiveHighlight] = useState<ChapterHighlight | null>(null)
   const [activeEditorialNote, setActiveEditorialNote] = useState<ChapterEditorialNote | null>(null)
+  const [showBookmarks, setShowBookmarks] = useState(false)
 
   const contentRef = useRef<HTMLDivElement>(null)
   const floatingMenuRef = useRef<HTMLDivElement>(null)
@@ -72,6 +74,16 @@ export function ReleaseBookReader({
   const chapterEditorialNotes = useMemo(
     () => editorialNotes.filter(n => n.chapter_id === currentChapter?.id),
     [editorialNotes, currentChapter],
+  )
+
+  // Мои хайлайты (все главы, отсортированные по позиции)
+  const myHighlights = useMemo(
+    () => currentUserId
+      ? highlights
+          .filter(h => h.user_id === currentUserId)
+          .sort((a, b) => (a.paragraph_index ?? 0) - (b.paragraph_index ?? 0))
+      : [],
+    [highlights, currentUserId],
   )
 
   // Подгружаем highlights при смене главы
@@ -278,6 +290,24 @@ export function ReleaseBookReader({
     setSelection({ text, rect, paragraphIndex, contextBefore, contextAfter })
   }, [])
 
+  const scrollToParagraph = useCallback((paragraphIndex: number) => {
+    const root = contentRef.current
+    if (!root) return
+    const paragraphs = root.querySelectorAll('p')
+    const el = paragraphs[paragraphIndex] as HTMLElement | undefined
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('cf-scroll-flash')
+    setTimeout(() => el.classList.remove('cf-scroll-flash'), 1800)
+  }, [])
+
+  const deleteHighlight = useCallback(async (id: string) => {
+    const res = await fetch(`/api/chapter-highlights/${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setHighlights(prev => prev.filter(h => h.id !== id))
+    }
+  }, [])
+
   const saveHighlight = async () => {
     if (!selection || !currentChapter) return
     if (!currentUserId) {
@@ -442,6 +472,24 @@ export function ReleaseBookReader({
                 aria-label="Оглавление"
               >
                 <AlignJustify className="h-4 w-4" />
+              </button>
+            )}
+            {currentUserId && (
+              <button
+                onClick={() => setShowBookmarks(b => !b)}
+                className="relative ml-1 p-2 transition-opacity hover:opacity-60"
+                style={{ color: showBookmarks ? accent : textColor }}
+                aria-label="Мои закладки"
+              >
+                <Bookmark className="h-4 w-4" style={{ fill: myHighlights.length > 0 ? 'currentColor' : 'none' }} />
+                {myHighlights.length > 0 && (
+                  <span
+                    className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-black leading-none"
+                    style={{ backgroundColor: accent, color: '#fff' }}
+                  >
+                    {myHighlights.length > 9 ? '9+' : myHighlights.length}
+                  </span>
+                )}
               </button>
             )}
           </div>
@@ -892,6 +940,21 @@ export function ReleaseBookReader({
             </div>
           </aside>
         </div>
+      )}
+
+      {/* Bookmarks panel */}
+      {currentUserId && (
+        <BookmarksPanel
+          open={showBookmarks}
+          onClose={() => setShowBookmarks(false)}
+          highlights={myHighlights}
+          currentChapterId={currentChapter?.id ?? ''}
+          onDelete={deleteHighlight}
+          onScrollTo={scrollToParagraph}
+          accent={accent}
+          bg={bg}
+          textColor={textColor}
+        />
       )}
     </div>
   )

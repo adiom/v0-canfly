@@ -57,3 +57,14 @@
   --font-cormorant-serif: var(--font-cormorant, 'Cormorant Garamond', Georgia, serif);
 }
 
+@keyframes cf-flash {
+  0%   { background-color: transparent; }
+  30%  { background-color: color-mix(in srgb, var(--cf-accent) 18%, transparent); }
+  100% { background-color: transparent; }
+}
+
+.cf-scroll-flash {
+  animation: cf-flash 1.8s ease forwards;
+  border-radius: 2px;
+}
+
