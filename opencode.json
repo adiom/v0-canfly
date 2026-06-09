@@ -1,5 +1,21 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "opencode": {
+      "options": {
+        "apiKey": "sk-ir7hr1z82fA7WD1ug47CunNPfDF5b17cvrtso9asDLDdO7S2ezP6bjBC4w8QeXfn"
+      },
+      "whitelist": [
+        "big-pickle",
+        "deepseek-v4-flash-free",
+        "mimo-v2.5-free",
+        "minimax-m3-free",
+        "nemotron-3-super-free",
+        "nemotron-3-ultra-free",
+        "qwen3.6-plus-free"
+      ]
+    }
+  },
   "mcp": {
     "next-devtools": {
       "type": "local",
