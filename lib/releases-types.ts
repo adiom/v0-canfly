@@ -147,6 +147,24 @@ export interface ChapterVersion {
   created_at: string
 }
 
+// === Release Events (HomeIssuesSection) ===
+
+export type ReleaseEventType = 'new_edition' | 'new_chapter'
+
+export interface ReleaseEvent {
+  event_type: ReleaseEventType
+  release_id: string
+  release_title: string
+  release_slug: string
+  cover_image: string | null
+  edition_id: string
+  edition_slug: string
+  format: EditionFormat
+  chapter_title: string | null
+  chapter_index: number | null
+  event_at: string
+}
+
 // === Chapter Highlights ===
 
 export interface ChapterHighlight {

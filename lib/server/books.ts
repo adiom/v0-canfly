@@ -207,6 +207,7 @@ export async function updateBookCharacters(bookId: string, characterIds: string[
   )
 }
 
+/** @deprecated Используй fetchRecentReleaseEvents из lib/server/releases.ts */
 export async function fetchIssueBooks(limit = 4) {
   return dbQuery<Book>(
     `SELECT ${bookColumns} FROM books

@@ -10,7 +10,8 @@ export default async function ChapterPublicPage({
   params: Promise<{ slug: string; editionSlug: string; chapterIndex: string }>
 }) {
   const { slug, editionSlug, chapterIndex: ciStr } = await params
-  const chapterIndex = parseInt(ciStr, 10)
+  const chapterNumber = parseInt(ciStr, 10)
+  const chapterIndex = chapterNumber - 1
 
   const release = await fetchReleaseBySlug(slug)
   if (!release || release.status !== 'published') notFound()

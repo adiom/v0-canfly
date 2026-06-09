@@ -71,7 +71,7 @@ export function ReleaseReader({ release, edition, chapters, chapterIndex }: {
               {publishedChapters.map((ch, i) => (
                 <Link
                   key={ch.id}
-                  href={`/release/${release.slug}/${edition.slug}/${i}`}
+                  href={`/release/${release.slug}/${edition.slug}/${i + 1}`}
                   className="px-3 py-2 rounded text-sm transition-colors"
                   style={{
                     color: i === chapterIndex ? accent : text,
@@ -102,7 +102,7 @@ export function ReleaseReader({ release, edition, chapters, chapterIndex }: {
       {publishedChapters.length > 1 && (
         <div className={`mx-auto flex items-center justify-between px-6 py-4 border-t ${maxWidth}`} style={{ borderColor: `${text}15` }}>
           {chapterIndex > 0 ? (
-            <Link href={`/release/${release.slug}/${edition.slug}/${chapterIndex - 1}`}>
+            <Link href={`/release/${release.slug}/${edition.slug}/${chapterIndex}`}>
               <Button variant="outline" style={{ borderColor: `${accent}40`, color: text }}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {publishedChapters[chapterIndex - 1]?.title ?? `${chapterLabel} ${chapterIndex}`}
@@ -112,7 +112,7 @@ export function ReleaseReader({ release, edition, chapters, chapterIndex }: {
             <div />
           )}
           {chapterIndex < publishedChapters.length - 1 ? (
-            <Link href={`/release/${release.slug}/${edition.slug}/${chapterIndex + 1}`}>
+            <Link href={`/release/${release.slug}/${edition.slug}/${chapterIndex + 2}`}>
               <Button style={{ backgroundColor: accent, color: bg }}>
                 {publishedChapters[chapterIndex + 1]?.title ?? `${chapterLabel} ${chapterIndex + 2}`}
                 <ArrowRight className="ml-2 h-4 w-4" />

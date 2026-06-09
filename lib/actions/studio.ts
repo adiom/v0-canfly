@@ -19,8 +19,11 @@ async function requireAuth() {
 // === Releases ===
 
 export async function getMyReleases() {
-  const { user } = await requireAuth()
-  return releasesDb.listReleasesByAuthor(user.id)
+  const session = await requireAuth()
+  if (session.roles.includes('admin')) {
+    return releasesDb.listAllReleases()
+  }
+  return releasesDb.listReleasesByAuthor(session.user.id)
 }
 
 export async function getRelease(id: string) {

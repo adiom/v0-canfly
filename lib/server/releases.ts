@@ -1,9 +1,12 @@
 import { dbQuery, dbQueryOne } from '@/lib/db'
 import type {
   Release,
+  ReleaseStatus,
+  EditionFormat,
   ReleaseCharacter,
   ReleaseSeries,
   ReleaseCharacterRole,
+  ReleaseEvent,
 } from '@/lib/releases-types'
 
 const releaseColumns = `
@@ -170,5 +173,67 @@ export async function listReleasesByAuthor(userId: string) {
      WHERE rc.user_id = $1
      ORDER BY r.updated_at DESC`,
     [userId],
+  )
+}
+
+export async function listAllReleases() {
+  return dbQuery<Release>(
+    `SELECT ${releaseColumns} FROM releases r
+     ORDER BY r.updated_at DESC`,
+  )
+}
+
+// --- Releases with edition formats (catalog) ---
+
+export async function fetchReleasesWithEditions(opts: { status?: ReleaseStatus } = {}) {
+  return dbQuery<Release & { formats: EditionFormat[] }>(
+    `SELECT r.id, r.title, r.slug, r.description, r.cover_image, r.genre,
+            r.release_date, r.isbn, r.authors, r.annotation, r.editor_notes,
+            r.view_count, r.status, r.design_config, r.created_at, r.updated_at,
+            COALESCE(
+              json_agg(DISTINCT e.format) FILTER (WHERE e.format IS NOT NULL),
+              '[]'::json
+            ) AS formats
+     FROM releases r
+     LEFT JOIN editions e ON e.release_id = r.id AND e.status = 'published'
+     WHERE r.status = $1::release_status
+     GROUP BY r.id
+     ORDER BY r.release_date DESC NULLS LAST, r.created_at DESC`,
+    [opts.status ?? 'published'],
+  )
+}
+
+// --- Release Events (HomeIssuesSection) ---
+
+export async function fetchRecentReleaseEvents(limit = 4) {
+  return dbQuery<ReleaseEvent>(
+    `
+    SELECT 'new_edition' AS event_type,
+           r.id AS release_id, r.title AS release_title, r.slug AS release_slug, r.cover_image,
+           e.id AS edition_id, e.slug AS edition_slug, e.format,
+           NULL AS chapter_title, NULL AS chapter_index,
+           e.created_at AS event_at
+    FROM editions e
+    JOIN releases r ON r.id = e.release_id
+    WHERE e.status = 'published' AND r.status = 'published'
+
+    UNION ALL
+
+    SELECT 'new_chapter' AS event_type,
+           r.id AS release_id, r.title AS release_title, r.slug AS release_slug, r.cover_image,
+           e.id AS edition_id, e.slug AS edition_slug, e.format,
+           c.title AS chapter_title, c.chapter_index,
+           COALESCE(c.published_at, c.created_at) AS event_at
+    FROM chapters c
+    JOIN editions e ON e.id = c.edition_id
+    JOIN releases r ON r.id = e.release_id
+    WHERE c.status = 'published'
+      AND e.status = 'published'
+      AND r.status = 'published'
+
+    ORDER BY event_at DESC
+    LIMIT $1
+    `,
+    [limit],
   )
 }

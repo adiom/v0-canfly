@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { fetchReleaseBySlug } from '@/lib/server/releases'
 import { fetchEditionsByRelease, fetchEditionBySlug } from '@/lib/server/editions'
 import { fetchPublishedChaptersByEdition } from '@/lib/server/chapters'
-import { ReleaseReader } from '@/components/release-reader'
 
 export default async function EditionPublicPage({
   params,
@@ -20,11 +20,11 @@ export default async function EditionPublicPage({
 
   if (chapters.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+      <div className="min-h-screen flex items-center justify-center text-cf-text-3">
         Содержимое ещё не опубликовано
       </div>
     )
   }
 
-  return <ReleaseReader release={release} edition={edition} chapters={chapters} chapterIndex={0} />
+  redirect(`/release/${slug}/${editionSlug}/1`)
 }

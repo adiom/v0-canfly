@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getMyReleases } from '@/lib/actions/studio'
+import { requireStudioSession } from '@/lib/server/studio-auth'
 import { ReleaseCard } from '@/components/studio/release-card'
 import { Button } from '@/components/ui/button'
 import { Plus, BookOpen, Globe, Eye, Sparkles } from 'lucide-react'
@@ -21,6 +22,8 @@ function StatCard({ label, value, icon: Icon, gradient }: { label: string; value
 }
 
 export default async function StudioDashboard() {
+  const session = await requireStudioSession()
+  const isAdmin = session?.roles.includes('admin') ?? false
   const releases = await getMyReleases()
 
   const published = releases.filter(r => r.status === 'published')
@@ -30,8 +33,8 @@ export default async function StudioDashboard() {
     <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-12">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Мои релизы</h1>
-          <p className="mt-1 text-gray-500">Управляйте своими произведениями</p>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{isAdmin ? 'Все релизы' : 'Мои релизы'}</h1>
+          <p className="mt-1 text-gray-500">{isAdmin ? 'Все произведения на платформе' : 'Управляйте своими произведениями'}</p>
         </div>
         <Link href="/studio/releases/new">
           <Button className="h-11 px-5 bg-gradient-to-r from-violet-600 to-violet-500 text-white font-semibold rounded-xl shadow-md shadow-violet-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-violet-500/30 hover:from-violet-700 hover:to-violet-600">
