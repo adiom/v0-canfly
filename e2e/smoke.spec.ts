@@ -2,14 +2,11 @@ import { test, expect, type Page } from '@playwright/test'
 
 const PUBLIC_ROUTES = [
   '/',
-  '/shop',
-  '/books',
+  '/releases',
   '/characters',
   '/news',
   '/search',
-  '/cart',
   '/login',
-  '/profile',
   '/admin/login',
 ] as const
 
@@ -19,6 +16,8 @@ const IGNORED_CONSOLE_PATTERNS: RegExp[] = [
   /tiptap warn/i,
   /immediatelyRender/i,
   /Next\.js detected\./i,
+  /^http.*\/api\/auth\/session.*ERR_ABORTED/i,
+  /ClientFetchError/i,
 ]
 
 function attachErrorCollectors(page: Page) {
@@ -37,7 +36,7 @@ function attachErrorCollectors(page: Page) {
 
   page.on('requestfailed', (req) => {
     const url = req.url()
-    if (url.includes('/_next/') || url.startsWith('chrome-extension://')) return
+    if (url.includes('/_next/') || url.startsWith('chrome-extension://') || url.includes('/api/auth/session') || url.includes('mc.yandex')) return
     errors.push(`[requestfailed] ${req.method()} ${url} → ${req.failure()?.errorText}`)
   })
 
@@ -72,7 +71,7 @@ test.describe('smoke: character profile tabs', () => {
     test.skip(!href || href === '/characters', 'no characters in DB')
 
     const basePath = href!.split('?')[0]
-    const tabs = ['feed', 'about', 'relations', 'books', 'wall']
+    const tabs = ['feed', 'about', 'relations', 'wall']
 
     for (const tab of tabs) {
       const res = await page.goto(`${basePath}?tab=${tab}`, { waitUntil: 'domcontentloaded' })

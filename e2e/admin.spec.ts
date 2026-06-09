@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { loadTestCredentials, type TestCredentials } from './setup/credentials'
+import { loginViaMagicLink } from './setup/login-helper'
 
 const ADMIN_ROUTES = [
   '/admin',
@@ -52,10 +53,7 @@ test.describe('smoke: admin routes (legacy /admin)', () => {
   })
 
   test.beforeEach(async ({ page }) => {
-    const res = await page.request.post('/api/admin/login', {
-      data: credentials.adminAuth,
-    })
-    expect(res.status(), 'admin login').toBeLessThan(400)
+    await loginViaMagicLink(page, credentials.email)
   })
 
   for (const path of ADMIN_ROUTES) {

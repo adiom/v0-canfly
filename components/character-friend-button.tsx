@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { MessageCircle, UserCheck, UserPlus, UserMinus } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 
 import { Button } from '@/components/ui/button'
 
@@ -15,10 +16,17 @@ export function CharacterFriendButton({
   characterSlug,
   canReceiveMessages,
 }: CharacterFriendButtonProps) {
+  const { status: authStatus } = useSession()
   const [friendshipStatus, setFriendshipStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (authStatus !== 'authenticated') {
+      setLoading(false)
+      setFriendshipStatus(null)
+      return
+    }
+
     let active = true
 
     const loadFriendship = async () => {
@@ -41,7 +49,7 @@ export function CharacterFriendButton({
     return () => {
       active = false
     }
-  }, [characterSlug])
+  }, [characterSlug, authStatus])
 
   const addFriend = async () => {
     setLoading(true)

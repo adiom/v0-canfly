@@ -2,8 +2,8 @@ import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 export interface TestCredentials {
-  userAuth: { login: string; password: string; userId: string }
-  adminAuth: { email: string; password: string }
+  email: string
+  userId: string
 }
 
 const CREDENTIALS_FILE = join(process.cwd(), 'e2e', '.test-credentials.json')

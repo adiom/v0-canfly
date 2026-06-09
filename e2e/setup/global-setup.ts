@@ -1,16 +1,12 @@
 import { Client } from 'pg'
-import { pbkdf2Sync, randomBytes } from 'node:crypto'
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 const TEST_ADMIN_EMAIL = 'studio-test-admin@canfly.test'
 const TEST_ADMIN_LOGIN = 'studio_test_admin'
-const TEST_ADMIN_PASSWORD = 'StudioTest_Admin_2026'
 const TEST_ADMIN_DISPLAY = 'Studio Test Admin'
 const TEST_ADMIN_HANDLE = 'studio_test_admin'
 const CREDENTIALS_FILE = join(process.cwd(), 'e2e', '.test-credentials.json')
-
-const PASSWORD_ITERATIONS = 120_000
 
 function loadEnvLocal() {
   const path = join(process.cwd(), '.env.local')
@@ -33,12 +29,6 @@ function loadEnvLocal() {
   }
 }
 
-function hashPassword(password: string): string {
-  const salt = randomBytes(16)
-  const hash = pbkdf2Sync(password, salt, PASSWORD_ITERATIONS, 32, 'sha256')
-  return `pbkdf2$${PASSWORD_ITERATIONS}$${salt.toString('base64url')}$${hash.toString('base64url')}`
-}
-
 export default async function globalSetup() {
   loadEnvLocal()
 
@@ -55,19 +45,17 @@ export default async function globalSetup() {
 
   try {
     await client.connect()
-    const passwordHash = hashPassword(TEST_ADMIN_PASSWORD)
 
     const userResult = await client.query<{ id: string }>(
       `
-        INSERT INTO users (login, email, password_hash, handle, display_name)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO users (login, email, handle, display_name)
+        VALUES ($1, $2, $3, $4)
         ON CONFLICT (login) DO UPDATE
-          SET password_hash = EXCLUDED.password_hash,
-              display_name = EXCLUDED.display_name,
+          SET display_name = EXCLUDED.display_name,
               email = EXCLUDED.email
         RETURNING id
       `,
-      [TEST_ADMIN_LOGIN, TEST_ADMIN_EMAIL, passwordHash, TEST_ADMIN_HANDLE, TEST_ADMIN_DISPLAY],
+      [TEST_ADMIN_LOGIN, TEST_ADMIN_EMAIL, TEST_ADMIN_HANDLE, TEST_ADMIN_DISPLAY],
     )
     const userId = userResult.rows[0]?.id
     if (!userId) throw new Error('Failed to upsert test admin user')
@@ -90,15 +78,13 @@ export default async function globalSetup() {
       [TEST_ADMIN_EMAIL],
     )
 
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123'
-
     mkdirSync(dirname(CREDENTIALS_FILE), { recursive: true })
     writeFileSync(
       CREDENTIALS_FILE,
       JSON.stringify(
         {
-          userAuth: { login: TEST_ADMIN_LOGIN, password: TEST_ADMIN_PASSWORD, userId },
-          adminAuth: { email: TEST_ADMIN_EMAIL, password: adminPassword },
+          email: TEST_ADMIN_EMAIL,
+          userId,
         },
         null,
         2,
