@@ -35,19 +35,9 @@ export default async function Home() {
     isMigrationMissing = true
   }
 
-  const homeNavItems = [
-    { label: 'Новости', href: '/news' },
-    { label: 'Книги', href: '/books' },
-    { label: 'Персонажи', href: '/characters' },
-    { label: 'Миры', href: '#worlds' },
-    { label: 'Выпуски', href: '#issues' },
-    { label: 'Блог', href: '/markdown' },
-    { label: 'Магазин', href: '/shop' },
-  ]
-
   return (
     <main className="min-h-screen bg-cf-bg text-cf-text-1">
-      <SiteHeader activePath="/" navItems={homeNavItems} />
+      <SiteHeader activePath="/" />
 
       {slides.length > 0 ? (
         <HomeHeroSlider slides={slides} />
@@ -67,7 +57,7 @@ export default async function Home() {
             </p>
             <Link
               href="/admin"
-              className="mt-8 inline-flex h-12 items-center rounded-sm bg-cf-warm px-5 text-sm font-black uppercase text-[#171713]"
+              className="mt-8 inline-flex h-12 items-center rounded-sm bg-cf-warm px-5 text-sm font-black uppercase text-cf-text-heading"
             >
               Открыть админку
             </Link>
@@ -76,17 +66,17 @@ export default async function Home() {
       )}
 
       <Suspense fallback={
-        <section id="issues" className="border-b border-cf-text-1/10 bg-cf-text-1 px-4 py-12 text-[#171713] md:px-8 md:py-16">
+        <section id="issues" className="border-b border-cf-text-1/10 bg-cf-bg-2 px-4 py-12 text-cf-text-1 md:px-8 md:py-16">
           <div className="mx-auto max-w-7xl">
             <div className="mb-8">
               <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-cf-accent">новые выпуски</p>
-              <div className="h-12 w-40 animate-pulse rounded bg-cf-accent/20" />
+              <div className="h-12 w-40 animate-pulse rounded bg-cf-text-1/10" />
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="animate-pulse">
-                  <div className="aspect-[4/5] rounded bg-cf-accent/20" />
-                  <div className="mt-3 h-6 rounded bg-cf-accent/20" />
+                  <div className="aspect-[4/5] rounded bg-cf-text-1/10" />
+                  <div className="mt-3 h-6 rounded bg-cf-text-1/10" />
                 </div>
               ))}
             </div>
