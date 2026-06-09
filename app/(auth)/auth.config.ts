@@ -85,6 +85,7 @@ async function consumeMagicToken(email: string, token: string) {
 }
 
 export const authConfig = {
+  trustHost: true,
   pages: {
     signIn: '/login',
     newUser: '/',
