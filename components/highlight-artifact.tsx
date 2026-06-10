@@ -180,9 +180,8 @@ export function HighlightArtifact({
     }
   }, [open])
 
-  // Сброс AI при смене вкладки
+  // Сброс UI при смене вкладки (без abort — streamAI сам отменяет предыдущий)
   useEffect(() => {
-    abortRef.current?.abort()
     setAiText('')
     setAiLoading(false)
     setAiError('')
@@ -279,10 +278,8 @@ export function HighlightArtifact({
       const data = await res.json() as { data?: ChapterHighlight; error?: string }
       if (res.ok && data.data) {
         setSavedHighlight(data.data)
-        setPhase('tools')
         onSaved(data.data)
-        // Автозапуск первой AI-вкладки
-        setTimeout(() => streamAI('/api/highlights/explain', { text }), 80)
+        setPhase('tools') // useEffect([activeTab, phase]) запустит explain автоматически
       }
     } finally {
       setIsSaving(false)
@@ -483,7 +480,7 @@ export function HighlightArtifact({
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className="relative shrink-0 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.12em] transition-colors"
+                    className="relative flex-1 px-2 py-2.5 text-[9px] font-black uppercase tracking-[0.08em] transition-colors"
                     style={{
                       color: activeTab === tab.id ? accent : `${textColor}40`,
                       borderBottom: activeTab === tab.id ? `2px solid ${accent}` : '2px solid transparent',
