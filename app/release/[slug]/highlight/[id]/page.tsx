@@ -7,6 +7,7 @@ import { fetchChapterHighlightById } from '@/lib/server/chapter-highlights'
 import { getCurrentUser, getUserRoles } from '@/lib/server/session'
 import { getPrimaryEdition } from '@/lib/utils/editions'
 import { ReleaseBookReader } from '@/components/release-book-reader'
+import { HighlightScroller } from '@/components/highlight-scroller'
 import { fetchEditionsByRelease } from '@/lib/server/editions'
 import { fetchPublishedChaptersByEdition } from '@/lib/server/chapters'
 import { fetchChapterHighlights } from '@/lib/server/chapter-highlights'
@@ -119,11 +120,7 @@ export default async function HighlightSharePage({ params }: PageProps) {
           <div className="p-8 text-center text-cf-text-3">Издание недоступно</div>
         )}
       </div>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `setTimeout(() => { const m = document.querySelector('mark[data-cf-hl="${highlight.id}"]'); if (m) { m.scrollIntoView({behavior:'smooth', block:'center'}); m.style.outline = '2px solid #d52525'; m.style.outlineOffset = '2px'; } }, 600);`,
-        }}
-      />
+      <HighlightScroller highlightId={highlight.id} />
     </>
   )
 }
