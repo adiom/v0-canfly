@@ -584,7 +584,7 @@ export function ReleaseBookReader({
           ref={floatingMenuRef}
           className="fixed z-[100] flex items-center overflow-hidden rounded-full shadow-2xl"
           style={{
-            top: Math.max(60, selection.rect.top + window.scrollY - 52),
+            top: Math.max(60, selection.rect.top - 52),
             left: Math.max(8, Math.min(window.innerWidth - 200, selection.rect.left + selection.rect.width / 2 - 96)),
             backgroundColor: '#0e0d0c',
             border: '1px solid rgba(244,239,229,0.12)',
