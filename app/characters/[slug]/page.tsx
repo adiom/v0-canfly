@@ -13,6 +13,9 @@ import {
 import { listVisibleCharacterPosts } from '@/lib/server/character-posts'
 import { fetchWallPosts } from '@/lib/server/character-wall'
 import { getCurrentUser, getUserRoles } from '@/lib/server/session'
+import { generateCharacterSchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
 
 interface CharacterPageProps {
   params: Promise<{ slug: string }>
@@ -32,9 +35,20 @@ export async function generateMetadata({ params }: CharacterPageProps) {
   const { slug } = await params
   const data = await getCharacterData(slug)
   if (!data?.character) return { title: 'Персонаж не найден - canfly' }
+  const url = `${BASE_URL}/characters/${data.character.slug}`
   return {
     title: `${data.character.name} - canfly | культура твоего сознания`,
     description: data.character.bio,
+    openGraph: {
+      title: data.character.name,
+      description: data.character.bio ?? data.character.name,
+      url,
+      type: 'profile',
+      locale: 'ru_RU',
+      siteName: 'canfly',
+      ...(data.character.avatar && { images: [{ url: data.character.avatar, alt: data.character.name }] }),
+    },
+    alternates: { canonical: url },
   }
 }
 
@@ -53,6 +67,13 @@ export default async function CharacterPage({ params, searchParams }: CharacterP
 
   const activeTab = normalizeTab(tab)
 
+  const characterSchema = generateCharacterSchema(data.character, BASE_URL)
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { label: 'canfly', url: `${BASE_URL}/` },
+    { label: 'Персонажи', url: `${BASE_URL}/characters` },
+    { label: data.character.name, url: `${BASE_URL}/characters/${data.character.slug}` },
+  ])
+
   const [stats, friends, posts, wall, currentUser] = await Promise.all([
     fetchCharacterStats(data.character.id),
     fetchCharacterFriends(data.character.id, 12),
@@ -67,6 +88,14 @@ export default async function CharacterPage({ params, searchParams }: CharacterP
 
   return (
     <main className="min-h-screen bg-cf-bg text-cf-text-1">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(characterSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <SiteHeader activePath="/characters" />
 
       <section className="max-w-5xl mx-auto px-4 md:px-8 py-12">

@@ -22,7 +22,6 @@ const cormorant = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: 'canfly | культура твоего сознания',
   description: 'Артхаусное издательство с комиксами, книгами и аудиокнигами. Встреться с персонажами и поговори с ними через AI.',
-  generator: 'v0.app',
   icons: {
     icon: [
       {

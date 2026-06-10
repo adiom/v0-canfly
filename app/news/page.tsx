@@ -4,11 +4,22 @@ import { ChevronLeft } from 'lucide-react'
 import { fetchNewsPosts } from '@/lib/server/news'
 import { ThemeToggle } from '@/components/theme-toggle'
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
+
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
   title: 'Новости | canfly',
   description: 'Новости, заметки и маршруты из вселенной canfly.',
+  openGraph: {
+    title: 'Новости | canfly',
+    description: 'Новости, заметки и маршруты из вселенной canfly.',
+    url: `${BASE_URL}/news`,
+    type: 'website',
+    locale: 'ru_RU',
+    siteName: 'canfly',
+  },
+  alternates: { canonical: `${BASE_URL}/news` },
 }
 
 export default async function NewsPage() {

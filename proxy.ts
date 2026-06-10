@@ -102,7 +102,7 @@ export async function proxy(request: NextRequest) {
 
   // --- Редиректы со старой системы книг на Release ---
   if (pathname === '/books') {
-    return NextResponse.redirect(new URL('/release/', request.url))
+    return NextResponse.redirect(new URL('/releases/', request.url))
   }
 
   if (pathname.startsWith('/books/')) {

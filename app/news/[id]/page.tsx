@@ -1,6 +1,9 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { fetchNewsPostById } from '@/lib/server/news'
+import { generateNewsArticleSchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,9 +19,20 @@ export async function generateMetadata({ params }: NewsPageProps) {
     return { title: 'Новость не найдена — canfly' }
   }
 
+  const url = `${BASE_URL}/news/${post.id}`
+
   return {
     title: `${post.title} — canfly`,
     description: post.content?.slice(0, 160) ?? post.title,
+    openGraph: {
+      title: post.title,
+      description: post.content?.slice(0, 160) ?? post.title,
+      url,
+      type: 'article',
+      locale: 'ru_RU',
+      siteName: 'canfly',
+    },
+    alternates: { canonical: url },
   }
 }
 
@@ -30,8 +44,23 @@ export default async function NewsPage({ params }: NewsPageProps) {
     notFound()
   }
 
+  const articleSchema = generateNewsArticleSchema(post, BASE_URL)
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { label: 'canfly', url: `${BASE_URL}/` },
+    { label: 'Новости', url: `${BASE_URL}/news` },
+    { label: post.title, url: `${BASE_URL}/news/${post.id}` },
+  ])
+
   return (
     <main className="min-h-screen bg-cf-bg text-cf-text-1">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <header className="sticky top-0 z-50 border-b border-cf-text-1/10 bg-cf-bg/92 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-8">
           <Link href="/" className="flex items-center gap-3">

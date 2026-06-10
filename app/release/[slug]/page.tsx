@@ -8,6 +8,7 @@ import { fetchCharactersList } from '@/lib/server/characters'
 import { fetchPublicHighlightsByRelease } from '@/lib/server/chapter-highlights'
 import { ReleasePagePublic } from '@/components/release-page'
 import { getPrimaryEdition } from '@/lib/utils/editions'
+import { generateReleaseSchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
 
@@ -76,15 +77,36 @@ export default async function ReleasePublicPage({ params }: { params: Promise<{ 
     ? { series: seriesLink.series, phase_number: seriesLink.phase_number }
     : null
 
+  const formats = editions
+    .filter(e => e.status === 'published')
+    .map(e => e.format)
+
+  const releaseSchema = generateReleaseSchema(release, formats, BASE_URL, characters)
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { label: 'canfly', url: `${BASE_URL}/` },
+    { label: 'Релизы', url: `${BASE_URL}/release/` },
+    { label: release.title, url: `${BASE_URL}/release/${release.slug}` },
+  ])
+
   return (
-    <ReleasePagePublic
-      release={release}
-      editions={editions}
-      primaryEditionSlug={primaryEdition?.slug ?? null}
-      characters={characters}
-      seriesLink={validSeriesLink}
-      highlights={highlights}
-      meta={meta}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(releaseSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <ReleasePagePublic
+        release={release}
+        editions={editions}
+        primaryEditionSlug={primaryEdition?.slug ?? null}
+        characters={characters}
+        seriesLink={validSeriesLink}
+        highlights={highlights}
+        meta={meta}
+      />
+    </>
   )
 }

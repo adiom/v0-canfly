@@ -1,0 +1,61 @@
+import type { MetadataRoute } from 'next'
+import { fetchReleasesWithEditions } from '@/lib/server/releases'
+import { fetchNewsPosts } from '@/lib/server/news'
+import { fetchCharactersList } from '@/lib/server/characters'
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const [releases, newsPosts, characters] = await Promise.all([
+    fetchReleasesWithEditions({ status: 'published' }),
+    fetchNewsPosts(100),
+    fetchCharactersList(),
+  ])
+
+  const releaseEntries = releases.map((release) => ({
+    url: `${BASE_URL}/release/${release.slug}`,
+    lastModified: new Date(release.updated_at),
+    changeFrequency: 'weekly' as const,
+    priority: 0.9,
+    images: release.cover_image ? [release.cover_image] : undefined,
+  }))
+
+  const newsEntries = newsPosts.map((post) => ({
+    url: `${BASE_URL}/news/${post.id}`,
+    lastModified: new Date(post.created_at),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }))
+
+  const characterEntries = characters.map((char) => ({
+    url: `${BASE_URL}/characters/${char.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.6,
+    images: char.avatar ? [char.avatar] : undefined,
+  }))
+
+  return [
+    {
+      url: BASE_URL,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 1,
+    },
+    {
+      url: `${BASE_URL}/news`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/characters`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    ...releaseEntries,
+    ...newsEntries,
+    ...characterEntries,
+  ]
+}

@@ -1,8 +1,13 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { requireStudioSession } from '@/lib/server/studio-auth'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { StudioSidebar } from '@/components/studio/studio-sidebar'
 import { Toaster } from '@/components/ui/sonner'
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+}
 
 export default async function StudioLayout({ children }: { children: React.ReactNode }) {
   const session = await requireStudioSession()

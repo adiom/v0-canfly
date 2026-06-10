@@ -24,12 +24,13 @@ export async function generateMetadata({ params }: ChatPageProps) {
   const data = await getCharacterData(slug);
 
   if (!data?.character) {
-    return { title: 'Персонаж не найден - canfly' };
+    return { title: 'Персонаж не найден - canfly', robots: { index: false, follow: false } };
   }
 
   return {
     title: `Чат с ${data.character.name} - canfly | культура твоего сознания`,
     description: `Поговори с ${data.character.name}`,
+    robots: { index: false, follow: false },
   };
 }
 
