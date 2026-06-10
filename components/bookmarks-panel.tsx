@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Trash2, Eye, EyeOff, Heart, ChevronRight } from 'lucide-react'
+import { X, Trash2, Eye, EyeOff, Heart, ChevronRight, ArrowUpRight } from 'lucide-react'
 import type { ChapterHighlight } from '@/lib/releases-types'
 
 interface BookmarksPanelProps {
@@ -42,7 +42,6 @@ export function BookmarksPanel({
   }
 
   const handleScrollTo = (h: ChapterHighlight) => {
-    if (h.chapter_id !== currentChapterId) return
     onScrollTo(h.paragraph_index ?? 0, h.chapter_id)
     onClose()
   }
@@ -71,10 +70,7 @@ export function BookmarksPanel({
         }}
       >
         {/* Верхняя полоса — «переплёт» */}
-        <div
-          className="h-1 w-full shrink-0"
-          style={{ backgroundColor: accent }}
-        />
+        <div className="h-1 w-full shrink-0" style={{ backgroundColor: accent }} />
 
         {/* Шапка */}
         <div
@@ -82,21 +78,15 @@ export function BookmarksPanel({
           style={{ borderBottom: `1px solid ${textColor}0f` }}
         >
           <div>
-            <p
-              className="mb-0.5 text-[10px] font-black uppercase tracking-[0.22em]"
-              style={{ color: accent }}
-            >
+            <p className="mb-0.5 text-[10px] font-black uppercase tracking-[0.22em]" style={{ color: accent }}>
               Пометки
             </p>
-            <h2
-              className="font-[family-name:var(--font-cormorant)] text-3xl italic leading-none"
-              style={{ color: textColor }}
-            >
+            <h2 className="font-[family-name:var(--font-cormorant)] text-3xl italic leading-none" style={{ color: textColor }}>
               {highlights.length === 0
                 ? 'Пусто'
                 : highlights.length === 1
                 ? '1 цитата'
-                : `${highlights.length} цитаты`}
+                : `${highlights.length} ${highlights.length >= 2 && highlights.length <= 4 ? 'цитаты' : 'цитат'}`}
             </h2>
           </div>
           <button
@@ -113,20 +103,14 @@ export function BookmarksPanel({
         <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
           {highlights.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-8 py-20 text-center">
-              {/* Декоративная «пустая страница» */}
-              <div
-                className="relative mb-6 h-24 w-16"
-                aria-hidden
-              >
+              <div className="relative mb-6 h-24 w-16" aria-hidden>
                 <div
                   className="absolute inset-0 rounded-sm"
                   style={{ backgroundColor: `${textColor}08`, border: `1px solid ${textColor}12` }}
                 />
                 <div
                   className="absolute right-0 top-0 h-6 w-6"
-                  style={{
-                    background: `linear-gradient(225deg, ${bg} 50%, ${textColor}12 50%)`,
-                  }}
+                  style={{ background: `linear-gradient(225deg, ${bg} 50%, ${textColor}12 50%)` }}
                 />
                 {[1, 2, 3].map(i => (
                   <div
@@ -148,10 +132,7 @@ export function BookmarksPanel({
               {/* === Текущая глава === */}
               {currentChapterHighlights.length > 0 && (
                 <section className="mb-6">
-                  <p
-                    className="mb-3 px-2 text-[9px] font-black uppercase tracking-[0.24em] opacity-40"
-                    style={{ color: textColor }}
-                  >
+                  <p className="mb-3 px-2 text-[9px] font-black uppercase tracking-[0.24em] opacity-40" style={{ color: textColor }}>
                     В этой главе
                   </p>
                   <div className="flex flex-col gap-2">
@@ -175,10 +156,7 @@ export function BookmarksPanel({
               {/* === Другие главы === */}
               {otherHighlights.length > 0 && (
                 <section>
-                  <p
-                    className="mb-3 px-2 text-[9px] font-black uppercase tracking-[0.24em] opacity-40"
-                    style={{ color: textColor }}
-                  >
+                  <p className="mb-3 px-2 text-[9px] font-black uppercase tracking-[0.24em] opacity-40" style={{ color: textColor }}>
                     В других главах
                   </p>
                   <div className="flex flex-col gap-2">
@@ -191,7 +169,7 @@ export function BookmarksPanel({
                         accent={accent}
                         bg={bg}
                         textColor={textColor}
-                        onScrollTo={() => {}}
+                        onScrollTo={() => handleScrollTo(h)}
                         onDelete={() => handleDelete(h.id)}
                       />
                     ))}
@@ -207,10 +185,7 @@ export function BookmarksPanel({
           className="shrink-0 px-6 py-3 text-center"
           style={{ borderTop: `1px solid ${textColor}0a` }}
         >
-          <p
-            className="font-[family-name:var(--font-cormorant)] text-xs italic opacity-25"
-            style={{ color: textColor }}
-          >
+          <p className="font-[family-name:var(--font-cormorant)] text-xs italic opacity-25" style={{ color: textColor }}>
             Только вы видите свои закладки
           </p>
         </div>
@@ -239,7 +214,6 @@ function BookmarkCard({
   onDelete: () => void
 }) {
   const [hovered, setHovered] = useState(false)
-  const [showDelete, setShowDelete] = useState(false)
 
   const borderColor = h.is_public ? accent : `${textColor}30`
 
@@ -255,25 +229,33 @@ function BookmarkCard({
         opacity: isDeleting ? 0.4 : 1,
       }}
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setHovered(false); setShowDelete(false) }}
+      onMouseLeave={() => setHovered(false)}
     >
       {/* Fold corner */}
       <div
         className="pointer-events-none absolute right-0 top-0 h-5 w-5"
         aria-hidden
-        style={{
-          background: `linear-gradient(225deg, ${bg} 50%, ${textColor}10 50%)`,
-        }}
+        style={{ background: `linear-gradient(225deg, ${bg} 50%, ${textColor}10 50%)` }}
       />
 
       {/* Основной контент */}
       <button
         className="w-full px-4 pb-3 pt-3 text-left"
-        onClick={isCurrent ? onScrollTo : undefined}
-        style={{ cursor: isCurrent ? 'pointer' : 'default' }}
-        disabled={!isCurrent || isDeleting}
-        aria-label={isCurrent ? 'Перейти к цитате' : undefined}
+        onClick={onScrollTo}
+        disabled={isDeleting}
+        aria-label={isCurrent ? 'Перейти к цитате' : 'Перейти к главе с цитатой'}
       >
+        {/* Заголовок главы для других глав */}
+        {!isCurrent && h.chapter_title && (
+          <p
+            className="mb-1.5 flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.2em]"
+            style={{ color: accent, opacity: 0.7 }}
+          >
+            <ArrowUpRight className="h-2.5 w-2.5" />
+            {h.chapter_title}
+          </p>
+        )}
+
         <p
           className="font-[family-name:var(--font-cormorant)] text-[15px] italic leading-snug line-clamp-4"
           style={{ color: textColor }}
@@ -282,10 +264,7 @@ function BookmarkCard({
         </p>
 
         {h.note && (
-          <p
-            className="mt-2 text-[11px] leading-snug opacity-60 line-clamp-2"
-            style={{ color: textColor }}
-          >
+          <p className="mt-2 text-[11px] leading-snug opacity-60 line-clamp-2" style={{ color: textColor }}>
             {h.note}
           </p>
         )}
@@ -296,34 +275,25 @@ function BookmarkCard({
             className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.18em]"
             style={{ color: h.is_public ? accent : `${textColor}35` }}
           >
-            {h.is_public ? (
-              <Eye className="h-2.5 w-2.5" />
-            ) : (
-              <EyeOff className="h-2.5 w-2.5" />
-            )}
+            {h.is_public ? <Eye className="h-2.5 w-2.5" /> : <EyeOff className="h-2.5 w-2.5" />}
             {h.is_public ? 'публичная' : 'приватная'}
           </span>
 
           {/* Лайки */}
           {h.likes_count > 0 && (
-            <span
-              className="inline-flex items-center gap-1 text-[9px] opacity-50"
-              style={{ color: textColor }}
-            >
+            <span className="inline-flex items-center gap-1 text-[9px] opacity-50" style={{ color: textColor }}>
               <Heart className="h-2.5 w-2.5" />
               {h.likes_count}
             </span>
           )}
 
-          {/* Стрелка «перейти» для текущей главы */}
-          {isCurrent && (
-            <span
-              className="ml-auto transition-opacity"
-              style={{ color: accent, opacity: hovered ? 0.8 : 0 }}
-            >
-              <ChevronRight className="h-3.5 w-3.5" />
-            </span>
-          )}
+          {/* Стрелка «перейти» */}
+          <span
+            className="ml-auto transition-opacity"
+            style={{ color: isCurrent ? accent : `${textColor}60`, opacity: hovered ? 0.8 : 0 }}
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </span>
         </div>
       </button>
 

@@ -55,6 +55,7 @@ export function ReleaseBookReader({
   const [showBookmarks, setShowBookmarks] = useState(false)
   const [artifactOpen, setArtifactOpen] = useState(false)
   const [artifactRect, setArtifactRect] = useState<DOMRect | null>(null)
+  const [pendingScroll, setPendingScroll] = useState<{ paragraphIndex: number; chapterId: string } | null>(null)
 
   const contentRef = useRef<HTMLDivElement>(null)
   const floatingMenuRef = useRef<HTMLDivElement>(null)
@@ -234,6 +235,7 @@ export function ReleaseBookReader({
   }, [chapterHighlights, chapterEditorialNotes])
 
   const handleMouseUp = useCallback(() => {
+    if (!currentUserId) return
     if (floatingMenuRef.current?.contains(document.activeElement)) return
     const sel = window.getSelection()
     if (!sel || sel.rangeCount === 0) return
@@ -300,6 +302,30 @@ export function ReleaseBookReader({
     el.classList.add('cf-scroll-flash')
     setTimeout(() => el.classList.remove('cf-scroll-flash'), 1800)
   }, [])
+
+  // Навигация к хайлайту — умеет переключать главы
+  const scrollToHighlight = useCallback((paragraphIndex: number, chapterId: string) => {
+    const targetIndex = chapters.findIndex(ch => ch.id === chapterId)
+    if (targetIndex === -1) return
+    if (targetIndex === currentIndex) {
+      scrollToParagraph(paragraphIndex)
+    } else {
+      setPendingScroll({ paragraphIndex, chapterId })
+      setCurrentIndex(targetIndex)
+      setShowBookmarks(false)
+    }
+  }, [chapters, currentIndex, scrollToParagraph])
+
+  // Срабатывает после смены главы — скроллит к нужному параграфу
+  useEffect(() => {
+    if (!pendingScroll) return
+    if (currentChapter?.id !== pendingScroll.chapterId) return
+    const timer = setTimeout(() => {
+      scrollToParagraph(pendingScroll.paragraphIndex)
+      setPendingScroll(null)
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [currentChapter?.id, pendingScroll, scrollToParagraph])
 
   const deleteHighlight = useCallback(async (id: string) => {
     const res = await fetch(`/api/chapter-highlights/${id}`, { method: 'DELETE' })
@@ -613,10 +639,8 @@ export function ReleaseBookReader({
           currentUserId={currentUserId}
           onSaved={hl => {
             setHighlights(prev => [hl, ...prev])
-            setSelection(null)
-            setArtifactOpen(false)
             window.getSelection()?.removeAllRanges()
-            toast.success(`Артефакт #${hl.id.slice(0, 6).toUpperCase()} — теперь твой`)
+            // Карточка сама переходит в фазу инструментов — не закрываем
           }}
           onClose={() => {
             setArtifactOpen(false)
@@ -859,7 +883,7 @@ export function ReleaseBookReader({
           highlights={myHighlights}
           currentChapterId={currentChapter?.id ?? ''}
           onDelete={deleteHighlight}
-          onScrollTo={scrollToParagraph}
+          onScrollTo={scrollToHighlight}
           accent={accent}
           bg={bg}
           textColor={textColor}
