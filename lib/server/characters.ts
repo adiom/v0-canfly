@@ -7,11 +7,23 @@ import {
 } from '@/lib/types'
 
 export async function fetchCharactersList(): Promise<Character[]> {
+  return dbQuery<Character>(
+    'SELECT * FROM characters WHERE character_type = \'person\' ORDER BY created_at DESC',
+  )
+}
+
+export async function fetchCitiesList(): Promise<Character[]> {
+  return dbQuery<Character>(
+    'SELECT * FROM characters WHERE character_type = \'city\' ORDER BY created_at DESC',
+  )
+}
+
+export async function fetchAllCharactersList(): Promise<Character[]> {
   return dbQuery<Character>('SELECT * FROM characters ORDER BY created_at DESC')
 }
 
 export async function fetchRelationshipsForCharacters(
-  characterIds: string[]
+  characterIds: string[],
 ): Promise<CharacterRelationship[]> {
   if (characterIds.length === 0) {
     return []
@@ -112,9 +124,12 @@ export async function createCharacter(data: Record<string, unknown>) {
         knowledge_scope,
         spoiler_policy,
         reply_mode,
-        can_receive_messages
+        can_receive_messages,
+        character_type,
+        passport,
+        map_image_url
       )
-      VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10, $11, $12::character_reply_mode, $13)
+      VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10, $11, $12::character_reply_mode, $13, $14::character_type, $15, $16)
       RETURNING *
     `,
     [
@@ -131,6 +146,9 @@ export async function createCharacter(data: Record<string, unknown>) {
       data.spoiler_policy,
       data.reply_mode ?? 'ai_auto',
       data.can_receive_messages ?? true,
+      data.character_type ?? 'person',
+      data.passport,
+      data.map_image_url,
     ],
   )
 }
@@ -152,7 +170,10 @@ export async function updateCharacter(id: string, data: Record<string, unknown>)
         knowledge_scope = $11,
         spoiler_policy = $12,
         reply_mode = $13::character_reply_mode,
-        can_receive_messages = $14
+        can_receive_messages = $14,
+        character_type = $15::character_type,
+        passport = $16,
+        map_image_url = $17
       WHERE id = $1
       RETURNING *
     `,
@@ -171,7 +192,17 @@ export async function updateCharacter(id: string, data: Record<string, unknown>)
       data.spoiler_policy,
       data.reply_mode ?? 'ai_auto',
       data.can_receive_messages ?? true,
+      data.character_type ?? 'person',
+      data.passport,
+      data.map_image_url,
     ],
+  )
+}
+
+export async function updatePassport(id: string, passport: string | null) {
+  return dbQueryOne<Character>(
+    'UPDATE characters SET passport = $2 WHERE id = $1 RETURNING *',
+    [id, passport],
   )
 }
 

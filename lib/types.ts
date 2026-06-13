@@ -70,11 +70,15 @@ export interface Character {
   spoiler_policy: string | null;
   reply_mode: CharacterReplyMode;
   can_receive_messages: boolean;
+  character_type: CharacterType;
+  passport: string | null;
+  map_image_url: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export type UserRole = 'reader' | 'author' | 'editor' | 'admin';
+export type CharacterType = 'person' | 'city';
 export type CharacterReplyMode = 'ai_auto' | 'manual' | 'hybrid' | 'disabled';
 export type CharacterFriendshipStatus = 'pending' | 'accepted' | 'blocked';
 export type CharacterMessageRole = 'user' | 'character' | 'system';

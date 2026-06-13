@@ -4,7 +4,14 @@ import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CharacterForm } from '@/components/studio/character-form'
 
-export default function NewCharacterPage() {
+interface NewCharacterPageProps {
+  searchParams: Promise<{ type?: string }>
+}
+
+export default async function NewCharacterPage({ searchParams }: NewCharacterPageProps) {
+  const { type } = await searchParams
+  const characterType = type === 'city' ? 'city' : 'person'
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 md:px-8 md:py-12">
       <div className="mb-6">
@@ -14,9 +21,11 @@ export default function NewCharacterPage() {
             К списку
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Новый персонаж</h1>
+        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+          {characterType === 'city' ? 'Новый город' : 'Новый персонаж'}
+        </h1>
       </div>
-      <CharacterForm />
+      <CharacterForm characterType={characterType} />
     </div>
   )
 }

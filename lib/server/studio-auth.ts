@@ -8,6 +8,7 @@ export interface StudioSession {
 }
 
 const STUDIO_ROLES: UserRole[] = ['author', 'editor', 'admin']
+const AUTHOR_OR_ADMIN_ROLES: UserRole[] = ['author', 'admin']
 
 export async function requireStudioSession(): Promise<StudioSession | null> {
   const user = await getCurrentUser()
@@ -26,6 +27,17 @@ export async function requireStudioAdminSession(): Promise<StudioSession | null>
   return session
 }
 
+export async function requireAuthorOrAdminSession(): Promise<StudioSession | null> {
+  const session = await requireStudioSession()
+  if (!session) return null
+  if (!session.roles.some(r => AUTHOR_OR_ADMIN_ROLES.includes(r))) return null
+  return session
+}
+
 export function isStudioAdmin(session: StudioSession | null | undefined) {
   return !!session?.roles.includes('admin')
+}
+
+export function isAuthorOrAdmin(session: StudioSession | null | undefined) {
+  return !!session?.roles.some(r => AUTHOR_OR_ADMIN_ROLES.includes(r))
 }

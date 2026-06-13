@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Edit, Plus, Trash2, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Edit, Plus, Trash2, ExternalLink, MapPin } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -22,8 +22,11 @@ import {
   listStudioCharacterPosts,
   listStudioWallPosts,
 } from '@/lib/actions/studio-characters'
+import { isAuthorOrAdmin } from '@/lib/server/studio-auth'
+import { requireStudioSession } from '@/lib/server/studio-auth'
 import { CharacterPostsTable } from '@/components/studio/character-posts-table'
 import { CharacterWallModeration } from '@/components/studio/character-wall-moderation'
+import { PassportEditor } from '@/components/studio/passport-editor'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,13 +50,28 @@ export default async function StudioCharacterPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const session = await requireStudioSession()
+  if (!session) notFound()
+
+  const showPassport = isAuthorOrAdmin(session)
+  const isAdmin = session.roles.includes('admin')
+
   const character = await getStudioCharacter(id)
   if (!character) notFound()
 
+  const isCity = character.character_type === 'city'
+
   const [posts, wallPosts] = await Promise.all([
-    listStudioCharacterPosts(id),
-    listStudioWallPosts(id),
+    isAdmin ? listStudioCharacterPosts(id) : [],
+    isAdmin ? listStudioWallPosts(id) : [],
   ])
+
+  const typeBadgeStyle = isCity
+    ? 'bg-emerald-50 text-emerald-600 border-emerald-200/80'
+    : 'bg-violet-50 text-violet-600 border-violet-200/80'
+  const typeLabel = isCity ? 'Город' : 'Персонаж'
+
+  const defaultTab = showPassport && character.passport ? 'passport' : isAdmin ? 'posts' : 'about'
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 md:px-8 md:py-12">
@@ -67,7 +85,7 @@ export default async function StudioCharacterPage({
 
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-4">
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-violet-50 to-rose-50 shadow-lg shadow-black/5 ring-2 ring-white/80">
+            <div className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl shadow-lg shadow-black/5 ring-2 ring-white/80 ${isCity ? 'bg-gradient-to-br from-emerald-50 to-teal-50' : 'bg-gradient-to-br from-violet-50 to-rose-50'}`}>
               {character.avatar ? (
                 <img
                   src={character.avatar}
@@ -75,8 +93,8 @@ export default async function StudioCharacterPage({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-lg font-bold text-violet-400">
-                  {character.name[0]}
+                <div className={`flex h-full w-full items-center justify-center text-lg font-bold ${isCity ? 'text-emerald-400' : 'text-violet-400'}`}>
+                  {isCity ? <MapPin className="h-6 w-6" /> : character.name[0]}
                 </div>
               )}
             </div>
@@ -84,10 +102,15 @@ export default async function StudioCharacterPage({
               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{character.name}</h1>
               <p className="text-sm text-gray-400">@{character.slug}</p>
               <div className="mt-2 flex gap-2">
-                <Badge variant="outline" className={`border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] rounded-lg ${replyModeBadgeStyles[character.reply_mode]}`}>
-                  {replyModeLabels[character.reply_mode]}
+                <Badge variant="outline" className={`border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] rounded-lg ${typeBadgeStyle}`}>
+                  {typeLabel}
                 </Badge>
-                {character.can_receive_messages ? null : (
+                {!isCity && (
+                  <Badge variant="outline" className={`border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] rounded-lg ${replyModeBadgeStyles[character.reply_mode]}`}>
+                    {replyModeLabels[character.reply_mode]}
+                  </Badge>
+                )}
+                {!isCity && !character.can_receive_messages && (
                   <Badge variant="outline" className="border-gray-200/80 bg-gray-50 text-gray-400 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] rounded-lg">
                     Сообщения отключены
                   </Badge>
@@ -97,75 +120,107 @@ export default async function StudioCharacterPage({
           </div>
 
           <div className="flex gap-2">
-            <Button asChild variant="outline" className="rounded-xl border-white/70 bg-white/60 text-gray-600 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200">
-              <Link href={`/characters/${character.slug}`} target="_blank">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Профиль
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="rounded-xl border-white/70 bg-white/60 text-gray-600 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200">
-              <Link href={`/studio/characters/${character.id}/edit`}>
-                <Edit className="mr-2 h-4 w-4" />
-                Редактировать
-              </Link>
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger className="inline-flex h-9 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 border border-red-200/80 transition-colors hover:bg-red-100 hover:text-red-700">
-                <Trash2 className="h-4 w-4" />
-              </AlertDialogTrigger>
-              <AlertDialogContent className="bg-white/80 backdrop-blur-xl border-white/70 rounded-2xl shadow-xl">
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="text-gray-900">Удалить персонажа?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Это действие необратимо. Все связи, посты и стена будут удалены.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="rounded-xl">Отмена</AlertDialogCancel>
-                  <form action={deleteCharacterAction.bind(null, character.id)}>
-                    <AlertDialogAction type="submit" className="rounded-xl bg-red-600 text-white">Удалить</AlertDialogAction>
-                  </form>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {!isCity && (
+              <Button asChild variant="outline" className="rounded-xl border-white/70 bg-white/60 text-gray-600 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200">
+                <Link href={`/characters/${character.slug}`} target="_blank">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Профиль
+                </Link>
+              </Button>
+            )}
+            {isAdmin && (
+              <>
+                <Button asChild variant="outline" className="rounded-xl border-white/70 bg-white/60 text-gray-600 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200">
+                  <Link href={`/studio/characters/${character.id}/edit`}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Редактировать
+                  </Link>
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger className="inline-flex h-9 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 border border-red-200/80 transition-colors hover:bg-red-100 hover:text-red-700">
+                    <Trash2 className="h-4 w-4" />
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="bg-white/80 backdrop-blur-xl border-white/70 rounded-2xl shadow-xl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-gray-900">Удалить {isCity ? 'город' : 'персонажа'}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Это действие необратимо. Все связи, посты и стена будут удалены.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="rounded-xl">Отмена</AlertDialogCancel>
+                      <form action={deleteCharacterAction.bind(null, character.id)}>
+                        <AlertDialogAction type="submit" className="rounded-xl bg-red-600 text-white">Удалить</AlertDialogAction>
+                      </form>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      <Tabs defaultValue="posts" className="space-y-6">
+      <Tabs defaultValue={defaultTab} className="space-y-6">
         <TabsList className="bg-white/60 backdrop-blur-md border border-white/70 rounded-xl shadow-sm">
-          <TabsTrigger value="posts" className="rounded-lg data-[state=active]:bg-violet-100/80 data-[state=active]:text-violet-700 data-[state=active]:shadow-sm text-gray-500">
-            Посты ({posts.length})
-          </TabsTrigger>
-          <TabsTrigger value="wall" className="rounded-lg data-[state=active]:bg-violet-100/80 data-[state=active]:text-violet-700 data-[state=active]:shadow-sm text-gray-500">
-            Стена ({wallPosts.length})
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="posts" className="rounded-lg data-[state=active]:bg-violet-100/80 data-[state=active]:text-violet-700 data-[state=active]:shadow-sm text-gray-500">
+              Посты ({posts.length})
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="wall" className="rounded-lg data-[state=active]:bg-violet-100/80 data-[state=active]:text-violet-700 data-[state=active]:shadow-sm text-gray-500">
+              Стена ({wallPosts.length})
+            </TabsTrigger>
+          )}
+          {showPassport && (
+            <TabsTrigger value="passport" className="rounded-lg data-[state=active]:bg-red-100/80 data-[state=active]:text-red-700 data-[state=active]:shadow-sm text-gray-500">
+              Паспорт
+            </TabsTrigger>
+          )}
           <TabsTrigger value="about" className="rounded-lg data-[state=active]:bg-violet-100/80 data-[state=active]:text-violet-700 data-[state=active]:shadow-sm text-gray-500">
-            О персонаже
+            {isCity ? 'О городе' : 'О персонаже'}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="posts" className="space-y-4">
-          <div className="flex justify-end">
-            <Button asChild className="rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white shadow-md shadow-violet-500/25 hover:from-violet-700 hover:to-violet-600">
-              <Link href={`/studio/characters/${character.id}/posts/new`}>
-                <Plus className="mr-2 h-4 w-4" />
-                Новый пост
-              </Link>
-            </Button>
-          </div>
-          <CharacterPostsTable characterId={character.id} posts={posts} />
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="posts" className="space-y-4">
+            {!isCity && (
+              <div className="flex justify-end">
+                <Button asChild className="rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white shadow-md shadow-violet-500/25 hover:from-violet-700 hover:to-violet-600">
+                  <Link href={`/studio/characters/${character.id}/posts/new`}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Новый пост
+                  </Link>
+                </Button>
+              </div>
+            )}
+            <CharacterPostsTable characterId={character.id} posts={posts} />
+          </TabsContent>
+        )}
 
-        <TabsContent value="wall">
-          <CharacterWallModeration wallPosts={wallPosts} />
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="wall">
+            <CharacterWallModeration wallPosts={wallPosts} />
+          </TabsContent>
+        )}
+
+        {showPassport && (
+          <TabsContent value="passport">
+            <PassportEditor
+              characterId={character.id}
+              passport={character.passport}
+              characterName={character.name}
+              characterType={character.character_type}
+            />
+          </TabsContent>
+        )}
 
         <TabsContent value="about" className="space-y-4">
           <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-5 md:p-6">
             <dl className="space-y-4 text-sm">
               <div>
-                <dt className="font-semibold text-gray-600">Био</dt>
+                <dt className="font-semibold text-gray-600">{isCity ? 'Описание' : 'Био'}</dt>
                 <dd className="mt-1 whitespace-pre-wrap text-gray-900">{character.bio || '—'}</dd>
               </div>
               {character.full_description ? (
@@ -174,7 +229,19 @@ export default async function StudioCharacterPage({
                   <dd className="mt-1 whitespace-pre-wrap text-gray-900">{character.full_description}</dd>
                 </div>
               ) : null}
-              {character.abilities?.length ? (
+              {isCity && character.map_image_url ? (
+                <div>
+                  <dt className="font-semibold text-gray-600">Карта</dt>
+                  <dd className="mt-1">
+                    <img
+                      src={character.map_image_url}
+                      alt={`Карта ${character.name}`}
+                      className="max-w-full rounded-xl border border-white/70 shadow-sm"
+                    />
+                  </dd>
+                </div>
+              ) : null}
+              {!isCity && character.abilities?.length ? (
                 <div>
                   <dt className="font-semibold text-gray-600">Способности</dt>
                   <dd className="mt-1">
