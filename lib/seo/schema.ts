@@ -1,9 +1,10 @@
 import { BookWithCharacters } from '@/lib/types'
-import type { Release, EditionFormat } from '@/lib/releases-types'
+import type { Release, Edition, EditionFormat, QualityTier } from '@/lib/releases-types'
 
 export type SchemaType =
   | ReturnType<typeof generateReleaseSchema>
   | ReturnType<typeof generateOrganizationSchema>
+  | ReturnType<typeof generateBookEditionSchema>
 
 const CANFLY_AUTHOR = {
   '@type': 'Person',
@@ -14,7 +15,6 @@ const CANFLY_AUTHOR = {
 
 function schemaOrgType(formats: EditionFormat[]): string {
   if (formats.includes('audiobook') || formats.includes('audiorelease')) return 'AudioBook'
-  if (formats.includes('comic')) return 'Book'
   return 'Book'
 }
 
@@ -25,20 +25,90 @@ function bookGenres(formats: EditionFormat[], genre: string | null): string[] {
   return g
 }
 
+const tierLabels: Record<QualityTier, string> = {
+  draft: 'черновик',
+  standard: '',
+  premium: 'иллюстрированное издание',
+}
+
+const tierNameSuffixes: Record<QualityTier, string> = {
+  draft: ' — черновик',
+  standard: '',
+  premium: ' — иллюстрированное издание',
+}
+
+export function generateBookEditionSchema(
+  release: Release,
+  edition: Edition,
+  baseUrl: string,
+) {
+  const url = baseUrl + '/release/' + release.slug + '/book/' + edition.quality_tier + '/1'
+  const nameSuffix = tierNameSuffixes[edition.quality_tier] ?? ''
+  const workUrl = baseUrl + '/release/' + release.slug
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Book',
+    '@id': url,
+    name: release.title + nameSuffix,
+    bookEdition: edition.quality_tier,
+    description: release.annotation ?? release.description ?? '«' + release.title + '» на canfly',
+    image: release.cover_image
+      ? { '@type': 'ImageObject', url: release.cover_image }
+      : undefined,
+    url,
+    isPartOf: {
+      '@type': 'CreativeWork',
+      '@id': workUrl,
+      name: release.title,
+      url: workUrl,
+    },
+    datePublished: release.release_date ?? new Date(release.created_at).toISOString().split('T')[0],
+    dateModified: new Date(release.updated_at).toISOString().split('T')[0],
+    author: CANFLY_AUTHOR,
+    publisher: {
+      '@type': 'Organization',
+      name: 'canfly',
+      url: baseUrl,
+    },
+    genre: ['Fiction', 'Contemporary Fiction'],
+    inLanguage: 'ru-RU',
+    ...(release.isbn && { isbn: release.isbn }),
+    ...(edition.quality_tier === 'premium' && {
+      creativeWorkStatus: 'Published',
+      bookFormat: 'https://schema.org/EBook',
+    }),
+    ...(edition.quality_tier === 'draft' && {
+      creativeWorkStatus: 'Draft',
+    }),
+  }
+}
+
 export function generateReleaseSchema(
   release: Release,
   formats: EditionFormat[],
   baseUrl: string,
+  bookEditions?: Edition[],
   characters?: Array<{ name: string; slug: string; avatar: string | null }>
 ) {
-  const url = `${baseUrl}/release/${release.slug}`
+  const url = baseUrl + '/release/' + release.slug
+
+  const workExample = (bookEditions ?? [])
+    .filter(e => e.status === 'published')
+    .map(edition => ({
+      '@type': 'Book',
+      '@id': baseUrl + '/release/' + release.slug + '/book/' + edition.quality_tier + '/1',
+      name: release.title + (tierNameSuffixes[edition.quality_tier] ?? ''),
+      bookEdition: edition.quality_tier,
+      url: baseUrl + '/release/' + release.slug + '/book/' + edition.quality_tier + '/1',
+    }))
 
   return {
     '@context': 'https://schema.org',
-    '@type': schemaOrgType(formats),
-    '@id': url,
+    '@type': 'CreativeWork',
+    '@id': url + '#work',
     name: release.title,
-    description: release.annotation ?? release.description ?? `«${release.title}» на canfly`,
+    description: release.annotation ?? release.description ?? '«' + release.title + '» на canfly',
     image: release.cover_image
       ? { '@type': 'ImageObject', url: release.cover_image }
       : undefined,
@@ -58,15 +128,16 @@ export function generateReleaseSchema(
       character: characters.map((char) => ({
         '@type': 'Person',
         name: char.name,
-        url: `${baseUrl}/characters/${char.slug}`,
+        url: baseUrl + '/characters/' + char.slug,
         ...(char.avatar && { image: { '@type': 'ImageObject', url: char.avatar } }),
       })),
     }),
+    ...(workExample.length > 0 && { workExample }),
   }
 }
 
 export function generateOrganizationSchema(baseUrl: string) {
-  const id = `${baseUrl}/#organization`
+  const id = baseUrl + '/#organization'
 
   return {
     '@context': 'https://schema.org',
@@ -78,7 +149,7 @@ export function generateOrganizationSchema(baseUrl: string) {
     url: baseUrl,
     logo: {
       '@type': 'ImageObject',
-      url: `${baseUrl}/logo.png`,
+      url: baseUrl + '/logo.png',
     },
     sameAs: ['https://twitter.com/adiomtimur', 'https://github.com/adiom'],
     founder: { '@type': 'Person', name: 'Адиом Тимур' },
@@ -110,7 +181,7 @@ export function generateNewsArticleSchema(
   post: { id: string; title: string; content: string | null; section: string; created_at: string },
   baseUrl: string
 ) {
-  const url = `${baseUrl}/news/${post.id}`
+  const url = baseUrl + '/news/' + post.id
 
   return {
     '@context': 'https://schema.org',
@@ -124,7 +195,7 @@ export function generateNewsArticleSchema(
       '@type': 'Organization',
       name: 'canfly',
       url: baseUrl,
-      logo: { '@type': 'ImageObject', url: `${baseUrl}/logo.png` },
+      logo: { '@type': 'ImageObject', url: baseUrl + '/logo.png' },
     },
     mainEntityOfPage: { '@type': 'WebPage', '@id': url },
     inLanguage: 'ru-RU',
@@ -136,7 +207,7 @@ export function generateCharacterSchema(
   character: { name: string; slug: string; avatar: string | null; bio: string | null },
   baseUrl: string
 ) {
-  const url = `${baseUrl}/characters/${character.slug}`
+  const url = baseUrl + '/characters/' + character.slug
 
   return {
     '@context': 'https://schema.org',
@@ -144,8 +215,8 @@ export function generateCharacterSchema(
     '@id': url,
     name: character.name,
     description: character.bio
-      ? `${character.bio} — персонаж литературной вселенной canfly.`
-      : `Персонаж литературной вселенной canfly.`,
+      ? character.bio + ' — персонаж литературной вселенной canfly.'
+      : 'Персонаж литературной вселенной canfly.',
     image: character.avatar
       ? { '@type': 'ImageObject', url: character.avatar }
       : undefined,
@@ -158,7 +229,7 @@ export function generateBookSchema(
   book: BookWithCharacters,
   baseUrl: string
 ) {
-  const bookUrl = `${baseUrl}/books/${book.slug}`
+  const bookUrl = baseUrl + '/books/' + book.slug
 
   return {
     '@context': 'https://schema.org',
@@ -190,7 +261,7 @@ export function generateBookSchema(
       character: book.characters.map((char) => ({
         '@type': 'Person',
         name: char.name,
-        url: `${baseUrl}/characters/${char.slug}`,
+        url: baseUrl + '/characters/' + char.slug,
         image: char.avatar
           ? { '@type': 'ImageObject', url: char.avatar }
           : undefined,
@@ -208,7 +279,7 @@ export function generateBooksCollectionSchema(
     '@context': 'https://schema.org',
     '@type': 'Collection',
     name: 'Canfly Books',
-    url: `${baseUrl}/books`,
+    url: baseUrl + '/books',
     itemListElement: books.map((book, index) => ({
       '@type': 'ListItem',
       position: index + 1,

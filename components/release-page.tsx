@@ -7,7 +7,7 @@ import {
   ExternalLink, Quote, ArrowRight, Clock, AlignLeft, Heart, BookText,
 } from 'lucide-react'
 import type {
-  Release, Edition, EditionFormat, ReleaseDesignConfig, Series, ChapterHighlight,
+  Release, Edition, EditionFormat, QualityTier, ReleaseDesignConfig, Series, ChapterHighlight,
 } from '@/lib/releases-types'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
@@ -35,6 +35,12 @@ const formatActionLabels: Record<EditionFormat, string> = {
   audiorelease: 'Слушать', album: 'Слушать', magazine: 'Читать',
 }
 
+const tierLabels: Record<QualityTier, string> = {
+  draft: 'Черновик',
+  standard: 'Книга',
+  premium: 'Иллюстрированная',
+}
+
 const roleLabels: Record<string, string> = {
   main: 'Главный', supporting: 'Второстепенный', cameo: 'Камео',
 }
@@ -60,10 +66,25 @@ function formatWordCount(words: number): string {
   return `${words} слов`
 }
 
+function getEditionReadUrl(release: { slug: string }, edition: Edition): string {
+  if (edition.format === 'book') {
+    return `/release/${release.slug}/book/${edition.quality_tier}/1`
+  }
+  return `/release/${release.slug}/${edition.slug}/1`
+}
+
+function getEditionFullUrl(release: { slug: string }, edition: Edition): string {
+  if (edition.format === 'book') {
+    return `/release/${release.slug}/book/${edition.quality_tier}/full`
+  }
+  return `/release/${release.slug}/${edition.slug}/full`
+}
+
 interface ReleasePagePublicProps {
   release: Release
   editions: Edition[]
   primaryEditionSlug: string | null
+  primaryEditionTier: string | null
   characters: { id: string; name: string; slug: string; avatar: string | null; role: string }[]
   seriesLink: { series: Series; phase_number: number | null } | null
   highlights: ChapterHighlight[]
@@ -71,7 +92,7 @@ interface ReleasePagePublicProps {
 }
 
 export function ReleasePagePublic({
-  release, editions, primaryEditionSlug, characters, seriesLink, highlights, meta,
+  release, editions, primaryEditionSlug, primaryEditionTier, characters, seriesLink, highlights, meta,
 }: ReleasePagePublicProps) {
   const config = release.design_config ?? {}
   const accent = config.accent_color ?? defaultConfig.accent_color!
@@ -87,8 +108,9 @@ export function ReleasePagePublic({
   const internalEditions = published
   const externalEditions = published.filter(e => e.external_url)
 
-  const readUrl = primaryEditionSlug ? `/release/${release.slug}/${primaryEditionSlug}/1` : null
-  const fullUrl = primaryEditionSlug ? `/release/${release.slug}/${primaryEditionSlug}/full` : null
+  const primaryEdition = published.find(e => e.slug === primaryEditionSlug) ?? null
+  const readUrl = primaryEdition ? getEditionReadUrl(release, primaryEdition) : null
+  const fullUrl = primaryEdition ? getEditionFullUrl(release, primaryEdition) : null
 
   const visibleQuotes = showAllQuotes ? highlights : highlights.slice(0, 3)
 
@@ -223,10 +245,13 @@ export function ReleasePagePublic({
               <div className="grid gap-3 sm:grid-cols-2">
                 {internalEditions.map(edition => {
                   const Icon = formatIcons[edition.format] ?? BookOpen
+                  const tierLabel = edition.format === 'book' && edition.quality_tier
+                    ? tierLabels[edition.quality_tier as QualityTier] ?? null
+                    : null
                   return (
                     <Link
                       key={edition.id}
-                      href={`/release/${release.slug}/${edition.slug}/1`}
+                      href={getEditionReadUrl(release, edition)}
                       className="group flex items-center gap-4 border p-4 transition-all hover:-translate-y-0.5"
                       style={{ borderColor: `${text}15`, backgroundColor: `${text}06` }}
                     >
@@ -237,7 +262,20 @@ export function ReleasePagePublic({
                         <Icon className="h-5 w-5" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-bold">{formatLabels[edition.format]}</span>
+                        <span className="flex items-center gap-2">
+                          <span className="text-sm font-bold">{formatLabels[edition.format]}</span>
+                          {tierLabel && (
+                            <span
+                              className="text-[10px] font-black uppercase tracking-[0.12em] px-1.5 py-0.5"
+                              style={{
+                                backgroundColor: `${accent}1f`,
+                                color: accent,
+                              }}
+                            >
+                              {tierLabel}
+                            </span>
+                          )}
+                        </span>
                         {edition.platform && (
                           <span className="block truncate text-xs opacity-50">{edition.platform}</span>
                         )}

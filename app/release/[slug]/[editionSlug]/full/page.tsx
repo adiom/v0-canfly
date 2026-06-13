@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { fetchReleaseBySlug } from '@/lib/server/releases'
 import { fetchEditionBySlug } from '@/lib/server/editions'
@@ -11,6 +12,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug, editionSlug } = await params
   const release = await fetchReleaseBySlug(slug)
   if (!release) return { title: 'Не найдено | canfly' }
+
+  const edition = await fetchEditionBySlug(editionSlug)
+  if (edition?.format === 'book') {
+    return { title: 'Перенаправление...' }
+  }
 
   const title = `${release.title} (полная версия) | canfly`
   const description = release.annotation ?? release.description ?? `«${release.title}» — полная версия на canfly`
@@ -37,6 +43,11 @@ export default async function EditionFullPage({ params }: { params: Promise<{ sl
 
   const edition = await fetchEditionBySlug(editionSlug)
   if (!edition || edition.release_id !== release.id || edition.status !== 'published') notFound()
+
+  // Redirect book editions to the new SEO-friendly URL structure
+  if (edition.format === 'book') {
+    redirect(`/release/${slug}/book/${edition.quality_tier}/full`)
+  }
 
   const chapters = await fetchPublishedChaptersByEdition(edition.id)
   if (chapters.length === 0) notFound()

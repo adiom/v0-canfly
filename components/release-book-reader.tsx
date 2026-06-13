@@ -5,7 +5,7 @@ import { sanitizeChapterHtml } from '@/lib/sanitize'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight, X, AlignJustify, Heart, Quote, MessageCircle, Check, Bookmark, BookmarkPlus } from 'lucide-react'
 import { toast } from 'sonner'
-import type { Release, Edition, Chapter, ChapterHighlight, ChapterEditorialNote, EditorialNoteStatus } from '@/lib/releases-types'
+import type { Release, Edition, Chapter, ChapterHighlight, ChapterEditorialNote, EditorialNoteStatus, QualityTier } from '@/lib/releases-types'
 import type { UserRole } from '@/lib/types'
 import { BookmarksPanel } from '@/components/bookmarks-panel'
 import { HighlightArtifact } from '@/components/highlight-artifact'
@@ -19,6 +19,7 @@ interface ReleaseBookReaderProps {
   userRole: UserRole | null
   userName: string | null
   initialChapterIndex?: number
+  otherBookEditions?: Edition[]
 }
 
 interface SelectionData {
@@ -38,6 +39,7 @@ export function ReleaseBookReader({
   userRole,
   userName,
   initialChapterIndex = 0,
+  otherBookEditions = [],
 }: ReleaseBookReaderProps) {
   const accent = release.design_config?.accent_color ?? '#d52525'
   const bg = release.design_config?.bg_color ?? 'var(--cf-bg)'
@@ -197,7 +199,10 @@ export function ReleaseBookReader({
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    window.history.replaceState(null, '', `/release/${release.slug}/${edition.slug}/${currentIndex + 1}`)
+    const chapterUrl = edition.format === 'book'
+      ? `/release/${release.slug}/book/${edition.quality_tier}/${currentIndex + 1}`
+      : `/release/${release.slug}/${edition.slug}/${currentIndex + 1}`
+    window.history.replaceState(null, '', chapterUrl)
     setSelection(null)
     setArtifactOpen(false)
   }, [currentIndex, release.slug, edition.slug])
@@ -862,7 +867,10 @@ export function ReleaseBookReader({
                 </button>
               ))}
               <Link
-                href={`/release/${release.slug}/${edition.slug}/full`}
+                href={edition.format === 'book'
+                  ? `/release/${release.slug}/book/${edition.quality_tier}/full`
+                  : `/release/${release.slug}/${edition.slug}/full`
+                }
                 onClick={() => setShowToc(false)}
                 className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.1em] transition-opacity hover:opacity-80"
                 style={{ color: accent }}
@@ -888,6 +896,46 @@ export function ReleaseBookReader({
           bg={bg}
           textColor={textColor}
         />
+      )}
+
+      {/* Cross-linking to other editions */}
+      {otherBookEditions && otherBookEditions.length > 0 && (
+        <div
+          className="fixed bottom-0 left-0 right-0 z-40 border-t py-3"
+          style={{
+            backgroundColor: bg,
+            borderColor: `${textColor}15`,
+          }}
+        >
+          <div className="mx-auto flex max-w-2xl items-center justify-center gap-4 px-6">
+            <span className="text-[11px] font-black uppercase tracking-[0.18em] opacity-40">
+              Также доступно:
+            </span>
+            <div className="flex gap-2">
+              {otherBookEditions.map(other => {
+                const tierLabel: Record<string, string> = {
+                  draft: 'Черновик',
+                  standard: 'Книга',
+                  premium: 'Иллюстрированная',
+                }
+                return (
+                  <Link
+                    key={other.id}
+                    href={`/release/${release.slug}/book/${other.quality_tier}/1`}
+                    className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors hover:border-current"
+                    style={{
+                      borderColor: `${textColor}20`,
+                      color: other.quality_tier === edition.quality_tier ? accent : textColor,
+                      backgroundColor: other.quality_tier === edition.quality_tier ? `${accent}15` : 'transparent',
+                    }}
+                  >
+                    {tierLabel[other.quality_tier] ?? other.quality_tier}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

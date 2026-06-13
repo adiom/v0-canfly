@@ -41,7 +41,10 @@ export function ReleaseFullPage({ release, edition, chapters }: {
             <p className="text-xs opacity-60 truncate">Полная версия</p>
           </div>
           {chapters.length > 1 && (
-            <Link href={`/release/${release.slug}/${edition.slug}/0`}>
+            <Link href={edition.format === 'book'
+              ? `/release/${release.slug}/book/${edition.quality_tier}/1`
+              : `/release/${release.slug}/${edition.slug}/1`
+            }>
               <Button variant="ghost" size="icon" style={{ color: text }}>
                 <BookOpen className="h-4 w-4" />
               </Button>
@@ -78,7 +81,13 @@ export function ReleaseFullPage({ release, edition, chapters }: {
       <footer className="border-t py-6" style={{ borderColor: `${text}10` }}>
         <div className={`mx-auto px-6 ${maxWidth} flex items-center justify-between text-sm opacity-50`}>
           <span>canfly</span>
-          <Link href={`/release/${release.slug}/${edition.slug}/0`} style={{ color: accent }}>
+          <Link
+            href={edition.format === 'book'
+              ? `/release/${release.slug}/book/${edition.quality_tier}/1`
+              : `/release/${release.slug}/${edition.slug}/1`
+            }
+            style={{ color: accent }}
+          >
             Постраничный режим
           </Link>
         </div>

@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import type { Edition, Release, ReleaseCharacter, ReleaseSeries, Series } from '@/lib/releases-types'
+import type { Edition, Release, ReleaseCharacter, ReleaseSeries, Series, QualityTier } from '@/lib/releases-types'
 import { updateEditionSetupAction } from '@/lib/actions/studio'
 import { generateSlug } from '@/lib/slug-utils'
 import { ComicPagesEditor } from '@/components/studio/comic-pages-editor'
@@ -56,6 +56,7 @@ export function EditionSetupPage({ data }: { data: SetupData }) {
   const [slug, setSlug] = useState(edition.slug)
   const [platform, setPlatform] = useState(edition.platform ?? '')
   const [externalUrl, setExternalUrl] = useState(edition.external_url ?? '')
+  const [qualityTier, setQualityTier] = useState(edition.quality_tier ?? 'standard')
   const [coverImage, setCoverImage] = useState(release?.cover_image ?? '')
   const [annotation, setAnnotation] = useState(release?.annotation ?? '')
   const [selectedCharacters, setSelectedCharacters] = useState<{ character_id: string; role: string }[]>(
@@ -94,6 +95,7 @@ export function EditionSetupPage({ data }: { data: SetupData }) {
         slug,
         platform: platform || null,
         external_url: externalUrl || null,
+        quality_tier: qualityTier,
         cover_image: coverImage || null,
         annotation: annotation || null,
         character_ids: selectedCharacters,
@@ -107,7 +109,7 @@ export function EditionSetupPage({ data }: { data: SetupData }) {
     } finally {
       setSaving(false)
     }
-  }, [edition.id, slug, platform, externalUrl, coverImage, annotation, selectedCharacters, seriesLink, router])
+  }, [edition.id, slug, platform, externalUrl, qualityTier, coverImage, annotation, selectedCharacters, seriesLink, router])
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 md:px-8 md:py-12">
@@ -146,6 +148,21 @@ export function EditionSetupPage({ data }: { data: SetupData }) {
                 className="bg-white/60 border-white/70 rounded-xl"
               />
             </div>
+            {edition.format === 'book' && (
+              <div className="space-y-2">
+                <Label className="text-gray-600">Тип издания</Label>
+                <Select value={qualityTier} onValueChange={(v) => setQualityTier(v as 'draft' | 'standard' | 'premium')}>
+                  <SelectTrigger className="bg-white/60 border-white/70 rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Черновик</SelectItem>
+                    <SelectItem value="standard">Книга</SelectItem>
+                    <SelectItem value="premium">Иллюстрированная</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label className="text-gray-600">Платформа</Label>
               <Input

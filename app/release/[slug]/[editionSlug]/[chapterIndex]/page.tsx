@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { fetchReleaseBySlug } from '@/lib/server/releases'
 import { fetchEditionBySlug } from '@/lib/server/editions'
 import { fetchPublishedChaptersByEdition } from '@/lib/server/chapters'
@@ -24,10 +25,15 @@ export default async function ChapterPublicPage({
   const edition = await fetchEditionBySlug(editionSlug)
   if (!edition || edition.release_id !== release.id || edition.status !== 'published') notFound()
 
+  // Redirect book editions to the new SEO-friendly URL structure
+  if (edition.format === 'book') {
+    redirect(`/release/${slug}/book/${edition.quality_tier}/${chapterNumber}`)
+  }
+
   const chapters = await fetchPublishedChaptersByEdition(edition.id)
   if (chapterIndex < 0 || chapterIndex >= chapters.length) notFound()
 
-  if (edition.format === 'book' || edition.format === 'magazine') {
+  if (edition.format === 'magazine') {
     const user = await getCurrentUser()
     const roles: UserRole[] = user ? await getUserRoles(user.id) : []
     const userRole = roles.find(r => ['editor', 'admin', 'author'].includes(r)) ?? (roles[0] ?? null)

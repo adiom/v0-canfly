@@ -315,6 +315,7 @@ export async function updateEditionSetupAction(
     slug?: string
     platform?: string | null
     external_url?: string | null
+    quality_tier?: string
     cover_image?: string | null
     annotation?: string | null
     character_ids?: { character_id: string; role: string }[]
@@ -331,6 +332,7 @@ export async function updateEditionSetupAction(
     external_url: data.external_url ?? edition.external_url,
     slug: data.slug ?? edition.slug,
     status: edition.status,
+    quality_tier: data.quality_tier ?? edition.quality_tier,
   })
 
   if (data.cover_image !== undefined || data.annotation !== undefined) {

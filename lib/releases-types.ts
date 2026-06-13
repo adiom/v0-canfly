@@ -1,6 +1,7 @@
 export type ReleaseStatus = 'draft' | 'published' | 'archived'
 export type EditionStatus = 'draft' | 'published' | 'archived'
 export type EditionFormat = 'book' | 'comic' | 'audiobook' | 'audiorelease' | 'album' | 'magazine'
+export type QualityTier = 'draft' | 'standard' | 'premium'
 export type MediaType = 'trailer' | 'podcast' | 'review' | 'other'
 export type CollaboratorRole = 'owner' | 'editor' | 'viewer'
 export type ChapterStatus = 'draft' | 'published'
@@ -64,6 +65,7 @@ export interface Edition {
   slug: string
   status: EditionStatus
   is_primary: boolean
+  quality_tier: QualityTier
   created_at: string
   updated_at: string
 }

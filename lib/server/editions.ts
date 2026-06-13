@@ -3,7 +3,7 @@ import type { Edition } from '@/lib/releases-types'
 
 const editionColumns = `
   id, release_id, format, platform, external_url,
-  slug, status, is_primary, created_at, updated_at
+  slug, status, is_primary, quality_tier, created_at, updated_at
 `
 
 export async function fetchEditionsByRelease(releaseId: string) {
@@ -29,13 +29,25 @@ export async function fetchEditionBySlug(slug: string) {
   )
 }
 
+export async function fetchEditionByReleaseFormatTier(
+  releaseId: string,
+  format: string,
+  qualityTier: string
+) {
+  return dbQueryOne<Edition>(
+    `SELECT ${editionColumns} FROM editions
+     WHERE release_id = $1 AND format = $2::edition_format AND quality_tier = $3 LIMIT 1`,
+    [releaseId, format, qualityTier],
+  )
+}
+
 export async function createEdition(data: Record<string, unknown>) {
   const baseSlug = (data.slug as string)?.trim() || 'edition'
   const uniqueSlug = await makeUniqueEditionSlugGlobal(baseSlug)
 
   return dbQueryOne<Edition>(
-    `INSERT INTO editions (release_id, format, platform, external_url, slug, status, is_primary)
-     VALUES ($1, $2::edition_format, $3, $4, $5, $6::edition_status, $7)
+    `INSERT INTO editions (release_id, format, platform, external_url, slug, status, is_primary, quality_tier)
+     VALUES ($1, $2::edition_format, $3, $4, $5, $6::edition_status, $7, $8)
      RETURNING ${editionColumns}`,
     [
       data.release_id,
@@ -45,6 +57,7 @@ export async function createEdition(data: Record<string, unknown>) {
       uniqueSlug,
       data.status ?? 'draft',
       data.is_primary ?? false,
+      data.quality_tier ?? 'standard',
     ],
   )
 }
@@ -82,7 +95,7 @@ export async function updateEdition(id: string, data: Record<string, unknown>) {
   return dbQueryOne<Edition>(
     `UPDATE editions SET
       format = $2::edition_format, platform = $3, external_url = $4,
-      slug = $5, status = $6::edition_status, is_primary = $7
+      slug = $5, status = $6::edition_status, is_primary = $7, quality_tier = $8
      WHERE id = $1
      RETURNING ${editionColumns}`,
     [
@@ -93,6 +106,7 @@ export async function updateEdition(id: string, data: Record<string, unknown>) {
       nextSlug,
       data.status ?? 'draft',
       data.is_primary ?? false,
+      data.quality_tier ?? 'standard',
     ],
   )
 }

@@ -35,6 +35,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 }
 
+function getBookEditionUrl(release: { slug: string }, edition: { quality_tier: string }): string {
+  return `/release/${release.slug}/book/${edition.quality_tier}/1`
+}
+
+function getFullBookEditionUrl(release: { slug: string }, edition: { quality_tier: string }): string {
+  return `/release/${release.slug}/book/${edition.quality_tier}/full`
+}
+
 export default async function ReleasePublicPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const release = await fetchReleaseBySlug(slug)
@@ -81,12 +89,16 @@ export default async function ReleasePublicPage({ params }: { params: Promise<{ 
     .filter(e => e.status === 'published')
     .map(e => e.format)
 
-  const releaseSchema = generateReleaseSchema(release, formats, BASE_URL, characters)
+  const bookEditions = editions.filter(e => e.format === 'book')
+
+  const releaseSchema = generateReleaseSchema(release, formats, BASE_URL, bookEditions, characters)
   const breadcrumbSchema = generateBreadcrumbSchema([
     { label: 'canfly', url: `${BASE_URL}/` },
     { label: 'Релизы', url: `${BASE_URL}/release/` },
     { label: release.title, url: `${BASE_URL}/release/${release.slug}` },
   ])
+
+  const primaryEditionTier = primaryEdition?.quality_tier ?? null
 
   return (
     <>
@@ -102,6 +114,7 @@ export default async function ReleasePublicPage({ params }: { params: Promise<{ 
         release={release}
         editions={editions}
         primaryEditionSlug={primaryEdition?.slug ?? null}
+        primaryEditionTier={primaryEditionTier}
         characters={characters}
         seriesLink={validSeriesLink}
         highlights={highlights}

@@ -13,12 +13,18 @@ export function getPrimaryEdition(editions: Edition[]): Edition | null {
   const published = editions.filter(e => e.status === 'published')
   if (published.length === 0) return null
 
-  return (
-    published.find(e => e.is_primary) ??
-    published.sort(
-      (a, b) => FORMAT_PRIORITY.indexOf(a.format) - FORMAT_PRIORITY.indexOf(b.format),
-    )[0]
-  )
+  // 1. Explicit is_primary flag
+  const explicit = published.find(e => e.is_primary)
+  if (explicit) return explicit
+
+  // 2. Standard tier (best default for SEO/UX, not draft)
+  const standard = published.find(e => e.quality_tier === 'standard')
+  if (standard) return standard
+
+  // 3. FORMAT_PRIORITY fallback
+  return published.sort(
+    (a, b) => FORMAT_PRIORITY.indexOf(a.format) - FORMAT_PRIORITY.indexOf(b.format),
+  )[0]
 }
 
 export function formatDuration(seconds: number): string {
