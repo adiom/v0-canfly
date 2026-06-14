@@ -1,7 +1,7 @@
 'use client'
 
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
-import { useEditor, EditorContent } from '@tiptap/react'
+import { useEditor, EditorContent, type Editor } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -27,6 +27,7 @@ interface TelegraphEditorProps {
   initialContent: string | null
   onSaveStatus?: (status: 'saving' | 'saved' | 'error') => void
   onContentUpdate?: () => void
+  onEditorReady?: (editor: Editor) => void
 }
 
 function BubbleBtn({
@@ -66,7 +67,7 @@ function BubbleDivider() {
 
 export const TelegraphEditor = forwardRef<HTMLDivElement, TelegraphEditorProps>(
   function TelegraphEditor(
-    { chapterId, initialTitle, initialContent, onSaveStatus, onContentUpdate },
+    { chapterId, initialTitle, initialContent, onSaveStatus, onContentUpdate, onEditorReady },
     ref,
   ) {
     const [title, setTitle] = useState(initialTitle)
@@ -95,7 +96,7 @@ export const TelegraphEditor = forwardRef<HTMLDivElement, TelegraphEditorProps>(
       editorProps: {
         attributes: {
           class:
-            'prose prose-lg max-w-none focus:outline-none min-h-[60vh] py-4 prose-headings:text-cf-text-heading prose-headings:font-black prose-headings:uppercase prose-p:text-cf-text-caption prose-p:leading-8 prose-blockquote:border-l-cf-accent prose-blockquote:text-cf-text-2 prose-strong:text-cf-text-1 prose-em:text-cf-text-2',
+            'prose prose-lg max-w-none focus:outline-none min-h-[60vh] py-4 prose-headings:text-cf-text-heading prose-headings:font-black prose-headings:uppercase prose-p:mb-5 prose-p:text-cf-text-caption prose-p:leading-8 prose-blockquote:border-l-cf-accent prose-blockquote:text-cf-text-2 prose-strong:text-cf-text-1 prose-em:text-cf-text-2',
         },
       },
       onUpdate: ({ editor }) => {
@@ -157,6 +158,10 @@ export const TelegraphEditor = forwardRef<HTMLDivElement, TelegraphEditorProps>(
       },
       [ref],
     )
+
+    useEffect(() => {
+      if (editor && onEditorReady) onEditorReady(editor)
+    }, [editor, onEditorReady])
 
     if (!editor) return null
 

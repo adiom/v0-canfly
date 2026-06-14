@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import type { Editor } from '@tiptap/react'
 import type { Chapter, ChapterEditorialNote } from '@/lib/releases-types'
-import { publishChapterAction, deleteChapterAction } from '@/lib/actions/studio'
+import { publishChapterAction, deleteChapterAction, updateChapterAction } from '@/lib/actions/studio'
 import { TelegraphEditor } from '@/components/studio/telegraph-editor'
 import { VersionHistory } from '@/components/studio/version-history'
 import { EditorialNotesPanel } from '@/components/studio/editorial-notes-panel'
@@ -24,14 +25,22 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { ArrowLeft, Globe, Trash2, Check, Loader2, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Globe, Trash2, Check, Loader2, AlertCircle, Code2 } from 'lucide-react'
 
 export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; editionId: string }) {
   const router = useRouter()
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [editorialNotes, setEditorialNotes] = useState<ChapterEditorialNote[]>([])
+  const [isHtmlMode, setIsHtmlMode] = useState(false)
+  const [htmlContent, setHtmlContent] = useState('')
+  const [initialContent, setInitialContent] = useState(chapter.content)
   const editorRef = useRef<HTMLDivElement | null>(null)
+  const tiptapRef = useRef<Editor | null>(null)
   const [, setContentVersion] = useState(0)
+
+  const handleEditorReady = useCallback((editor: Editor) => {
+    tiptapRef.current = editor
+  }, [])
 
   const handleNoteFocus = useCallback((note: ChapterEditorialNote) => {
     const container = editorRef.current
@@ -59,7 +68,6 @@ export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; ed
 
     let target: HTMLElement | null = null
 
-    // 1. Точное совпадение: параграф содержит text_content
     for (const p of paragraphs) {
       const text = p.textContent ?? ''
       if (text.includes(note.text_content)) {
@@ -68,7 +76,6 @@ export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; ed
       }
     }
 
-    // 2. Fallback: context_before совпадает
     if (!target && note.context_before) {
       for (const p of paragraphs) {
         const text = p.textContent ?? ''
@@ -79,7 +86,6 @@ export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; ed
       }
     }
 
-    // 3. Fallback: paragraph_index (последний шанс)
     if (!target && note.paragraph_index != null) {
       target = paragraphs[note.paragraph_index]
     }
@@ -102,6 +108,28 @@ export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; ed
   const handleContentUpdate = useCallback(() => {
     setContentVersion(v => v + 1)
   }, [])
+
+  function switchToHtml() {
+    if (!tiptapRef.current) return
+    setHtmlContent(tiptapRef.current.getHTML())
+    setIsHtmlMode(true)
+  }
+
+  function switchToWysiwyg() {
+    setInitialContent(htmlContent)
+    setIsHtmlMode(false)
+  }
+
+  async function handleHtmlSave() {
+    setSaveStatus('saving')
+    try {
+      await updateChapterAction(chapter.id, { title: chapter.title, content: htmlContent })
+      setInitialContent(htmlContent)
+      setSaveStatus('saved')
+    } catch {
+      setSaveStatus('error')
+    }
+  }
 
   async function handlePublish() {
     try {
@@ -147,6 +175,16 @@ export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; ed
             </span>
           </div>
 
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={isHtmlMode ? switchToWysiwyg : switchToHtml}
+            className={`rounded-xl ${isHtmlMode ? 'bg-amber-50 text-amber-600 border border-amber-200/80 font-semibold' : 'text-gray-500 hover:text-violet-600 hover:bg-violet-50/50'}`}
+          >
+            <Code2 className="mr-1.5 h-4 w-4" />
+            {isHtmlMode ? 'WYSIWYG' : 'HTML'}
+          </Button>
+
           <VersionHistory chapterId={chapter.id} />
 
           {chapter.status !== 'published' && (
@@ -179,32 +217,75 @@ export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; ed
       </header>
 
       <div className="mx-auto max-w-6xl px-4 md:px-8 py-8">
-        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-          <div className="relative">
-            <EditorialNotesOverlay
-              editorContainer={editorRef.current}
-              notes={editorialNotes}
-            />
-            <TelegraphEditor
-              ref={editorRef}
-              chapterId={chapter.id}
-              initialTitle={chapter.title}
-              initialContent={chapter.content}
-              onSaveStatus={setSaveStatus}
-              onContentUpdate={handleContentUpdate}
-            />
+        {isHtmlMode ? (
+          <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+            <div className="space-y-4">
+              <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-4">
+                <label className="text-sm font-semibold text-gray-600 mb-2 block">HTML код главы</label>
+                <textarea
+                  value={htmlContent}
+                  onChange={(e) => setHtmlContent(e.target.value)}
+                  className="w-full min-h-[60vh] bg-white/60 border border-white/70 rounded-xl font-mono text-sm leading-6 text-gray-800 p-4 resize-y focus:outline-none focus:ring-2 focus:ring-violet-500/70 focus:border-violet-500/70"
+                  spellCheck={false}
+                />
+                <div className="flex justify-end gap-3 mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={switchToWysiwyg}
+                    className="rounded-xl border-white/70 bg-white/60 text-gray-600 hover:bg-white/80"
+                  >
+                    Вернуться в редактор
+                  </Button>
+                  <Button
+                    onClick={handleHtmlSave}
+                    disabled={saveStatus === 'saving'}
+                    className="rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white shadow-md shadow-violet-500/25 hover:from-violet-700 hover:to-violet-600"
+                  >
+                    {saveStatus === 'saving' ? 'Сохраняю...' : 'Сохранить'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <aside className="lg:sticky lg:top-20 lg:self-start">
+              <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-4">
+                <EditorialNotesPanel
+                  chapterId={chapter.id}
+                  onNoteFocus={handleNoteFocus}
+                  editorialNotes={editorialNotes}
+                  onNotesUpdate={setEditorialNotes}
+                />
+              </div>
+            </aside>
           </div>
-          <aside className="lg:sticky lg:top-20 lg:self-start">
-            <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-4">
-              <EditorialNotesPanel
+        ) : (
+          <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+            <div className="relative">
+              <EditorialNotesOverlay
+                editorContainer={editorRef.current}
+                notes={editorialNotes}
+              />
+              <TelegraphEditor
+                ref={editorRef}
                 chapterId={chapter.id}
-                onNoteFocus={handleNoteFocus}
-                editorialNotes={editorialNotes}
-                onNotesUpdate={setEditorialNotes}
+                initialTitle={chapter.title}
+                initialContent={initialContent}
+                onSaveStatus={setSaveStatus}
+                onContentUpdate={handleContentUpdate}
+                onEditorReady={handleEditorReady}
               />
             </div>
-          </aside>
-        </div>
+            <aside className="lg:sticky lg:top-20 lg:self-start">
+              <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-4">
+                <EditorialNotesPanel
+                  chapterId={chapter.id}
+                  onNoteFocus={handleNoteFocus}
+                  editorialNotes={editorialNotes}
+                  onNotesUpdate={setEditorialNotes}
+                />
+              </div>
+            </aside>
+          </div>
+        )}
       </div>
     </div>
   )

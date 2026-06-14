@@ -521,7 +521,7 @@ export function ReleaseBookReader({
           <div
             ref={contentRef}
             onMouseUp={handleMouseUp}
-            className="prose max-w-none leading-8"
+            className="prose max-w-none leading-8 prose-p:mb-5"
             style={{
               fontSize: `${fontSize}px`,
               color: textColor,

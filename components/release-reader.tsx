@@ -96,7 +96,7 @@ export function ReleaseReader({ release, edition, chapters, chapterIndex }: {
       <div className={`mx-auto px-6 py-8 ${maxWidth}`}>
         {currentChapter?.content ? (
           <div
-            className="prose prose-lg max-w-none leading-7"
+            className="prose prose-lg max-w-none leading-7 prose-p:mb-5"
             dangerouslySetInnerHTML={{ __html: sanitizeChapterHtml(currentChapter.content) }}
           />
         ) : (

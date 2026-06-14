@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { sanitizeChapterHtml } from '@/lib/sanitize'
 import type { Release, Edition, Chapter, ReleaseDesignConfig } from '@/lib/releases-types'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, BookOpen } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { ArrowLeft, BookOpen, Download } from 'lucide-react'
 
 const defaultConfig: ReleaseDesignConfig = {
   accent_color: '#d52525',
@@ -50,6 +51,31 @@ export function ReleaseFullPage({ release, edition, chapters }: {
               </Button>
             </Link>
           )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" style={{ color: text }}>
+                <Download className="h-4 w-4 mr-1.5" />
+                Скачать
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-white/90 backdrop-blur-xl border-white/70 rounded-xl shadow-xl">
+              <DropdownMenuItem asChild>
+                <a href={`/api/releases/download/markdown?releaseId=${release.id}&editionId=${edition.id}`} className="text-gray-700 focus:text-violet-700 cursor-pointer">
+                  Markdown (.md)
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-gray-100/80" />
+              <DropdownMenuItem disabled className="text-gray-400 opacity-60">
+                DOCX — скоро
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled className="text-gray-400 opacity-60">
+                EPUB — скоро
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled className="text-gray-400 opacity-60">
+                PDF — скоро
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
@@ -68,7 +94,7 @@ export function ReleaseFullPage({ release, edition, chapters }: {
             )}
             {chapter.content ? (
               <div
-                className="prose prose-lg max-w-none leading-7"
+                className="prose prose-lg max-w-none leading-7 prose-p:mb-5"
                 dangerouslySetInnerHTML={{ __html: sanitizeChapterHtml(chapter.content) }}
               />
             ) : (

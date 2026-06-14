@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@plugin '@tailwindcss/typography';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -77,4 +78,6 @@
   animation: cf-flash 1.8s ease forwards;
   border-radius: 2px;
 }
+
+
 

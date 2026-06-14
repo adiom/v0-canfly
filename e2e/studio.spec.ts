@@ -89,4 +89,54 @@ test.describe('smoke: studio routes (admin role)', () => {
     await page.waitForLoadState('networkidle').catch(() => {})
     expect(errors, `runtime errors:\n${errors.join('\n')}`).toEqual([])
   })
+
+  test('GET new character form with type=city', async ({ page }) => {
+    const errors = attachErrorCollectors(page)
+    const res = await page.goto('/studio/characters/new?type=city', { waitUntil: 'domcontentloaded' })
+    expect(res!.status()).toBeLessThan(400)
+    await page.waitForLoadState('networkidle').catch(() => {})
+    expect(errors, `runtime errors:\n${errors.join('\n')}`).toEqual([])
+  })
+
+  test('full page has download dropdown', async ({ page }) => {
+    const errors = attachErrorCollectors(page)
+    await page.goto('/releases', { waitUntil: 'domcontentloaded' })
+
+    const firstLink = page.locator('a[href^="/release/"]').first()
+    let href: string | null = null
+    try {
+      await firstLink.waitFor({ state: 'attached', timeout: 25_000 })
+      href = await firstLink.getAttribute('href')
+    } catch {
+      test.skip(true, 'no releases listed')
+    }
+    test.skip(!href, 'no release link found')
+
+    await page.goto(href!, { waitUntil: 'domcontentloaded' })
+    await page.waitForLoadState('networkidle').catch(() => {})
+
+    const fullPageLink = page.locator('a[href*="/full"]')
+    try {
+      await fullPageLink.first().waitFor({ state: 'attached', timeout: 10_000 })
+    } catch {
+      test.skip(true, 'no full page link on release page')
+    }
+
+    const fullHref = await fullPageLink.first().getAttribute('href')
+    if (!fullHref) test.skip(true, 'no full page href')
+
+    await page.goto(fullHref!, { waitUntil: 'domcontentloaded' })
+    await page.waitForLoadState('networkidle').catch(() => {})
+
+    const downloadButton = page.locator('button').filter({ hasText: 'Скачать' })
+    await expect(downloadButton).toBeVisible({ timeout: 5_000 })
+    expect(errors, `runtime errors on full page:\n${errors.join('\n')}`).toEqual([])
+  })
+})
+
+test.describe('smoke: download markdown API', () => {
+  test('markdown download returns 400 without params', async ({ page }) => {
+    const res = await page.goto('/api/releases/download/markdown', { waitUntil: 'domcontentloaded' })
+    expect(res!.status()).toBe(400)
+  })
 })
