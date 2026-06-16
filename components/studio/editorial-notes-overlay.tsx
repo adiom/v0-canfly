@@ -99,9 +99,13 @@ export function EditorialNotesOverlay({ editorContainer, notes }: EditorialNotes
     setIndicators(result)
   }, [editorContainer, notes])
 
+  // Пересчёт indicators из DOM-layout (getBoundingClientRect).
+  // setState в effect — синхронизация с external DOM-layout.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     compute()
   }, [compute])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     const handler = () => {

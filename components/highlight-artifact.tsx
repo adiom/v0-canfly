@@ -93,8 +93,10 @@ export function HighlightArtifact({
   const cardRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
-  const tempId = useRef(Math.random().toString(16).slice(2, 14))
-  const tintColor = uuidToHsl(tempId.current)
+  // Стабильный temp-ID для tint-цвета и shortId (до сохранения highlight).
+  // Lazy-init вместо useRef(Math.random()) — React Compiler принимает.
+  const [tempId] = useState(() => Math.random().toString(16).slice(2, 14))
+  const tintColor = uuidToHsl(tempId)
 
   // Пересчёт позиции при открытии и ресайзе
   useLayoutEffect(() => {
@@ -160,7 +162,9 @@ export function HighlightArtifact({
     return () => window.removeEventListener('resize', calcPosition)
   }, [open, anchorRect])
 
-  // Сброс при закрытии
+  // Сброс при закрытии диалога. setState в effect — синхронизация internal
+  // state с prop (`open`). remount-by-key сломал бы анимацию закрытия.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!open) {
       setPhase('save')
@@ -176,7 +180,6 @@ export function HighlightArtifact({
       setImageLoading(false)
       setImageError('')
       abortRef.current?.abort()
-      tempId.current = Math.random().toString(16).slice(2, 14)
     }
   }, [open])
 
@@ -190,6 +193,7 @@ export function HighlightArtifact({
     setImageLoading(false)
     setImageError('')
   }, [activeTab])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const streamAI = useCallback(async (endpoint: string, body: object) => {
     abortRef.current?.abort()
@@ -227,13 +231,15 @@ export function HighlightArtifact({
     streamAI('/api/highlights/rewrite', { text, mode })
   }, [streamAI, text])
 
-  // Автозапуск при смене вкладки (explain / meaning)
+  // Автозапуск при смене вкладки (explain / meaning) — вызовы запускают
+  // streamAI, который внутри делает setState. Sync с activeTab-пропсом.
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (phase !== 'tools') return
     if (activeTab === 'explain') runExplain()
     if (activeTab === 'meaning') runMeaning()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, phase])
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   const handleIllustrate = async () => {
     setImageLoading(true)
@@ -299,7 +305,7 @@ export function HighlightArtifact({
 
   if (!open) return null
 
-  const shortId = (savedHighlight?.id ?? tempId.current).slice(0, 6).toUpperCase()
+  const shortId = (savedHighlight?.id ?? tempId).slice(0, 6).toUpperCase()
   const cardTint = savedHighlight ? uuidToHsl(savedHighlight.id) : tintColor
 
   return (

@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 interface GlobalErrorProps {
   error: Error & { digest?: string }
   reset: () => void
@@ -11,11 +13,11 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
       <body style={{ margin: 0, background: '#111210', color: '#f4efe5', fontFamily: 'sans-serif' }}>
         <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div style={{ maxWidth: '28rem', width: '100%' }}>
-            <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', marginBottom: '3rem', textDecoration: 'none' }}>
+            <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', marginBottom: '3rem', textDecoration: 'none' }}>
               <span style={{ display: 'flex', height: '2.25rem', width: '4rem', alignItems: 'center', justifyContent: 'center', background: '#d52525', color: '#fff', fontWeight: 900, fontSize: '1.125rem', textTransform: 'uppercase', letterSpacing: '-0.04em' }}>
                 canfly
               </span>
-            </a>
+            </Link>
 
             <p style={{ fontFamily: 'monospace', fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.22em', color: '#d52525', marginBottom: '1rem' }}>
               Критическая ошибка
@@ -39,12 +41,12 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               >
                 Попробовать снова
               </button>
-              <a
+              <Link
                 href="/"
                 style={{ height: '3rem', padding: '0 1.25rem', border: '1px solid rgba(244,239,229,0.18)', color: '#f4efe5', fontWeight: 700, fontSize: '0.875rem', textTransform: 'uppercase', display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
               >
                 На главную
-              </a>
+              </Link>
             </div>
           </div>
         </main>

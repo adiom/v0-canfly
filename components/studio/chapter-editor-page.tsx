@@ -35,6 +35,13 @@ export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; ed
   const [htmlContent, setHtmlContent] = useState('')
   const [initialContent, setInitialContent] = useState(chapter.content)
   const editorRef = useRef<HTMLDivElement | null>(null)
+  // Отдельный state для DOM-узла редактора — нужен, чтобы передать его как
+  // пропс в EditorialNotesOverlay без чтения ref.current во время render.
+  const [editorContainer, setEditorContainer] = useState<HTMLDivElement | null>(null)
+  const editorCallbackRef = useCallback((node: HTMLDivElement | null) => {
+    editorRef.current = node
+    setEditorContainer(node)
+  }, [])
   const tiptapRef = useRef<Editor | null>(null)
   const [, setContentVersion] = useState(0)
 
@@ -261,11 +268,11 @@ export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; ed
           <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
             <div className="relative">
               <EditorialNotesOverlay
-                editorContainer={editorRef.current}
+                editorContainer={editorContainer}
                 notes={editorialNotes}
               />
               <TelegraphEditor
-                ref={editorRef}
+                ref={editorCallbackRef}
                 chapterId={chapter.id}
                 initialTitle={chapter.title}
                 initialContent={initialContent}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
 import { Plus, Check, X, MessageCircle, RefreshCw } from 'lucide-react'
 import type { ChapterEditorialNote, EditorialNoteStatus } from '@/lib/releases-types'
@@ -19,7 +19,7 @@ export function EditorialNotesPanel({ chapterId, onNoteFocus, editorialNotes: ex
   const [selection, setSelection] = useState<{ text: string; paragraphIndex: number; contextBefore: string; contextAfter: string } | null>(null)
   const [noteText, setNoteText] = useState('')
   const [filter, setFilter] = useState<EditorialNoteStatus | 'all'>('open')
-  const hasLoadedRef = useRef(false)
+  const [hasLoaded, setHasLoaded] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -30,7 +30,7 @@ export function EditorialNotesPanel({ chapterId, onNoteFocus, editorialNotes: ex
         const loaded = data.data ?? []
         setNotes(loaded)
         onNotesUpdate?.(loaded)
-        hasLoadedRef.current = true
+        setHasLoaded(true)
       }
     } catch {
       toast.error('Ошибка загрузки')
@@ -39,11 +39,35 @@ export function EditorialNotesPanel({ chapterId, onNoteFocus, editorialNotes: ex
     }
   }, [chapterId, onNotesUpdate])
 
-  useEffect(() => { load() }, [load])
-
+  // Первичная загрузка notes. setState в effect — data-loading паттерн.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (externalNotes && hasLoadedRef.current) setNotes(externalNotes)
-  }, [externalNotes])
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch(`/api/chapter-editorial-notes?chapterId=${chapterId}`)
+        const data = await res.json()
+        if (cancelled) return
+        if (res.ok) {
+          const loaded = data.data ?? []
+          setNotes(loaded)
+          onNotesUpdate?.(loaded)
+          setHasLoaded(true)
+        }
+      } catch {
+        if (!cancelled) toast.error('Ошибка загрузки')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [chapterId, onNotesUpdate])
+
+  // Синхронизация с parent notes (после первичной загрузки).
+  useEffect(() => {
+    if (hasLoaded && externalNotes) setNotes(externalNotes)
+  }, [externalNotes, hasLoaded])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleMouseUp = useCallback(() => {
     const sel = window.getSelection()
