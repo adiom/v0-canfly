@@ -2,18 +2,74 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { requireStudioSession } from '@/lib/server/studio-auth'
+import {
+  requireStudioSession,
+  requireReleaseOwnership,
+  requireEditionOwnership,
+  requireChapterOwnership,
+} from '@/lib/server/studio-auth'
 import * as releasesDb from '@/lib/server/releases'
 import * as editionsDb from '@/lib/server/editions'
 import * as chaptersDb from '@/lib/server/chapters'
 import * as seriesDb from '@/lib/server/series'
 import { dbQuery } from '@/lib/db'
 import type { ReleaseCharacterRole, ReleaseDesignConfig } from '@/lib/releases-types'
+import {
+  releaseFormSchema,
+  editionFormSchema,
+  chapterFormSchema,
+  chapterUpdateSchema,
+  seriesFormSchema,
+  releaseStatusSchema,
+  editionStatusSchema,
+} from '@/lib/schemas/studio'
+
+/** Безопасный парсинг enum-строки; возвращает значение или null. */
+function parseEnum<T extends string>(
+  schema: { safeParse: (d: unknown) => { success: true; data: T } | { success: false } },
+  value: string,
+): T | null {
+  const result = schema.safeParse(value)
+  return result.success ? result.data : null
+}
+const releaseStatusSchemaSafe = (v: string) => parseEnum(releaseStatusSchema, v)
+const editionStatusSchemaSafe = (v: string) => parseEnum(editionStatusSchema, v)
 
 async function requireAuth() {
   const session = await requireStudioSession()
   if (!session) redirect('/login')
   return session
+}
+
+/**
+ * Безопасно парсит JSON из FormData. Раньше был голый JSON.parse(... as string),
+ * который падал на невалидном JSON и ронял весь action. Теперь fallback на [].
+ */
+function parseJsonArray<T = unknown>(value: FormDataEntryValue | null): T[] {
+  const raw = typeof value === 'string' ? value : ''
+  if (!raw) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as T[]) : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Парсит FormData через zod-схему и выбрасывает Error с человекочитаемым
+ * сообщением при невалидных данных. Код форм перехватывает и показывает toast.
+ */
+function validateForm<T>(
+  schema: { safeParse: (d: unknown) => { success: true; data: T } | { success: false; error: { issues: { message: string }[] } } },
+  formData: FormData,
+): T {
+  const result = schema.safeParse(formData)
+  if (!result.success) {
+    const msg = result.error.issues[0]?.message ?? 'Ошибка валидации'
+    throw new Error(msg)
+  }
+  return result.data
 }
 
 // === Releases ===
@@ -42,17 +98,18 @@ export async function getRelease(id: string) {
 export async function createReleaseAction(formData: FormData) {
   const { user } = await requireAuth()
 
+  const data = validateForm(releaseFormSchema, formData)
   const release = await releasesDb.createRelease({
-    title: formData.get('title'),
-    slug: formData.get('slug'),
-    description: formData.get('description') || null,
-    cover_image: formData.get('cover_image') || null,
-    genre: formData.get('genre') || null,
-    release_date: formData.get('release_date') || null,
-    isbn: formData.get('isbn') || null,
-    authors: JSON.parse(formData.get('authors') as string || '[]'),
-    annotation: formData.get('annotation') || null,
-    editor_notes: formData.get('editor_notes') || null,
+    title: data.title,
+    slug: data.slug,
+    description: data.description,
+    cover_image: data.cover_image,
+    genre: data.genre,
+    release_date: data.release_date,
+    isbn: data.isbn,
+    authors: parseJsonArray(formData.get('authors')),
+    annotation: data.annotation,
+    editor_notes: data.editor_notes,
     status: 'draft',
   })
 
@@ -68,44 +125,51 @@ export async function createReleaseAction(formData: FormData) {
 }
 
 export async function updateReleaseAction(id: string, formData: FormData) {
-  await requireAuth()
+  await requireReleaseOwnership(id)
 
+  const data = validateForm(releaseFormSchema, formData)
   await releasesDb.updateRelease(id, {
-    title: formData.get('title'),
-    slug: formData.get('slug'),
-    description: formData.get('description') || null,
-    cover_image: formData.get('cover_image') || null,
-    genre: formData.get('genre') || null,
-    release_date: formData.get('release_date') || null,
-    isbn: formData.get('isbn') || null,
-    authors: JSON.parse(formData.get('authors') as string || '[]'),
-    annotation: formData.get('annotation') || null,
-    editor_notes: formData.get('editor_notes') || null,
-    status: formData.get('status') || 'draft',
+    title: data.title,
+    slug: data.slug,
+    description: data.description,
+    cover_image: data.cover_image,
+    genre: data.genre,
+    release_date: data.release_date,
+    isbn: data.isbn,
+    authors: parseJsonArray(formData.get('authors')),
+    annotation: data.annotation,
+    editor_notes: data.editor_notes,
+    status: data.status,
   })
 
   revalidatePath(`/studio/releases/${id}`)
 }
 
 export async function updateReleaseStatusAction(id: string, status: string) {
-  await requireAuth()
-  await releasesDb.updateReleaseStatus(id, status)
+  await requireReleaseOwnership(id)
+  const parsed = releaseStatusSchemaSafe(status)
+  if (!parsed) throw new Error('Недопустимый статус релиза')
+  await releasesDb.updateReleaseStatus(id, parsed)
   revalidatePath(`/studio/releases/${id}`)
   revalidatePath('/studio')
 }
 
 export async function deleteReleaseAction(id: string) {
-  await requireAuth()
+  await requireReleaseOwnership(id)
   await releasesDb.deleteRelease(id)
   revalidatePath('/studio')
   redirect('/studio')
 }
 
 export async function updateReleaseDesignAction(id: string, config: ReleaseDesignConfig) {
-  await requireAuth()
+  await requireReleaseOwnership(id)
   await releasesDb.updateReleaseDesign(id, config as Record<string, unknown>)
   revalidatePath(`/studio/releases/${id}`)
-  revalidatePath(`/release/${id}`)
+  // Инвалидируем публичную страницу по slug (раньше использовали UUID — не работало)
+  const release = await releasesDb.fetchReleaseById(id)
+  if (release?.slug) {
+    revalidatePath(`/release/${release.slug}`)
+  }
 }
 
 // === Editions ===
@@ -122,26 +186,28 @@ export async function getEdition(id: string) {
 
 export async function createEditionAction(formData: FormData) {
   await requireAuth()
+  const data = validateForm(editionFormSchema, formData)
 
   const edition = await editionsDb.createEdition({
-    release_id: formData.get('release_id'),
-    format: formData.get('format') || 'book',
-    platform: formData.get('platform') || null,
-    external_url: formData.get('external_url') || null,
-    slug: formData.get('slug'),
+    release_id: data.release_id,
+    format: data.format,
+    platform: data.platform,
+    external_url: data.external_url,
+    slug: data.slug,
     status: 'draft',
-    is_primary: formData.get('is_primary') === 'true',
+    is_primary: data.is_primary,
   })
 
-  const releaseId = formData.get('release_id') as string
-  revalidatePath(`/studio/releases/${releaseId}`)
+  revalidatePath(`/studio/releases/${data.release_id}`)
   if (edition) redirect(`/studio/editions/${edition.id}/setup`)
 }
 
 
 export async function updateEditionStatusAction(id: string, status: string) {
-  await requireAuth()
-  await editionsDb.updateEditionStatus(id, status)
+  await requireEditionOwnership(id)
+  const parsed = editionStatusSchemaSafe(status)
+  if (!parsed) throw new Error('Недопустимый статус издания')
+  await editionsDb.updateEditionStatus(id, parsed)
   const edition = await editionsDb.fetchEditionById(id)
   if (edition) {
     revalidatePath(`/studio/editions/${id}`)
@@ -150,7 +216,7 @@ export async function updateEditionStatusAction(id: string, status: string) {
 }
 
 export async function deleteEditionAction(id: string, releaseId: string) {
-  await requireAuth()
+  await requireEditionOwnership(id)
   await editionsDb.deleteEdition(id)
   revalidatePath(`/studio/releases/${releaseId}`)
   redirect(`/studio/releases/${releaseId}`)
@@ -169,9 +235,10 @@ export async function getChapter(id: string) {
 }
 
 export async function createChapterAction(formData: FormData) {
-  await requireAuth()
+  const data = validateForm(chapterFormSchema, formData)
+  await requireEditionOwnership(data.edition_id)
 
-  const editionId = formData.get('edition_id') as string
+  const editionId = data.edition_id
   const existing = await chaptersDb.fetchChaptersByEdition(editionId)
   const nextIndex = existing.length > 0
     ? Math.max(...existing.map(c => c.chapter_index)) + 1
@@ -179,7 +246,7 @@ export async function createChapterAction(formData: FormData) {
 
   const chapter = await chaptersDb.createChapter({
     edition_id: editionId,
-    title: formData.get('title') || `Глава ${nextIndex}`,
+    title: data.title ?? `Глава ${nextIndex}`,
     content: null,
     chapter_index: nextIndex,
     status: 'draft',
@@ -191,23 +258,29 @@ export async function createChapterAction(formData: FormData) {
 }
 
 export async function updateChapterAction(id: string, data: { title?: string; content?: string; chapter_index?: number }) {
-  await requireAuth()
+  await requireChapterOwnership(id)
+
+  const parsed = chapterUpdateSchema.safeParse(data)
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? 'Ошибка валидации главы')
+  }
+  const valid = parsed.data
 
   const chapter = await chaptersDb.fetchChapterById(id)
   if (!chapter) return null
 
-  const wordCount = data.content
-    ? data.content.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length
+  const wordCount = valid.content
+    ? valid.content.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length
     : chapter.word_count
 
-  if (data.content && chapter.content && data.content !== chapter.content) {
+  if (valid.content && chapter.content && valid.content !== chapter.content) {
     await chaptersDb.createChapterVersion(id, chapter.content)
   }
 
   const updated = await chaptersDb.updateChapter(id, {
-    title: data.title ?? chapter.title,
-    content: data.content ?? chapter.content,
-    chapter_index: data.chapter_index ?? chapter.chapter_index,
+    title: valid.title ?? chapter.title,
+    content: valid.content ?? chapter.content,
+    chapter_index: valid.chapter_index ?? chapter.chapter_index,
     status: chapter.status,
     word_count: wordCount,
   })
@@ -217,14 +290,14 @@ export async function updateChapterAction(id: string, data: { title?: string; co
 }
 
 export async function publishChapterAction(id: string) {
-  await requireAuth()
+  await requireChapterOwnership(id)
   const chapter = await chaptersDb.publishChapter(id)
   if (chapter) revalidatePath(`/studio/editions/${chapter.edition_id}`)
   return chapter
 }
 
 export async function deleteChapterAction(id: string) {
-  await requireAuth()
+  await requireChapterOwnership(id)
   const chapter = await chaptersDb.fetchChapterById(id)
   if (!chapter) return
   await chaptersDb.deleteChapter(id)
@@ -240,7 +313,7 @@ export async function getChapterVersions(chapterId: string) {
 }
 
 export async function restoreChapterVersionAction(chapterId: string, versionId: string) {
-  await requireAuth()
+  await requireChapterOwnership(chapterId)
   const chapter = await chaptersDb.restoreChapterVersion(chapterId, versionId)
   if (chapter) revalidatePath(`/studio/editions/${chapter.edition_id}/chapters/${chapterId}`)
   return chapter
@@ -255,20 +328,22 @@ export async function getAllSeries() {
 
 export async function createSeriesAction(formData: FormData) {
   await requireAuth()
+  const data = validateForm(seriesFormSchema, formData)
   await seriesDb.createSeries({
-    title: formData.get('title'),
-    slug: formData.get('slug'),
-    description: formData.get('description') || null,
+    title: data.title,
+    slug: data.slug,
+    description: data.description,
   })
   revalidatePath('/studio/series')
 }
 
 export async function updateSeriesAction(id: string, formData: FormData) {
   await requireAuth()
+  const data = validateForm(seriesFormSchema, formData)
   await seriesDb.updateSeries(id, {
-    title: formData.get('title'),
-    slug: formData.get('slug'),
-    description: formData.get('description') || null,
+    title: data.title,
+    slug: data.slug,
+    description: data.description,
   })
   revalidatePath('/studio/series')
 }
@@ -322,7 +397,7 @@ export async function updateEditionSetupAction(
     series_links?: { series_id: string; phase_number: number | null }[]
   },
 ) {
-  await requireAuth()
+  await requireEditionOwnership(editionId)
   const edition = await editionsDb.fetchEditionById(editionId)
   if (!edition) return null
 

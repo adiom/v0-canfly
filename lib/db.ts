@@ -1,9 +1,8 @@
-import { Pool, QueryResultRow } from 'pg'
+import { Pool, PoolClient, QueryResultRow } from 'pg'
 
 let cachedPool: Pool | null = null
 
-function getDatabaseUrl() {
-  const databaseUrl =
+function getDatabaseUrl() {  const databaseUrl =
     process.env.DATABASE_URL ||
     process.env.POSTGRES_URL ||
     process.env.POSTGRES_PRISMA_URL ||
@@ -70,4 +69,33 @@ export async function dbQuery<T extends QueryResultRow>(query: string, params: u
 export async function dbQueryOne<T extends QueryResultRow>(query: string, params: unknown[] = []) {
   const rows = await dbQuery<T>(query, params)
   return rows[0] ?? null
+}
+
+/**
+ * Выполняет fn внутри одной транзакции на отдельном клиенте из пула.
+ * BEGIN/COMMIT/ROLLBACK управляются автоматически. Использовать для групп
+ * запросов, которые должны быть атомарны (например DELETE + INSERT при
+ * перезаписи связей many-to-many), чтобы избежать race condition.
+ *
+ * Внутри fn используйте client.query вместо dbQuery — тот берёт другой клиент.
+ */
+export async function withTransaction<T>(
+  fn: (client: PoolClient) => Promise<T>,
+): Promise<T> {
+  const client = await getPool().connect()
+  try {
+    await client.query('BEGIN')
+    const result = await fn(client)
+    await client.query('COMMIT')
+    return result
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK')
+    } catch {
+      // ignore rollback errors — original error важнее
+    }
+    throw error
+  } finally {
+    client.release()
+  }
 }

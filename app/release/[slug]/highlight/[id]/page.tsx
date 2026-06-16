@@ -3,14 +3,14 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { fetchReleaseBySlug } from '@/lib/server/releases'
 import { fetchChapterById } from '@/lib/server/chapters'
-import { fetchChapterHighlightById } from '@/lib/server/chapter-highlights'
+import { fetchChapterHighlights, fetchChapterHighlightById } from '@/lib/server/chapter-highlights'
+import type { ChapterHighlight } from '@/lib/releases-types'
 import { getCurrentUser, getUserRoles } from '@/lib/server/session'
 import { getPrimaryEdition } from '@/lib/utils/editions'
 import { ReleaseBookReader } from '@/components/release-book-reader'
 import { HighlightScroller } from '@/components/highlight-scroller'
 import { fetchEditionsByRelease } from '@/lib/server/editions'
 import { fetchPublishedChaptersByEdition } from '@/lib/server/chapters'
-import { fetchChapterHighlights } from '@/lib/server/chapter-highlights'
 import type { UserRole } from '@/lib/types'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
@@ -82,10 +82,15 @@ export default async function HighlightSharePage({ params }: PageProps) {
     ? await fetchPublishedChaptersByEdition(primaryEdition.id)
     : [chapter]
 
-  // Загружаем highlights ВСЕХ глав
-  const allHighlights = user
-    ? await fetchChapterHighlights({ chapterId: chapters[0]?.id, currentUserId: user.id })
-    : []
+  // Загружаем highlights ВСЕХ глав (раньше грузили только первую — баг).
+  // Ридер сам фильтрует по chapter_id, но данные нужны для TOC/переключения.
+  let allHighlights: ChapterHighlight[] = []
+  if (user && chapters.length > 0) {
+    const perChapter = await Promise.all(
+      chapters.map(c => fetchChapterHighlights({ chapterId: c.id, currentUserId: user.id })),
+    )
+    allHighlights = perChapter.flat()
+  }
 
   // Если текущая глава не в списке — добавляем
   if (!chapters.find(c => c.id === chapter.id)) {

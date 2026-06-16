@@ -128,9 +128,11 @@ lib/
 proxy.ts                    # ⚠️ Middleware (НЕ middleware.ts — файл называется proxy.ts)
 postgres/
 ├── schema.sql              # Основная идемпотентная схема
-├── 002_release_system.sql
+├── 002_release_system.sql  # Release system: ENUMs + 12 таблиц
 ├── 003_add_audiorelease.sql
 ├── 004_release_design.sql
+├── 005_add_quality_tier.sql    # edition.quality_tier (draft/standard/premium)
+├── 006_add_passport_and_cities.sql  # character_type enum (passport/cities)
 └── highlights-migration.sql
 ```
 
@@ -332,11 +334,15 @@ return result.toDataStreamResponse()
 ## Уникальные фичи проекта
 
 ### 1. Система релизов (основная, новая)
-- Читалка: `components/release-book-reader.tsx` (716 строк) — хайлайты, DOM-обёртка, прогресс
+- Читалка: `components/release-book-reader.tsx` (~1060 строк) — хайлайты, DOM-обёртка (TreeWalker), прогресс, сохранение прогресса чтения
 - Комикс-ридер: `components/release-comic-reader.tsx`
 - Аудиоплеер: `components/release-audio-player.tsx`
-- Маршруты: `/release/[slug]/[editionSlug]/[chapterIndex]`
-- Server actions: `lib/actions/studio.ts`
+- Маршруты (две ветки):
+  - Legacy: `/release/[slug]/[editionSlug]/[chapterIndex]` — для comic/magazine/audio
+  - SEO-friendly book: `/release/[slug]/book/[qualityTier]/[chapterIndex]` — для book-изданий (qualityTier ∈ draft/standard/premium)
+- Server actions: `lib/actions/studio.ts` (с zod-валидацией через `lib/schemas/studio.ts`)
+- Проверка владения: `lib/server/studio-auth.ts` — `requireReleaseOwnership` / `requireEditionOwnership` / `requireChapterOwnership` (owner + admin)
+- Прогресс чтения: `lib/server/reading-progress.ts` + `POST /api/reading-progress`
 
 ### 2. Studio для авторов
 - Маршрут: `/studio/`
@@ -371,11 +377,11 @@ return result.toDataStreamResponse()
 - 5 тем: `atelier`, `night-city`, `pvz`, `volga`, `dreams`
 - Авторотация 8.5с, Embla Carousel
 
-## Известные баги (не трогать без фикса)
+## Известные баги
 
-1. **Broken logout** — `app/admin/slider/page.tsx:61` вызывает `fetch('/api/admin/logout')`, этого роута не существует.
-2. **Email не отправляется** — `app/(auth)/actions.ts:84` содержит TODO. Magic link только в dev-консоли.
-3. **Hardcoded service key** — `scripts/import_books_fix.mjs` и `scripts/migrate-supabase-to-local.mjs` содержат Supabase service role JWT в исходнике. Это legacy-скрипты, не используются в production.
+1. **Email не отправляется** — `app/(auth)/actions.ts` содержит TODO. Magic link работает только в dev-консоли; в prod токен возвращается в ответе (требует интеграции с Resend/Nodemailer).
+
+> Устаревшие записи удалены: баг `/api/admin/logout` (вызов отсутствует в коде) и hardcoded service keys в legacy-скриптах (grep чист).
 
 ## Частые задачи
 
@@ -478,8 +484,6 @@ pnpm db:structure
 
 # E2E тесты (см. раздел ниже)
 pnpm test:smoke
-pnpm test:admin
-pnpm test:studio
 pnpm test:e2e
 
 ### Структура
@@ -520,12 +524,6 @@ e2e/
 ```bash
 # Smoke-тесты (публичные маршруты + профиль персонажа)
 pnpm test:smoke
-
-# Admin-тесты (требуют admin роль)
-pnpm test:admin
-
-# Studio-тесты (требуют author/editor/admin роль)
-pnpm test:studio
 
 # Все e2e вместе
 pnpm test:e2e

@@ -172,7 +172,7 @@ export function ReleaseBookReader({
     paragraphs.forEach((p, idx) => {
       const list = hlByParagraph.get(idx)
       if (!list) return
-      for (const hl of list) wrapHighlight(p, hl)
+      for (const hl of list) wrapHighlight(p, hl, currentUserId)
     })
 
     // Группируем editorial notes по параграфу (editor/admin only)
@@ -195,7 +195,28 @@ export function ReleaseBookReader({
     return () => { cancelled = true }
   }, [currentChapter?.id, chapterHighlights, chapterEditorialNotes, currentIndex, isEditor])
 
-  // Скролл наверх + синхронизация URL при смене главы
+  // Сохраняем прогресс чтения на сервере (только для залогиненных).
+  // Debounce 1.5с, чтобы не спамить при быстром перелистывании.
+  useEffect(() => {
+    if (!currentUserId || !currentChapter) return
+    const timer = setTimeout(() => {
+      fetch('/api/reading-progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          editionId: edition.id,
+          chapterId: currentChapter.id,
+          progressPercent: progress,
+        }),
+        keepalive: true,
+      }).catch(() => {})
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [currentUserId, currentChapter?.id, edition.id, progress])
+
+  // Скролл наверх + синхронизация URL при смене главы. setState в effect —
+  // reset selection/artifact при навигации (sync с currentIndex).
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -206,6 +227,7 @@ export function ReleaseBookReader({
     setSelection(null)
     setArtifactOpen(false)
   }, [currentIndex, release.slug, edition.slug])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Клавиатура
   useEffect(() => {
@@ -941,12 +963,18 @@ export function ReleaseBookReader({
   )
 }
 
-// Обёртывает найденный текст в <mark>
-function wrapHighlight(paragraph: HTMLElement, hl: ChapterHighlight) {
-  const text = hl.text_content
-  if (!text) return
-
-  // Собираем все текстовые узлы
+/**
+ * Общий поиск текстового диапазона для обёртки в <mark>. Используется и хайлайтами,
+ * и редакторскими замечаниями — устраняет дублирование TreeWalker-логики.
+ *
+ * Ищет точное совпадение text, при промахе пробует контекстный fallback
+ * (context_before + префикс text). Возвращает Range или null.
+ */
+function findTextRange(
+  paragraph: HTMLElement,
+  text: string,
+  contextBefore?: string | null,
+): Range | null {
   const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT, null)
   const textNodes: Text[] = []
   let n: Node | null = walker.nextNode()
@@ -955,18 +983,17 @@ function wrapHighlight(paragraph: HTMLElement, hl: ChapterHighlight) {
     n = walker.nextNode()
   }
 
-  // Ищем точное совпадение или с учётом контекста
   for (const node of textNodes) {
     if (node.parentElement?.tagName === 'MARK') continue
     const nodeText = node.textContent ?? ''
     let idx = nodeText.indexOf(text)
-    if (idx === -1 && hl.context_before) {
-      // Пробуем найти с контекстом
-      const foundAt = nodeText.indexOf(hl.context_before)
+    if (idx === -1 && contextBefore) {
+      // Контекстный fallback: нашли context_before → сверяем префикс text
+      const foundAt = nodeText.indexOf(contextBefore)
       if (foundAt >= 0) {
-        const tail = nodeText.slice(foundAt + hl.context_before.length, foundAt + hl.context_before.length + text.length + 10)
+        const tail = nodeText.slice(foundAt + contextBefore.length, foundAt + contextBefore.length + text.length + 10)
         if (tail.startsWith(text.slice(0, 20))) {
-          idx = foundAt + hl.context_before.length
+          idx = foundAt + contextBefore.length
         }
       }
     }
@@ -976,24 +1003,42 @@ function wrapHighlight(paragraph: HTMLElement, hl: ChapterHighlight) {
       const range = document.createRange()
       range.setStart(node, idx)
       range.setEnd(node, idx + text.length)
-      const mark = document.createElement('mark')
-      mark.dataset.cfHl = hl.id
-      mark.dataset.cfMine = hl.user_id === hl.user_id && !hl.is_public ? 'true' : ''
-
-      // Стили
-      mark.style.backgroundColor = hl.is_public ? `${hl.user_id}25` : `${accent_for_hl(hl)}44`
-      mark.style.cursor = 'pointer'
-      mark.style.borderRadius = '2px'
-      mark.style.padding = '0 1px'
-      mark.style.transition = 'background-color 0.15s'
-      mark.addEventListener('mouseenter', () => { mark.style.backgroundColor = `${accent_for_hl(hl)}88` })
-      mark.addEventListener('mouseleave', () => { mark.style.backgroundColor = hl.is_public ? `${hl.user_id}25` : `${accent_for_hl(hl)}44` })
-
-      range.surroundContents(mark)
-      return // один highlight за раз
+      return range
     } catch {
-      // не получилось окружить — пропускаем
+      // кросс-узел / невалидный offset — пробуем следующий узел
     }
+  }
+  return null
+}
+
+/** Применяет общие стили <mark> + hover-эффект. */
+function styleMark(mark: HTMLElement, color: string, idleOpacity: string) {
+  mark.style.cursor = 'pointer'
+  mark.style.borderRadius = '2px'
+  mark.style.padding = '0 1px'
+  mark.style.transition = 'background-color 0.15s'
+  const idle = `${color}${idleOpacity}`
+  mark.style.backgroundColor = idle
+  mark.addEventListener('mouseenter', () => { mark.style.backgroundColor = `${color}88` })
+  mark.addEventListener('mouseleave', () => { mark.style.backgroundColor = idle })
+}
+
+// Обёртывает найденный текст в <mark>
+function wrapHighlight(paragraph: HTMLElement, hl: ChapterHighlight, currentUserId: string | null) {
+  const text = hl.text_content
+  if (!text) return
+
+  const range = findTextRange(paragraph, text, hl.context_before)
+  if (!range) return
+
+  try {
+    const mark = document.createElement('mark')
+    mark.dataset.cfHl = hl.id
+    mark.dataset.cfMine = hl.user_id === currentUserId && !hl.is_public ? 'true' : ''
+    styleMark(mark, accent_for_hl(hl), '44')
+    range.surroundContents(mark)
+  } catch {
+    // не получилось окружить — пропускаем
   }
 }
 
@@ -1001,56 +1046,23 @@ function wrapEditorialNote(paragraph: HTMLElement, en: ChapterEditorialNote) {
   const text = en.text_content
   if (!text) return
 
-  const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT, null)
-  const textNodes: Text[] = []
-  let n: Node | null = walker.nextNode()
-  while (n) {
-    textNodes.push(n as Text)
-    n = walker.nextNode()
-  }
+  const range = findTextRange(paragraph, text, en.context_before)
+  if (!range) return
 
-  for (const node of textNodes) {
-    if (node.parentElement?.tagName === 'MARK') continue
-    const nodeText = node.textContent ?? ''
-    let idx = nodeText.indexOf(text)
-    if (idx === -1 && en.context_before) {
-      const foundAt = nodeText.indexOf(en.context_before)
-      if (foundAt >= 0) {
-        const tail = nodeText.slice(foundAt + en.context_before.length, foundAt + en.context_before.length + text.length + 10)
-        if (tail.startsWith(text.slice(0, 20))) {
-          idx = foundAt + en.context_before.length
-        }
-      }
-    }
-    if (idx === -1) continue
-
-    try {
-      const range = document.createRange()
-      range.setStart(node, idx)
-      range.setEnd(node, idx + text.length)
-      const mark = document.createElement('mark')
-      mark.dataset.cfEn = en.id
-
-      const statusColor = en.status === 'open' ? '#e97316' : en.status === 'resolved' ? '#16a34a' : '#6b7280'
-      const bgOpacity = en.status === 'open' ? '44' : en.status === 'resolved' ? '28' : '18'
-      mark.style.backgroundColor = `${statusColor}${bgOpacity}`
-      mark.style.cursor = 'pointer'
-      mark.style.borderRadius = '2px'
-      mark.style.padding = '0 1px'
-      mark.style.transition = 'background-color 0.15s'
-      mark.addEventListener('mouseenter', () => { mark.style.backgroundColor = `${statusColor}88` })
-      mark.addEventListener('mouseleave', () => { mark.style.backgroundColor = `${statusColor}${bgOpacity}` })
-
-      range.surroundContents(mark)
-      return
-    } catch {
-      // skip
-    }
+  try {
+    const mark = document.createElement('mark')
+    mark.dataset.cfEn = en.id
+    const statusColor = en.status === 'open' ? '#e97316' : en.status === 'resolved' ? '#16a34a' : '#6b7280'
+    const bgOpacity = en.status === 'open' ? '44' : en.status === 'resolved' ? '28' : '18'
+    styleMark(mark, statusColor, bgOpacity)
+    range.surroundContents(mark)
+  } catch {
+    // skip
   }
 }
 
-function accent_for_hl(hl: ChapterHighlight): string {
-  // Простой детерминированный цвет по user_id для приватных
-  if (!hl.is_public) return '#d52525'
+function accent_for_hl(_hl: ChapterHighlight): string {
+  // Пока единый акцентный цвет проекта; зарезервировано под детерминированный
+  // цвет по user_id в будущем.
   return '#d52525'
 }

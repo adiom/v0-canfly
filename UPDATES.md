@@ -2,6 +2,65 @@
 
 ---
 
+## v6.4 — Lint cleanup + audiorelease zod-fix (16 июня 2026)
+
+### Что изменено
+
+**1. Zod-баг: создание Аудиорелиза заблокировано**
+- `lib/schemas/studio.ts`: `editionFormatSchema` был без `'audiorelease'` → `createEditionAction` падал с «Invalid enum value» при создании издания формата Аудиорелиз. Добавлено значение (соответствует `lib/releases-types.ts` и `003_add_audiorelease.sql`).
+
+**2. Lint-ошибки: 14 → 0 (Next 16 React Compiler)**
+- `app/global-error.tsx`: 2× `<a href="/">` → `<Link>` (`@next/next/no-html-link-for-pages`)
+- `components/highlight-artifact.tsx`: `useRef(Math.random())` → `useState` lazy-init (устранены impure-function и access-ref-in-render); reset-эффекты помечены `eslint-disable react-hooks/set-state-in-effect` с обоснованием
+- `components/studio/editorial-notes-panel.tsx`: `useMemo`+ref подход → state-based с `hasLoaded` boolean (убран access-ref-in-render); data-loading эффекты помечены
+- `components/studio/editorial-notes-overlay.tsx`, `chapter-editor-page.tsx` (`editorRef.current` в render → callback-ref + state), `character-friend-button.tsx`, `release-book-reader.tsx` — setState-in-effect помечены как валидный паттерн (data-loading / reset / DOM-layout-sync)
+
+### Стратегия
+React Compiler-правило `react-hooks/set-state-in-effect` стало `error` в Next 16. Для валидных use-case'ов (data-fetch на mount, reset при смене props, чтение DOM-layout) применён `eslint-disable` с комментарием-обоснованием вместо поломки data-flow. Глубокий рефакторинг (derived state, key-remount) оставлен на будущее — текущие эффекты семантически корректны.
+
+### Проверка
+- `pnpm exec tsc --noEmit` — 0 ошибок
+- `pnpm lint` — **0 errors** (66 warnings, не в scope)
+- `pnpm build` — успешно
+
+---
+
+## v6.3 — Security & Quality Pass (15 июня 2026)
+
+### Что изменено
+
+**1. IDOR-фикс — проверка владения в Studio (P0)**
+- Добавлены `requireReleaseOwnership`, `requireEditionOwnership`, `requireChapterOwnership` в `lib/server/studio-auth.ts`
+- Все mutate-actions в `lib/actions/studio.ts` теперь проверяют ownership через `release_collaborators` (role='owner') или admin
+- Ранее любой автор мог мутировать чужой релиз/главу по UUID
+
+**2. Устранена утечка AUTH_SECRET в логи**
+- `proxy.ts` больше не выводит первые символы `AUTH_SECRET` при каждом запросе к `/profile`
+
+**3. Баги ридера (release-book-reader.tsx)**
+- `hl.user_id === hl.user_id` (тавтология) → `hl.user_id === currentUserId`
+- `${hl.user_id}25` (UUID как hex-цвет) → `accent_for_hl(hl)`
+- `revalidatePath('/release/${id}')` → `revalidatePath('/release/${release.slug}')` (UUID не инвалидировал кэш)
+
+**4. Корректность данных**
+- `setReleaseCharacters` / `setReleaseSeries` обёрнуты в транзакции (`withTransaction` в `lib/db.ts`) — устранена race condition
+- `JSON.parse(authors)` обёрнут в `parseJsonArray` с try/catch и fallback на `[]`
+- Реализовано сохранение прогресса чтения: `lib/server/reading-progress.ts`, `POST /api/reading-progress`, debounce 1.5с в ридере
+
+**5. Zod-валидация Studio-actions**
+- Новые схемы в `lib/schemas/studio.ts`: release, edition, chapter, series с enum-проверкой против postgres-типов
+- Все create/update actions в `lib/actions/studio.ts` валидируют ввод через `validateForm()`
+
+**6. Рефакторинг**
+- `wrapHighlight` / `wrapEditorialNote` дедуплицированы: общий `findTextRange` + `styleMark`
+- Шаринг хайлайтов: грузит данные всех глав, а не только первой
+- Audio-player: устранён stale closure (isPlaying через ref), `goToTrack` обёрнут в `useCallback`
+
+**7. Документация**
+- AGENTS.md обновлён: размер ридера, маршруты book/[qualityTier], миграции 005/006, убраны мёртвые баги
+
+---
+
 ## v6.2 — Авторизация через Magic Link + next-auth v5 (7 июня 2026)
 
 ### Что изменено

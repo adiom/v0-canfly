@@ -1,4 +1,4 @@
-import { dbQuery, dbQueryOne } from '@/lib/db'
+import { dbQuery, dbQueryOne, withTransaction } from '@/lib/db'
 import type {
   Release,
   ReleaseStatus,
@@ -121,20 +121,24 @@ export async function setReleaseCharacters(
   releaseId: string,
   characters: { character_id: string; role: ReleaseCharacterRole }[],
 ) {
-  await dbQuery('DELETE FROM release_characters WHERE release_id = $1', [releaseId])
-  if (characters.length === 0) return
+  // DELETE + INSERT в одной транзакции — иначе при конкурентной записи
+  // можно потерять данные в окне между запросами.
+  await withTransaction(async (client) => {
+    await client.query('DELETE FROM release_characters WHERE release_id = $1', [releaseId])
+    if (characters.length === 0) return
 
-  const values = characters.map((_, i) => `($1, $${i * 2 + 2}::uuid, $${i * 2 + 3}::release_character_role)`).join(', ')
-  const params: unknown[] = [releaseId]
-  for (const c of characters) {
-    params.push(c.character_id, c.role)
-  }
+    const values = characters.map((_, i) => `($1, ${i * 2 + 2}::uuid, ${i * 2 + 3}::release_character_role)`).join(', ')
+    const params: unknown[] = [releaseId]
+    for (const c of characters) {
+      params.push(c.character_id, c.role)
+    }
 
-  await dbQuery(
-    `INSERT INTO release_characters (release_id, character_id, role) VALUES ${values}
-     ON CONFLICT DO NOTHING`,
-    params,
-  )
+    await client.query(
+      `INSERT INTO release_characters (release_id, character_id, role) VALUES ${values}
+       ON CONFLICT DO NOTHING`,
+      params,
+    )
+  })
 }
 
 // --- Release Series ---
@@ -150,20 +154,23 @@ export async function setReleaseSeries(
   releaseId: string,
   series: { series_id: string; phase_number: number | null }[],
 ) {
-  await dbQuery('DELETE FROM release_series WHERE release_id = $1', [releaseId])
-  if (series.length === 0) return
+  // Атомарная перезапись связей (см. setReleaseCharacters).
+  await withTransaction(async (client) => {
+    await client.query('DELETE FROM release_series WHERE release_id = $1', [releaseId])
+    if (series.length === 0) return
 
-  const values = series.map((_, i) => `($1, $${i * 2 + 2}::uuid, $${i * 2 + 3})`).join(', ')
-  const params: unknown[] = [releaseId]
-  for (const s of series) {
-    params.push(s.series_id, s.phase_number)
-  }
+    const values = series.map((_, i) => `($1, ${i * 2 + 2}::uuid, ${i * 2 + 3})`).join(', ')
+    const params: unknown[] = [releaseId]
+    for (const s of series) {
+      params.push(s.series_id, s.phase_number)
+    }
 
-  await dbQuery(
-    `INSERT INTO release_series (release_id, series_id, phase_number) VALUES ${values}
-     ON CONFLICT DO NOTHING`,
-    params,
-  )
+    await client.query(
+      `INSERT INTO release_series (release_id, series_id, phase_number) VALUES ${values}
+       ON CONFLICT DO NOTHING`,
+      params,
+    )
+  })
 }
 
 export async function listReleasesByAuthor(userId: string) {

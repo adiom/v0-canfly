@@ -15,10 +15,6 @@ export async function proxy(request: NextRequest) {
 
   // --- Защита /profile через next-auth JWT ---
   if (pathname.startsWith('/profile')) {
-    console.log('[proxy] /profile check', {
-      authSecret: process.env.AUTH_SECRET ? `${process.env.AUTH_SECRET.slice(0, 10)}...` : 'MISSING',
-      cookies: request.headers.get('cookie')?.slice(0, 100),
-    })
     const token = await getToken({
       req: request,
       secret: process.env.AUTH_SECRET,

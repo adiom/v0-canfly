@@ -48,11 +48,11 @@ export function ReleaseAudioPlayer({ release, chapters }: ReleaseAudioPlayerProp
     audio.currentTime = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + delta))
   }, [])
 
-  const goToTrack = (index: number) => {
+  const goToTrack = useCallback((index: number) => {
     setCurrentIndex(index)
     setCurrentTime(0)
     setShowTracklist(false)
-  }
+  }, [])
 
   const prevTrack = () => {
     if (currentTime > 3) {
@@ -65,16 +65,21 @@ export function ReleaseAudioPlayer({ release, chapters }: ReleaseAudioPlayerProp
   const nextTrack = useCallback(() => {
     if (currentIndex < chapters.length - 1) goToTrack(currentIndex + 1)
     else setIsPlaying(false)
-  }, [currentIndex, chapters.length])
+  }, [currentIndex, chapters.length, goToTrack])
+
+  // ref для актуального isPlaying — эффект смены трека зависит только от
+  // currentIndex, но должен знать, играл ли трок до переключения.
+  const isPlayingRef = useRef(isPlaying)
+  useEffect(() => { isPlayingRef.current = isPlaying }, [isPlaying])
 
   useEffect(() => {
     const audio = audioRef.current
     if (!audio || !currentTrack?.audio_url) return
-    const wasPlaying = isPlaying
+    const wasPlaying = isPlayingRef.current
     audio.src = currentTrack.audio_url
     audio.load()
     if (wasPlaying) audio.play().catch(() => setIsPlaying(false))
-  }, [currentIndex])
+  }, [currentIndex, currentTrack?.audio_url])
 
   useEffect(() => {
     const audio = audioRef.current
