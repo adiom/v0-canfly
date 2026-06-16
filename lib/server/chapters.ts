@@ -2,13 +2,15 @@ import { dbQuery, dbQueryOne } from '@/lib/db'
 import type { Chapter, ChapterVersion } from '@/lib/releases-types'
 
 const chapterColumns = `
-  id, edition_id, title, content, audio_url, duration_seconds, chapter_index,
+  id, edition_id, title, content, audio_url, audio_blob_path, duration_seconds,
+  audio_metadata, audio_content_type, audio_file_size_bytes, audio_uploaded_at, chapter_index,
   status, word_count, view_count,
   created_at, updated_at, published_at
 `
 
 const chapterListColumns = `
-  id, edition_id, title, audio_url, duration_seconds, chapter_index,
+  id, edition_id, title, audio_url, audio_blob_path, duration_seconds,
+  audio_metadata, audio_content_type, audio_file_size_bytes, audio_uploaded_at, chapter_index,
   status, word_count, view_count,
   created_at, updated_at, published_at
 `
@@ -48,15 +50,24 @@ export async function fetchChapterByEditionAndIndex(editionId: string, chapterIn
 
 export async function createChapter(data: Record<string, unknown>) {
   return dbQueryOne<Chapter>(
-    `INSERT INTO chapters (edition_id, title, content, audio_url, duration_seconds, chapter_index, status, word_count)
-     VALUES ($1, $2, $3, $4, $5, $6, $7::chapter_status, $8)
+    `INSERT INTO chapters (
+       edition_id, title, content, audio_url, audio_blob_path, duration_seconds,
+       audio_metadata, audio_content_type, audio_file_size_bytes, audio_uploaded_at,
+       chapter_index, status, word_count
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11, $12::chapter_status, $13)
      RETURNING ${chapterColumns}`,
     [
       data.edition_id,
       data.title,
       data.content ?? null,
       data.audio_url ?? null,
+      data.audio_blob_path ?? null,
       data.duration_seconds ?? null,
+      JSON.stringify(data.audio_metadata ?? {}),
+      data.audio_content_type ?? null,
+      data.audio_file_size_bytes ?? null,
+      data.audio_uploaded_at ?? null,
       data.chapter_index,
       data.status ?? 'draft',
       data.word_count ?? 0,
@@ -67,8 +78,10 @@ export async function createChapter(data: Record<string, unknown>) {
 export async function updateChapter(id: string, data: Record<string, unknown>) {
   return dbQueryOne<Chapter>(
     `UPDATE chapters SET
-      title = $2, content = $3, audio_url = $4, duration_seconds = $5,
-      chapter_index = $6, status = $7::chapter_status, word_count = $8
+      title = $2, content = $3, audio_url = $4, audio_blob_path = $5,
+      duration_seconds = $6, audio_metadata = $7::jsonb, audio_content_type = $8,
+      audio_file_size_bytes = $9, audio_uploaded_at = $10,
+      chapter_index = $11, status = $12::chapter_status, word_count = $13
      WHERE id = $1
      RETURNING ${chapterColumns}`,
     [
@@ -76,7 +89,12 @@ export async function updateChapter(id: string, data: Record<string, unknown>) {
       data.title,
       data.content ?? null,
       data.audio_url ?? null,
+      data.audio_blob_path ?? null,
       data.duration_seconds ?? null,
+      JSON.stringify(data.audio_metadata ?? {}),
+      data.audio_content_type ?? null,
+      data.audio_file_size_bytes ?? null,
+      data.audio_uploaded_at ?? null,
       data.chapter_index,
       data.status ?? 'draft',
       data.word_count ?? 0,

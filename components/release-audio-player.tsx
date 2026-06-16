@@ -11,13 +11,22 @@ interface ReleaseAudioPlayerProps {
   release: Release
   edition: Edition
   chapters: Chapter[]
+  initialChapterIndex?: number
 }
 
-export function ReleaseAudioPlayer({ release, chapters }: ReleaseAudioPlayerProps) {
+function metadataString(chapter: Chapter | undefined, key: string) {
+  const value = chapter?.audio_metadata?.[key]
+  return typeof value === 'string' ? value : ''
+}
+
+export function ReleaseAudioPlayer({ release, chapters, initialChapterIndex = 0 }: ReleaseAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
+  const initialPlayableIndex = chapters[initialChapterIndex]?.audio_url
+    ? initialChapterIndex
+    : chapters.findIndex(chapter => chapter.audio_url)
 
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [currentIndex, setCurrentIndex] = useState(initialPlayableIndex >= 0 ? initialPlayableIndex : initialChapterIndex)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -25,8 +34,11 @@ export function ReleaseAudioPlayer({ release, chapters }: ReleaseAudioPlayerProp
   const [isMuted, setIsMuted] = useState(false)
   const [showTracklist, setShowTracklist] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [trackError, setTrackError] = useState(false)
 
   const currentTrack = chapters[currentIndex]
+  const currentArtist = metadataString(currentTrack, 'artist')
+  const currentAlbum = metadataString(currentTrack, 'album')
   const accent = release.design_config?.accent_color ?? '#d52525'
 
   const totalDuration = chapters.reduce((sum, ch) => sum + (ch.duration_seconds ?? 0), 0)
@@ -51,21 +63,32 @@ export function ReleaseAudioPlayer({ release, chapters }: ReleaseAudioPlayerProp
   const goToTrack = useCallback((index: number) => {
     setCurrentIndex(index)
     setCurrentTime(0)
+    setDuration(0)
+    setTrackError(false)
     setShowTracklist(false)
   }, [])
 
+  const findPlayableTrack = useCallback((fromIndex: number, direction: 1 | -1) => {
+    for (let i = fromIndex; i >= 0 && i < chapters.length; i += direction) {
+      if (chapters[i]?.audio_url) return i
+    }
+    return -1
+  }, [chapters])
+
   const prevTrack = () => {
     if (currentTime > 3) {
-      audioRef.current && (audioRef.current.currentTime = 0)
+      if (audioRef.current) audioRef.current.currentTime = 0
       return
     }
-    if (currentIndex > 0) goToTrack(currentIndex - 1)
+    const previous = findPlayableTrack(currentIndex - 1, -1)
+    if (previous >= 0) goToTrack(previous)
   }
 
   const nextTrack = useCallback(() => {
-    if (currentIndex < chapters.length - 1) goToTrack(currentIndex + 1)
+    const next = findPlayableTrack(currentIndex + 1, 1)
+    if (next >= 0) goToTrack(next)
     else setIsPlaying(false)
-  }, [currentIndex, chapters.length, goToTrack])
+  }, [currentIndex, findPlayableTrack, goToTrack])
 
   // ref для актуального isPlaying — эффект смены трека зависит только от
   // currentIndex, но должен знать, играл ли трок до переключения.
@@ -138,6 +161,11 @@ export function ReleaseAudioPlayer({ release, chapters }: ReleaseAudioPlayerProp
         onEnded={nextTrack}
         onWaiting={() => setIsLoading(true)}
         onCanPlay={() => setIsLoading(false)}
+        onError={() => {
+          setIsLoading(false)
+          setIsPlaying(false)
+          setTrackError(true)
+        }}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
       />
@@ -210,6 +238,17 @@ export function ReleaseAudioPlayer({ release, chapters }: ReleaseAudioPlayerProp
                 <p className="mt-1 truncate text-base font-bold text-cf-text-1">
                   {currentTrack.title}
                 </p>
+                {currentArtist && (
+                  <p className="mt-1 truncate text-sm text-cf-text-3">{currentArtist}</p>
+                )}
+                {currentAlbum && (
+                  <p className="mt-0.5 truncate text-xs text-cf-text-4">{currentAlbum}</p>
+                )}
+                {trackError && (
+                  <p className="mt-2 text-xs font-bold uppercase tracking-[0.12em] text-[#d52525]">
+                    Трек временно недоступен
+                  </p>
+                )}
               </>
             ) : (
               <p className="text-sm text-cf-text-4">Треки не добавлены</p>
@@ -262,7 +301,7 @@ export function ReleaseAudioPlayer({ release, chapters }: ReleaseAudioPlayerProp
               {/* Предыдущий */}
               <button
                 onClick={prevTrack}
-                disabled={currentIndex === 0 && currentTime <= 3}
+                disabled={currentTime <= 3 && findPlayableTrack(currentIndex - 1, -1) < 0}
                 className="p-2 text-cf-text-2 hover:text-cf-text-heading disabled:opacity-30 transition-colors"
                 aria-label="Предыдущий трек"
               >
@@ -289,7 +328,7 @@ export function ReleaseAudioPlayer({ release, chapters }: ReleaseAudioPlayerProp
               {/* Следующий */}
               <button
                 onClick={nextTrack}
-                disabled={currentIndex === chapters.length - 1}
+                disabled={findPlayableTrack(currentIndex + 1, 1) < 0}
                 className="p-2 text-cf-text-2 hover:text-cf-text-heading disabled:opacity-30 transition-colors"
                 aria-label="Следующий трек"
               >
@@ -357,6 +396,9 @@ export function ReleaseAudioPlayer({ release, chapters }: ReleaseAudioPlayerProp
                     <p className={`truncate text-sm font-medium ${i === currentIndex ? 'text-cf-text-heading' : 'text-cf-text-2'}`}>
                       {ch.title}
                     </p>
+                    {metadataString(ch, 'artist') && (
+                      <p className="truncate text-xs text-cf-text-4">{metadataString(ch, 'artist')}</p>
+                    )}
                     {ch.duration_seconds && (
                       <p className="text-xs text-cf-text-4">{formatDuration(ch.duration_seconds)}</p>
                     )}

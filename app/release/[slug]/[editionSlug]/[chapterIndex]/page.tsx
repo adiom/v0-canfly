@@ -60,5 +60,5 @@ export default async function ChapterPublicPage({
   }
 
   // audiobook | audiorelease | album
-  return <ReleaseAudioPlayer release={release} edition={edition} chapters={chapters} />
+  return <ReleaseAudioPlayer release={release} edition={edition} chapters={chapters} initialChapterIndex={chapterIndex} />
 }

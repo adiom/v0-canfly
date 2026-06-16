@@ -6,9 +6,10 @@ import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import type { Editor } from '@tiptap/react'
-import type { Chapter, ChapterEditorialNote } from '@/lib/releases-types'
+import type { Chapter, ChapterEditorialNote, EditionFormat } from '@/lib/releases-types'
 import { publishChapterAction, deleteChapterAction, updateChapterAction } from '@/lib/actions/studio'
 import { TelegraphEditor } from '@/components/studio/telegraph-editor'
+import { AudioChapterEditor } from '@/components/studio/audio-chapter-editor'
 import { VersionHistory } from '@/components/studio/version-history'
 import { EditorialNotesPanel } from '@/components/studio/editorial-notes-panel'
 import { EditorialNotesOverlay } from '@/components/studio/editorial-notes-overlay'
@@ -27,8 +28,11 @@ import {
 } from '@/components/ui/alert-dialog'
 import { ArrowLeft, Globe, Trash2, Check, Loader2, AlertCircle, Code2 } from 'lucide-react'
 
-export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; editionId: string }) {
+const audioFormats = new Set<EditionFormat>(['audiobook', 'audiorelease', 'album'])
+
+export function ChapterEditorPage({ chapter, editionId, editionFormat }: { chapter: Chapter; editionId: string; editionFormat: EditionFormat }) {
   const router = useRouter()
+  const isAudioEditor = audioFormats.has(editionFormat)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [editorialNotes, setEditorialNotes] = useState<ChapterEditorialNote[]>([])
   const [isHtmlMode, setIsHtmlMode] = useState(false)
@@ -182,17 +186,19 @@ export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; ed
             </span>
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={isHtmlMode ? switchToWysiwyg : switchToHtml}
-            className={`rounded-xl ${isHtmlMode ? 'bg-amber-50 text-amber-600 border border-amber-200/80 font-semibold' : 'text-gray-500 hover:text-violet-600 hover:bg-violet-50/50'}`}
-          >
-            <Code2 className="mr-1.5 h-4 w-4" />
-            {isHtmlMode ? 'WYSIWYG' : 'HTML'}
-          </Button>
+          {!isAudioEditor && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={isHtmlMode ? switchToWysiwyg : switchToHtml}
+              className={`rounded-xl ${isHtmlMode ? 'bg-amber-50 text-amber-600 border border-amber-200/80 font-semibold' : 'text-gray-500 hover:text-violet-600 hover:bg-violet-50/50'}`}
+            >
+              <Code2 className="mr-1.5 h-4 w-4" />
+              {isHtmlMode ? 'WYSIWYG' : 'HTML'}
+            </Button>
+          )}
 
-          <VersionHistory chapterId={chapter.id} />
+          {!isAudioEditor && <VersionHistory chapterId={chapter.id} />}
 
           {chapter.status !== 'published' && (
             <Button size="sm" onClick={handlePublish} className="rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-md shadow-emerald-500/25 hover:from-emerald-700 hover:to-emerald-600">
@@ -224,7 +230,11 @@ export function ChapterEditorPage({ chapter, editionId }: { chapter: Chapter; ed
       </header>
 
       <div className="mx-auto max-w-6xl px-4 md:px-8 py-8">
-        {isHtmlMode ? (
+        {isAudioEditor ? (
+          <div className="mx-auto max-w-4xl">
+            <AudioChapterEditor chapter={chapter} onSaveStatus={setSaveStatus} />
+          </div>
+        ) : isHtmlMode ? (
           <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
             <div className="space-y-4">
               <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-4">

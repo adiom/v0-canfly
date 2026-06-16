@@ -19,10 +19,11 @@ export const qualityTierSchema = z.enum(['draft', 'standard', 'premium'])
 
 // --- Общие хелперы для FormData (значения приходят строкой или null) ---
 
-/** Пустая строка или null → null, иначе обрезанная строка. */
+/** Пустая строка, null или undefined → null, иначе обрезанная строка. */
 const optionalString = z
-  .union([z.string(), z.null()])
+  .union([z.string(), z.null(), z.undefined()])
   .transform((v) => (v == null || v === '' ? null : v.trim()))
+  .nullable()
 
 /** Строка-обязательная; trim, минимум 1 символ. */
 const requiredString = z
@@ -31,10 +32,14 @@ const requiredString = z
   .min(1, 'Поле обязательно')
 
 /** Slug: латиница/цифры/дефис. */
-const slugSchema = requiredString.regex(
-  /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-  'Slug: только латиница, цифры и дефисы',
-)
+const slugSchema = z
+  .string()
+  .trim()
+  .min(1, 'Slug обязателен')
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    'Slug: только латиница, цифры и дефисы',
+  )
 
 // --- Release ---
 
@@ -46,7 +51,15 @@ export const releaseFormSchema = z.object({
   genre: optionalString,
   release_date: optionalString,
   isbn: optionalString,
-  authors: z.array(z.any()), // массив уже распарсен в action через parseJsonArray
+  authors: z.preprocess(
+    (v) => {
+      if (typeof v === 'string') {
+        try { return JSON.parse(v) } catch { return [] }
+      }
+      return Array.isArray(v) ? v : []
+    },
+    z.array(z.any()),
+  ),
   annotation: optionalString,
   editor_notes: optionalString,
   status: releaseStatusSchema.default('draft'),
@@ -61,7 +74,7 @@ export const editionFormSchema = z.object({
   external_url: optionalString,
   slug: slugSchema,
   is_primary: z
-  .union([z.literal('true'), z.literal('false'), z.null()])
+  .union([z.literal('true'), z.literal('false'), z.literal(''), z.null(), z.undefined()])
   .transform((v) => v === 'true')
   .default('false'),
 })
@@ -74,8 +87,15 @@ export const chapterFormSchema = z.object({
 })
 
 export const chapterUpdateSchema = z.object({
-  title: optionalString,
-  content: optionalString,
+  title: optionalString.optional(),
+  content: optionalString.optional(),
+  audio_url: optionalString.optional(),
+  audio_blob_path: optionalString.optional(),
+  duration_seconds: z.number().int().nonnegative().nullable().optional(),
+  audio_metadata: z.record(z.unknown()).nullable().optional(),
+  audio_content_type: optionalString.optional(),
+  audio_file_size_bytes: z.number().int().nonnegative().nullable().optional(),
+  audio_uploaded_at: optionalString.optional(),
   chapter_index: z.number().int().min(1).optional(),
 })
 

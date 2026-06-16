@@ -76,7 +76,12 @@ export interface Chapter {
   title: string
   content: string | null
   audio_url: string | null
+  audio_blob_path: string | null
   duration_seconds: number | null
+  audio_metadata: Record<string, unknown>
+  audio_content_type: string | null
+  audio_file_size_bytes: number | null
+  audio_uploaded_at: string | null
   chapter_index: number
   status: ChapterStatus
   word_count: number

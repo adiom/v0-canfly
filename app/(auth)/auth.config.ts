@@ -204,10 +204,10 @@ export const authConfig = {
 
     session({ session, token }) {
       if (session.user) {
-        console.log('[auth] session', {
-          userId: token.id ?? token.sub,
-          roles: token.roles,
-        })
+        // console.log('[auth] session', {
+        //   userId: token.id ?? token.sub,
+        //   roles: token.roles,
+        // })
         if (token.id) session.user.id = token.id
         session.user.type = (token.type as UserType) ?? 'regular'
         session.user.handle = token.handle ?? null

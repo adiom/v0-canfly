@@ -8,7 +8,6 @@ import type { Edition, Release, ReleaseCharacter, ReleaseSeries, Series, Quality
 import { updateEditionSetupAction } from '@/lib/actions/studio'
 import { generateSlug } from '@/lib/slug-utils'
 import { ComicPagesEditor } from '@/components/studio/comic-pages-editor'
-import { AudioTracksEditor } from '@/components/studio/audio-tracks-editor'
 import { CoverImageUploader } from '@/components/studio/cover-image-uploader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -280,12 +279,6 @@ export function EditionSetupPage({ data }: { data: SetupData }) {
         {edition.format === 'comic' && (
           <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-5 md:p-6">
             <ComicPagesEditor editionId={edition.id} />
-          </div>
-        )}
-
-        {(edition.format === 'audiobook' || edition.format === 'audiorelease') && (
-          <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-5 md:p-6">
-            <AudioTracksEditor editionId={edition.id} />
           </div>
         )}
 

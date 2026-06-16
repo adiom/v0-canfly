@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { del, head } from '@vercel/blob'
 import {
   requireStudioSession,
   requireReleaseOwnership,
@@ -13,6 +14,7 @@ import * as editionsDb from '@/lib/server/editions'
 import * as chaptersDb from '@/lib/server/chapters'
 import * as seriesDb from '@/lib/server/series'
 import { dbQuery } from '@/lib/db'
+import { parseAudioBlobMetadata } from '@/lib/server/audio-metadata'
 import type { ReleaseCharacterRole, ReleaseDesignConfig } from '@/lib/releases-types'
 import {
   releaseFormSchema,
@@ -64,7 +66,7 @@ function validateForm<T>(
   schema: { safeParse: (d: unknown) => { success: true; data: T } | { success: false; error: { issues: { message: string }[] } } },
   formData: FormData,
 ): T {
-  const result = schema.safeParse(formData)
+  const result = schema.safeParse(Object.fromEntries(formData))
   if (!result.success) {
     const msg = result.error.issues[0]?.message ?? 'Ошибка валидации'
     throw new Error(msg)
@@ -257,7 +259,18 @@ export async function createChapterAction(formData: FormData) {
   if (chapter) redirect(`/studio/editions/${editionId}/chapters/${chapter.id}`)
 }
 
-export async function updateChapterAction(id: string, data: { title?: string; content?: string; chapter_index?: number }) {
+export async function updateChapterAction(id: string, data: {
+  title?: string | null
+  content?: string | null
+  audio_url?: string | null
+  audio_blob_path?: string | null
+  duration_seconds?: number | null
+  audio_metadata?: Record<string, unknown> | null
+  audio_content_type?: string | null
+  audio_file_size_bytes?: number | null
+  audio_uploaded_at?: string | null
+  chapter_index?: number
+}) {
   await requireChapterOwnership(id)
 
   const parsed = chapterUpdateSchema.safeParse(data)
@@ -280,9 +293,125 @@ export async function updateChapterAction(id: string, data: { title?: string; co
   const updated = await chaptersDb.updateChapter(id, {
     title: valid.title ?? chapter.title,
     content: valid.content ?? chapter.content,
+    audio_url: valid.audio_url ?? chapter.audio_url,
+    audio_blob_path: valid.audio_blob_path ?? chapter.audio_blob_path,
+    duration_seconds: valid.duration_seconds ?? chapter.duration_seconds,
+    audio_metadata: valid.audio_metadata ?? chapter.audio_metadata,
+    audio_content_type: valid.audio_content_type ?? chapter.audio_content_type,
+    audio_file_size_bytes: valid.audio_file_size_bytes ?? chapter.audio_file_size_bytes,
+    audio_uploaded_at: valid.audio_uploaded_at ?? chapter.audio_uploaded_at,
     chapter_index: valid.chapter_index ?? chapter.chapter_index,
     status: chapter.status,
     word_count: wordCount,
+  })
+
+  revalidatePath(`/studio/editions/${chapter.edition_id}`)
+  return updated
+}
+
+export async function finalizeAudioChapterUploadAction(id: string, data: {
+  url: string
+  pathname: string
+  contentType?: string | null
+  size?: number | null
+}) {
+  await requireChapterOwnership(id)
+
+  const chapter = await chaptersDb.fetchChapterById(id)
+  if (!chapter) return null
+
+  if (!data.pathname.startsWith(`audio/chapters/${id}/`)) {
+    throw new Error('Некорректный путь аудиофайла')
+  }
+
+  const blobToken = process.env.BLOB_READ_WRITE_TOKEN
+  const blobInfo = await head(data.pathname, { token: blobToken })
+  if (blobInfo.url !== data.url) {
+    throw new Error('Blob URL не соответствует загруженному файлу')
+  }
+
+  const parsed = await parseAudioBlobMetadata({
+    url: blobInfo.url,
+    pathname: blobInfo.pathname,
+    contentType: blobInfo.contentType ?? data.contentType ?? null,
+    size: blobInfo.size ?? data.size ?? null,
+    chapterId: id,
+  })
+
+  const previousPath = chapter.audio_blob_path
+  const updated = await chaptersDb.updateChapter(id, {
+    title: parsed.metadata.title ?? chapter.title,
+    content: chapter.content,
+    audio_url: blobInfo.url,
+    audio_blob_path: blobInfo.pathname,
+    duration_seconds: parsed.durationSeconds ?? chapter.duration_seconds,
+    audio_metadata: parsed.metadata,
+    audio_content_type: blobInfo.contentType ?? data.contentType ?? null,
+    audio_file_size_bytes: blobInfo.size ?? data.size ?? null,
+    audio_uploaded_at: blobInfo.uploadedAt.toISOString(),
+    chapter_index: chapter.chapter_index,
+    status: chapter.status,
+    word_count: chapter.word_count,
+  })
+
+  if (previousPath && previousPath !== blobInfo.pathname && previousPath.startsWith(`audio/chapters/${id}/`)) {
+    await del(previousPath, { token: blobToken }).catch(() => undefined)
+  }
+
+  revalidatePath(`/studio/editions/${chapter.edition_id}`)
+  return { chapter: updated, coverUrl: parsed.coverUrl }
+}
+
+export async function applyAudioCoverToReleaseAction(chapterId: string, coverUrl: string) {
+  await requireChapterOwnership(chapterId)
+  const chapter = await chaptersDb.fetchChapterById(chapterId)
+  if (!chapter) return null
+  const edition = await editionsDb.fetchEditionById(chapter.edition_id)
+  if (!edition) return null
+  const release = await releasesDb.fetchReleaseById(edition.release_id)
+  if (!release) return null
+
+  const updated = await releasesDb.updateRelease(release.id, {
+    title: release.title,
+    slug: release.slug,
+    description: release.description,
+    cover_image: coverUrl,
+    genre: release.genre,
+    release_date: release.release_date,
+    isbn: release.isbn,
+    authors: release.authors,
+    annotation: release.annotation,
+    editor_notes: release.editor_notes,
+    status: release.status,
+  })
+
+  revalidatePath(`/studio/editions/${chapter.edition_id}`)
+  revalidatePath(`/studio/releases/${release.id}`)
+  return updated
+}
+
+export async function removeAudioChapterFileAction(id: string) {
+  await requireChapterOwnership(id)
+  const chapter = await chaptersDb.fetchChapterById(id)
+  if (!chapter) return null
+
+  if (chapter.audio_blob_path?.startsWith(`audio/chapters/${id}/`)) {
+    await del(chapter.audio_blob_path, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch(() => undefined)
+  }
+
+  const updated = await chaptersDb.updateChapter(id, {
+    title: chapter.title,
+    content: chapter.content,
+    audio_url: null,
+    audio_blob_path: null,
+    duration_seconds: null,
+    audio_metadata: {},
+    audio_content_type: null,
+    audio_file_size_bytes: null,
+    audio_uploaded_at: null,
+    chapter_index: chapter.chapter_index,
+    status: chapter.status,
+    word_count: chapter.word_count,
   })
 
   revalidatePath(`/studio/editions/${chapter.edition_id}`)
