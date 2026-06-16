@@ -52,14 +52,16 @@ export default async function ReleasePublicPage({ params }: { params: Promise<{ 
   const primaryEdition = getPrimaryEdition(editions)
 
   // Мета по главному изданию (число глав, объём, время чтения)
-  let meta = { chapterCount: 0, wordCount: 0, readingMinutes: 0 }
+  let meta = { chapterCount: 0, wordCount: 0, readingMinutes: 0, durationSeconds: 0 }
   if (primaryEdition) {
     const chapters = await fetchPublishedChaptersByEdition(primaryEdition.id)
     const wordCount = chapters.reduce((sum, c) => sum + (c.word_count ?? 0), 0)
+    const durationSeconds = chapters.reduce((sum, c) => sum + (c.duration_seconds ?? 0), 0)
     meta = {
       chapterCount: chapters.length,
       wordCount,
       readingMinutes: wordCount > 0 ? Math.max(1, Math.round(wordCount / 200)) : 0,
+      durationSeconds,
     }
   }
 

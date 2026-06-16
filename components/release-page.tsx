@@ -35,6 +35,13 @@ const formatActionLabels: Record<EditionFormat, string> = {
   audiorelease: 'Слушать', album: 'Слушать', magazine: 'Читать',
 }
 
+const formatHeroLabels: Record<EditionFormat, string> = {
+  book: 'Читать', comic: 'Смотреть', audiobook: 'Слушать аудиокнигу',
+  audiorelease: 'Слушать релиз', album: 'Слушать альбом', magazine: 'Читать выпуск',
+}
+
+const audioFormats: Set<EditionFormat> = new Set(['audiobook', 'audiorelease', 'album'])
+
 const tierLabels: Record<QualityTier, string> = {
   draft: 'Черновик',
   standard: 'Книга',
@@ -80,6 +87,17 @@ function getEditionFullUrl(release: { slug: string }, edition: Edition): string 
   return `/release/${release.slug}/${edition.slug}/full`
 }
 
+function findAlternateEdition(published: Edition[], primary: Edition | null): Edition | null {
+  if (!primary) return null
+  const primaryIsAudio = audioFormats.has(primary.format)
+  const alternate = published.find(e => {
+    if (e.id === primary.id) return false
+    if (primaryIsAudio) return e.format === 'book' || e.format === 'magazine'
+    return audioFormats.has(e.format)
+  })
+  return alternate ?? null
+}
+
 interface ReleasePagePublicProps {
   release: Release
   editions: Edition[]
@@ -88,7 +106,7 @@ interface ReleasePagePublicProps {
   characters: { id: string; name: string; slug: string; avatar: string | null; role: string }[]
   seriesLink: { series: Series; phase_number: number | null } | null
   highlights: ChapterHighlight[]
-  meta: { chapterCount: number; wordCount: number; readingMinutes: number }
+  meta: { chapterCount: number; wordCount: number; readingMinutes: number; durationSeconds: number }
 }
 
 export function ReleasePagePublic({
@@ -104,20 +122,37 @@ export function ReleasePagePublic({
   const [showAllQuotes, setShowAllQuotes] = useState(false)
 
   const published = editions.filter(e => e.status === 'published')
-  // Все опубликованные издания читаются на canfly; external_url — дополнительная ссылка на площадку
   const internalEditions = published
   const externalEditions = published.filter(e => e.external_url)
 
   const primaryEdition = published.find(e => e.slug === primaryEditionSlug) ?? null
+  const primaryIsAudio = primaryEdition ? audioFormats.has(primaryEdition.format) : false
   const readUrl = primaryEdition ? getEditionReadUrl(release, primaryEdition) : null
-  const fullUrl = primaryEdition ? getEditionFullUrl(release, primaryEdition) : null
+  const fullUrl = primaryEdition && !primaryIsAudio ? getEditionFullUrl(release, primaryEdition) : null
+
+  const alternateEdition = findAlternateEdition(published, primaryEdition)
+  const alternateUrl = alternateEdition ? getEditionReadUrl(release, alternateEdition) : null
 
   const visibleQuotes = showAllQuotes ? highlights : highlights.slice(0, 3)
 
   const metaChips: { icon: typeof Clock; label: string }[] = []
-  if (meta.chapterCount > 0) metaChips.push({ icon: AlignLeft, label: `${meta.chapterCount} ${pluralRu(meta.chapterCount, 'глава', 'главы', 'глав')}` })
-  if (meta.wordCount > 0) metaChips.push({ icon: BookText, label: formatWordCount(meta.wordCount) })
-  if (meta.readingMinutes > 0) metaChips.push({ icon: Clock, label: formatReadingTime(meta.readingMinutes) })
+  if (meta.chapterCount > 0) {
+    const unit = primaryIsAudio
+      ? pluralRu(meta.chapterCount, 'трек', 'трека', 'треков')
+      : pluralRu(meta.chapterCount, 'глава', 'главы', 'глав')
+    metaChips.push({ icon: primaryIsAudio ? Music2 : AlignLeft, label: `${meta.chapterCount} ${unit}` })
+  }
+  if (meta.wordCount > 0 && !primaryIsAudio) metaChips.push({ icon: BookText, label: formatWordCount(meta.wordCount) })
+  if (meta.readingMinutes > 0 && !primaryIsAudio) metaChips.push({ icon: Clock, label: formatReadingTime(meta.readingMinutes) })
+  if (primaryIsAudio) {
+    if (meta.durationSeconds > 0) {
+      const h = Math.floor(meta.durationSeconds / 3600)
+      const m = Math.floor((meta.durationSeconds % 3600) / 60)
+      metaChips.push({ icon: Clock, label: h > 0 ? `${h} ч ${m} мин` : `${m} мин` })
+    }
+  }
+
+  const PrimaryIcon = primaryEdition ? formatIcons[primaryEdition.format] : BookOpen
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: bg, color: text }}>
@@ -125,7 +160,6 @@ export function ReleasePagePublic({
 
       {/* HERO */}
       <section className="relative overflow-hidden">
-        {/* Атмосферный фон из обложки */}
         {release.cover_image && (
           <div className="pointer-events-none absolute inset-0">
             <img
@@ -204,7 +238,8 @@ export function ReleasePagePublic({
                     className="inline-flex h-12 items-center gap-2 px-7 text-sm font-black uppercase tracking-[0.12em] text-white transition-transform hover:-translate-y-0.5"
                     style={{ backgroundColor: accent }}
                   >
-                    Читать
+                    <PrimaryIcon className="h-4 w-4" />
+                    {primaryEdition ? formatHeroLabels[primaryEdition.format] : 'Читать'}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                   {fullUrl && (
@@ -215,6 +250,19 @@ export function ReleasePagePublic({
                     >
                       <BookText className="h-4 w-4" />
                       Одним файлом
+                    </Link>
+                  )}
+                  {alternateUrl && alternateEdition && (
+                    <Link
+                      href={alternateUrl}
+                      className="inline-flex h-12 items-center gap-2 border px-6 text-sm font-black uppercase tracking-[0.12em] transition-colors"
+                      style={{ borderColor: `${accent}35`, color: accent }}
+                    >
+                      {audioFormats.has(alternateEdition.format)
+                        ? <Disc3 className="h-4 w-4" />
+                        : <BookOpen className="h-4 w-4" />
+                      }
+                      {formatActionLabels[alternateEdition.format]}
                     </Link>
                   )}
                 </div>

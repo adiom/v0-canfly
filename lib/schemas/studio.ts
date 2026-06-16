@@ -86,6 +86,16 @@ export const chapterFormSchema = z.object({
   title: optionalString,
 })
 
+export const lyricLineSchema = z.object({
+  text: z.string().min(1),
+  time: z.number().nonnegative().optional(),
+})
+
+export const lyricsSchema = z.object({
+  format: z.enum(['synced', 'plain']),
+  lines: z.array(lyricLineSchema).min(1),
+})
+
 export const chapterUpdateSchema = z.object({
   title: optionalString.optional(),
   content: optionalString.optional(),

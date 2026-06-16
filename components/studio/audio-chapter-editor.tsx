@@ -1,11 +1,12 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { put } from '@vercel/blob/client'
 import { toast } from 'sonner'
-import { Headphones, Loader2, Music2, Save, Trash2, Upload } from 'lucide-react'
-import type { Chapter } from '@/lib/releases-types'
+import { Headphones, Loader2, Mic2, Music2, Save, Trash2, Upload } from 'lucide-react'
+import type { Chapter, ChapterLyrics } from '@/lib/releases-types'
+import { extractLyrics } from '@/lib/releases-types'
 import {
   applyAudioCoverToReleaseAction,
   finalizeAudioChapterUploadAction,
@@ -13,6 +14,7 @@ import {
   updateChapterAction,
 } from '@/lib/actions/studio'
 import { formatDuration } from '@/lib/utils/editions'
+import { parseLrc, serializeLrc, findActiveLine } from '@/lib/utils/lyrics'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -36,8 +38,12 @@ function numberMeta(metadata: Record<string, unknown>, key: string) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
 
+type LyricsMode = 'edit' | 'sync' | 'preview'
+
 export function AudioChapterEditor({ chapter, onSaveStatus }: AudioChapterEditorProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const previewAudioRef = useRef<HTMLAudioElement>(null)
+  const syncLineRef = useRef<HTMLDivElement>(null)
   const initialMetadata = useMemo(() => chapter.audio_metadata ?? {}, [chapter.audio_metadata])
   const [title, setTitle] = useState(chapter.title)
   const [audioUrl, setAudioUrl] = useState(chapter.audio_url ?? '')
@@ -55,6 +61,14 @@ export function AudioChapterEditor({ chapter, onSaveStatus }: AudioChapterEditor
   const [progress, setProgress] = useState(0)
   const [isPending, startTransition] = useTransition()
 
+  const initialLyrics = useMemo(() => extractLyrics(initialMetadata), [initialMetadata])
+  const [lyrics, setLyrics] = useState<ChapterLyrics | null>(initialLyrics)
+  const [lyricsText, setLyricsText] = useState(() => initialLyrics ? serializeLrc(initialLyrics) : '')
+  const [lyricsMode, setLyricsMode] = useState<LyricsMode>('edit')
+  const [syncCurrentLine, setSyncCurrentLine] = useState(0)
+  const [syncCurrentTime, setSyncCurrentTime] = useState(0)
+  const [previewCurrentTime, setPreviewCurrentTime] = useState(0)
+
   const canSave = title.trim().length > 0 && !uploading && !isPending
 
   const buildMetadata = useCallback(() => ({
@@ -66,7 +80,66 @@ export function AudioChapterEditor({ chapter, onSaveStatus }: AudioChapterEditor
     codec: codec || undefined,
     bitrate: bitrate ?? undefined,
     sampleRate: sampleRate ?? undefined,
-  }), [album, artist, bitrate, codec, initialMetadata, sampleRate, trackNo, year])
+    lyrics: lyrics ?? undefined,
+  }), [album, artist, bitrate, codec, initialMetadata, lyrics, sampleRate, trackNo, year])
+
+  const parseLyricsText = useCallback((text: string) => {
+    if (!text.trim()) {
+      setLyrics(null)
+      return
+    }
+    const parsed = parseLrc(text)
+    setLyrics(parsed)
+  }, [])
+
+  useEffect(() => {
+    if (lyricsMode !== 'preview') return
+    const audio = previewAudioRef.current
+    if (!audio) return
+    const handler = () => setPreviewCurrentTime(audio.currentTime)
+    audio.addEventListener('timeupdate', handler)
+    return () => audio.removeEventListener('timeupdate', handler)
+  }, [lyricsMode])
+
+  useEffect(() => {
+    if (lyricsMode !== 'sync') return
+    const audio = previewAudioRef.current
+    if (!audio) return
+    const handler = () => setSyncCurrentTime(audio.currentTime)
+    audio.addEventListener('timeupdate', handler)
+    return () => audio.removeEventListener('timeupdate', handler)
+  }, [lyricsMode])
+
+  useEffect(() => {
+    if (lyricsMode !== 'sync' || !lyrics?.lines[syncCurrentLine]) return
+    syncLineRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [syncCurrentLine, lyricsMode, lyrics])
+
+  function stampCurrentLine() {
+    if (!lyrics) return
+    const audio = previewAudioRef.current
+    if (!audio) return
+    const time = audio.currentTime
+    const lines = lyrics.lines.map((l, i) =>
+      i === syncCurrentLine ? { ...l, time } : l
+    )
+    const updated: ChapterLyrics = { format: 'synced', lines }
+    setLyrics(updated)
+    setLyricsText(serializeLrc(updated))
+    if (syncCurrentLine + 1 < lyrics.lines.length) {
+      setSyncCurrentLine(syncCurrentLine + 1)
+    }
+  }
+
+  function advanceSyncLine() {
+    if (!lyrics) return
+    const next = syncCurrentLine + 1
+    if (next < lyrics.lines.length) setSyncCurrentLine(next)
+  }
+
+  function retreatSyncLine() {
+    if (syncCurrentLine > 0) setSyncCurrentLine(syncCurrentLine - 1)
+  }
 
   const uploadAudio = useCallback(async (file: File) => {
     if (!file.type.startsWith('audio/') && !/\.(mp3|m4a|aac|ogg|wav|flac)$/i.test(file.name)) {
@@ -203,8 +276,13 @@ export function AudioChapterEditor({ chapter, onSaveStatus }: AudioChapterEditor
     })
   }
 
+  const previewActiveLine = lyrics?.format === 'synced'
+    ? findActiveLine(lyrics.lines, previewCurrentTime)
+    : -1
+
   return (
     <div className="space-y-5">
+      {/* Upload zone */}
       <div
         onDragOver={event => {
           event.preventDefault()
@@ -254,6 +332,7 @@ export function AudioChapterEditor({ chapter, onSaveStatus }: AudioChapterEditor
         )}
       </div>
 
+      {/* Track metadata */}
       <div className="rounded-2xl border border-white/70 bg-white/60 p-5 shadow-sm shadow-black/5">
         <div className="mb-5 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-900 text-white">
@@ -297,7 +376,7 @@ export function AudioChapterEditor({ chapter, onSaveStatus }: AudioChapterEditor
         </div>
 
         {audioUrl && (
-          <audio controls src={audioUrl} className="mt-5 w-full" preload="metadata" />
+          <audio ref={previewAudioRef} controls src={audioUrl} className="mt-5 w-full" preload="metadata" />
         )}
 
         {coverUrl && (
@@ -327,6 +406,225 @@ export function AudioChapterEditor({ chapter, onSaveStatus }: AudioChapterEditor
             Сохранить
           </Button>
         </div>
+      </div>
+
+      {/* Lyrics editor */}
+      <div className="rounded-2xl border border-white/70 bg-white/60 p-5 shadow-sm shadow-black/5">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+            <Mic2 className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-gray-900">Слова песни</h3>
+            <p className="text-xs text-gray-400">LRC-формат с таймкодами или обычный текст</p>
+          </div>
+        </div>
+
+        {/* Mode tabs */}
+        <div className="mb-4 flex gap-1 rounded-xl bg-gray-100/70 p-1">
+          <button
+            type="button"
+            onClick={() => setLyricsMode('edit')}
+            className={cn(
+              'flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-all',
+              lyricsMode === 'edit'
+                ? 'bg-violet-600 text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-700',
+            )}
+          >
+            Ввод
+          </button>
+          {audioUrl && (
+            <button
+              type="button"
+              onClick={() => {
+                if (lyricsText.trim()) parseLyricsText(lyricsText)
+                setLyricsMode('sync')
+              }}
+              disabled={!lyricsText.trim()}
+              className={cn(
+                'flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-all',
+                lyricsMode === 'sync'
+                  ? 'bg-amber-500 text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700 disabled:opacity-40',
+              )}
+            >
+              Синхронизация
+            </button>
+          )}
+          {audioUrl && lyrics?.format === 'synced' && (
+            <button
+              type="button"
+              onClick={() => setLyricsMode('preview')}
+              className={cn(
+                'flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-all',
+                lyricsMode === 'preview'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700',
+              )}
+            >
+              Превью
+            </button>
+          )}
+        </div>
+
+        {/* EDIT mode */}
+        {lyricsMode === 'edit' && (
+          <div className="space-y-3">
+            <div className="rounded-xl border border-violet-200/80 bg-violet-50/50 p-3 text-xs text-violet-700">
+              <p className="font-semibold">LRC-формат:</p>
+              <code className="mt-1 block text-violet-500">[00:12.50] Строка с таймкодом</code>
+              <p className="mt-1 text-violet-600">Строки с <code>[mm:ss.ms]</code> → синхронизированный режим. Строки без меток → обычный текст.</p>
+            </div>
+            <textarea
+              value={lyricsText}
+              onChange={e => {
+                setLyricsText(e.target.value)
+                parseLyricsText(e.target.value)
+              }}
+              placeholder="[00:15.00] Первая строка песни&#10;[00:19.50] Вторая строка&#10;&#10;Или просто текст без таймкодов"
+              className="w-full min-h-[200px] rounded-xl border border-white/70 bg-white/70 p-4 text-sm leading-7 text-gray-800 resize-y focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 font-mono"
+              spellCheck={false}
+            />
+            {lyrics && (
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <span className={cn(
+                  'rounded-full px-2 py-0.5 font-semibold uppercase tracking-wide',
+                  lyrics.format === 'synced' ? 'bg-violet-100 text-violet-600' : 'bg-gray-100 text-gray-600',
+                )}>
+                  {lyrics.format === 'synced' ? 'Синхронизировано' : 'Обычный текст'}
+                </span>
+                <span>{lyrics.lines.length} строк</span>
+                {lyrics.format === 'synced' && (
+                  <span>{lyrics.lines.filter(l => l.time !== undefined).length} с таймкодами</span>
+                )}
+              </div>
+            )}
+            {lyricsText.trim() && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => { setLyricsText(''); setLyrics(null) }}
+                className="rounded-xl text-gray-400 hover:text-red-500"
+              >
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                Очистить
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* SYNC mode */}
+        {lyricsMode === 'sync' && lyrics && (
+          <div className="space-y-3">
+            <div className="rounded-xl border border-amber-200/80 bg-amber-50/50 p-3 text-xs text-amber-700">
+              <p className="font-semibold">Ручная синхронизация</p>
+              <p className="mt-1">Запустите аудио. Когда строка звучит — нажмите <kbd className="rounded bg-amber-200 px-1.5 py-0.5 font-mono text-amber-800">Поставить метку</kbd> или <kbd className="rounded bg-amber-200 px-1.5 py-0.5 font-mono text-amber-800">Enter</kbd>. Таймкод текущей позиции запишется в строку, курсор перейдёт к следующей.</p>
+            </div>
+            <div className="max-h-[360px] overflow-y-auto rounded-xl border border-white/70 bg-white/50">
+              {lyrics.lines.map((line, i) => (
+                <div
+                  key={i}
+                  ref={i === syncCurrentLine ? syncLineRef : undefined}
+                  className={cn(
+                    'flex items-center gap-3 px-4 py-2.5 border-b border-white/40 transition-all',
+                    i === syncCurrentLine ? 'bg-amber-100/80' : 'bg-transparent',
+                    line.time !== undefined ? 'opacity-90' : 'opacity-40',
+                  )}
+                >
+                  <span className="min-w-[52px] text-xs tabular-nums font-mono text-gray-400">
+                    {line.time !== undefined ? formatDuration(Math.floor(line.time)) : '--:--'}
+                  </span>
+                  <span className={cn(
+                    'text-sm',
+                    i === syncCurrentLine ? 'font-semibold text-amber-800' : 'text-gray-600',
+                  )}>
+                    {line.text}
+                  </span>
+                  {i === syncCurrentLine && (
+                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-white text-[10px] font-bold">
+                      ▶
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                onClick={stampCurrentLine}
+                disabled={syncCurrentLine >= lyrics.lines.length}
+                className="rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-white shadow-md shadow-amber-500/25 hover:from-amber-600 hover:to-amber-500"
+              >
+                Поставить метку
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={retreatSyncLine}
+                disabled={syncCurrentLine <= 0}
+                className="rounded-xl"
+              >
+                ← Назад
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={advanceSyncLine}
+                disabled={syncCurrentLine >= lyrics.lines.length - 1}
+                className="rounded-xl"
+              >
+                Следующая строка →
+              </Button>
+              <span className="text-xs text-gray-400">
+                Строка {syncCurrentLine + 1} / {lyrics.lines.length} · {formatDuration(Math.floor(syncCurrentTime))}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* PREVIEW mode */}
+        {lyricsMode === 'preview' && lyrics && (
+          <div className="space-y-3">
+            <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/50 p-3 text-xs text-emerald-700">
+              <p className="font-semibold">Превью — как увидит слушатель</p>
+              <p className="mt-1">Активная строка подсвечивается при воспроизведении. Клик по строке перематывает аудио.</p>
+            </div>
+            <div className="max-h-[360px] overflow-y-auto rounded-xl bg-gray-900 p-4">
+              {lyrics.lines.map((line, i) => {
+                const isActive = i === previewActiveLine
+                const isPast = i < previewActiveLine
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => {
+                      if (line.time !== undefined && previewAudioRef.current) {
+                        previewAudioRef.current.currentTime = line.time
+                      }
+                    }}
+                    className={cn(
+                      'block w-full text-left px-2 py-1.5 rounded-lg transition-all duration-300',
+                      isActive && 'text-white font-bold text-base scale-[1.02]',
+                      isPast && !isActive && 'text-gray-400 text-sm',
+                      !isActive && !isPast && 'text-gray-500 text-sm',
+                    )}
+                    style={isActive ? { color: '#d52525' } : undefined}
+                  >
+                    {line.text}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {!audioUrl && lyricsText.trim() && (
+          <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs text-gray-500">
+            <Music2 className="mr-1.5 inline h-3.5 w-3.5" />
+            Синхронизация и превью доступны после загрузки аудиофайла.
+          </div>
+        )}
       </div>
 
       {!audioUrl && (

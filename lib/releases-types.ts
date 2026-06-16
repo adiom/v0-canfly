@@ -91,6 +91,33 @@ export interface Chapter {
   published_at: string | null
 }
 
+export interface LyricLine {
+  text: string
+  time?: number
+}
+
+export interface ChapterLyrics {
+  format: 'synced' | 'plain'
+  lines: LyricLine[]
+}
+
+export function extractLyrics(metadata: Record<string, unknown>): ChapterLyrics | null {
+  const raw = metadata.lyrics
+  if (!raw || typeof raw !== 'object') return null
+  const obj = raw as Record<string, unknown>
+  if (obj.format !== 'synced' && obj.format !== 'plain') return null
+  if (!Array.isArray(obj.lines)) return null
+  const lines: LyricLine[] = []
+  for (const line of obj.lines) {
+    if (!line || typeof line !== 'object') continue
+    const l = line as Record<string, unknown>
+    if (typeof l.text !== 'string' || !l.text) continue
+    lines.push({ text: l.text, time: typeof l.time === 'number' && l.time >= 0 ? l.time : undefined })
+  }
+  if (lines.length === 0) return null
+  return { format: obj.format as 'synced' | 'plain', lines }
+}
+
 export interface ReleaseSeries {
   release_id: string
   series_id: string
