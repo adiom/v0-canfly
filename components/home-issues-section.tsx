@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { fetchRecentReleaseEvents } from '@/lib/server/releases'
-import type { EditionFormat, ReleaseEventType } from '@/lib/releases-types'
+import { formatRelativeTime } from '@/lib/utils'
+import type { EditionFormat } from '@/lib/releases-types'
 
 const FORMAT_LABEL: Record<EditionFormat, string> = {
   book: 'книга',
@@ -12,13 +13,41 @@ const FORMAT_LABEL: Record<EditionFormat, string> = {
   magazine: 'журнал',
 }
 
-const EVENT_LABEL: Record<ReleaseEventType, string> = {
-  new_edition: 'новое издание',
-  new_chapter: 'новая глава',
+function getEventHref(event: {
+  release_slug: string
+  edition_slug: string
+  format: EditionFormat
+  quality_tier: string | null
+  chapter_index: number | null
+  event_type: string
+}) {
+  if (event.event_type === 'new_chapter' && event.chapter_index != null) {
+    if (event.format === 'book' && event.quality_tier) {
+      return `/release/${event.release_slug}/book/${event.quality_tier}/${event.chapter_index}`
+    }
+    return `/release/${event.release_slug}/${event.edition_slug}/${event.chapter_index}`
+  }
+  if (event.format === 'book' && event.quality_tier) {
+    return `/release/${event.release_slug}/book/${event.quality_tier}`
+  }
+  return `/release/${event.release_slug}/${event.edition_slug}`
+}
+
+function getEventLabel(event: {
+  event_type: string
+  new_chapters_count: number
+  new_editions_count: number
+  chapter_title: string | null
+}) {
+  if (event.event_type === 'new_chapter') {
+    if (event.new_chapters_count > 1) return `${event.new_chapters_count} новых глав`
+    return event.chapter_title ?? 'новая глава'
+  }
+  return 'новое издание'
 }
 
 export async function HomeIssuesSection() {
-  const events = await fetchRecentReleaseEvents(4)
+  const events = await fetchRecentReleaseEvents(8)
 
   return (
     <section id="issues" className="border-b border-cf-text-1/10 bg-cf-bg-2 px-4 py-12 text-cf-text-1 md:px-8 md:py-16">
@@ -35,12 +64,8 @@ export async function HomeIssuesSection() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {events.map((event, index) => (
             <Link
-              key={`${event.event_type}-${event.edition_id}-${event.chapter_index ?? 'x'}`}
-              href={
-                event.event_type === 'new_edition'
-                  ? `/release/${event.release_slug}/${event.edition_slug}`
-                  : `/release/${event.release_slug}/${event.edition_slug}/${(event.chapter_index ?? 0)}`
-              }
+              key={`${event.event_type}-${event.release_id}-${event.chapter_index ?? 'x'}`}
+              href={getEventHref(event)}
               className="group border border-cf-text-1/10 bg-cf-bg transition-colors hover:border-cf-warm/45"
             >
               <div className="relative aspect-[4/5] overflow-hidden md:aspect-[3/4] bg-cf-bg-2">
@@ -65,7 +90,6 @@ export async function HomeIssuesSection() {
                 <div className="absolute bottom-5 left-5 right-5 z-10">
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-cf-text-1/60">
                     {FORMAT_LABEL[event.format]}
-                    {event.event_type === 'new_chapter' && ` · ${EVENT_LABEL[event.event_type]}`}
                   </p>
                 </div>
               </div>
@@ -73,11 +97,9 @@ export async function HomeIssuesSection() {
                 <h3 className="min-h-12 text-base font-black leading-tight text-cf-text-heading sm:min-h-14 sm:text-lg">
                   {event.release_title}
                 </h3>
-                {event.chapter_title && (
-                  <p className="mt-1 text-sm font-bold text-cf-warm">{event.chapter_title}</p>
-                )}
+                <p className="mt-1 text-sm font-bold text-cf-warm">{getEventLabel(event)}</p>
                 <p className="mt-2 text-xs uppercase tracking-[0.18em] text-cf-text-3">
-                  {EVENT_LABEL[event.event_type]}
+                  {formatRelativeTime(event.event_at)}
                 </p>
               </div>
             </Link>

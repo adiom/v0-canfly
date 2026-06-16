@@ -251,33 +251,48 @@ export async function fetchReleasesWithEditions(opts: { status?: ReleaseStatus }
 
 // --- Release Events (HomeIssuesSection) ---
 
-export async function fetchRecentReleaseEvents(limit = 4) {
+export async function fetchRecentReleaseEvents(limit = 8) {
   return dbQuery<ReleaseEvent>(
     `
-    SELECT 'new_edition' AS event_type,
+    WITH latest_chapter AS (
+      SELECT DISTINCT ON (r.id)
+             r.id AS release_id,
+             c.id AS chapter_id, c.title AS chapter_title, c.chapter_index,
+             COALESCE(c.published_at, c.created_at) AS chapter_at,
+             e.format, e.quality_tier, e.id AS edition_id, e.slug AS edition_slug
+      FROM releases r
+      JOIN editions e ON e.release_id = r.id AND e.status = 'published'
+      JOIN chapters c ON c.edition_id = e.id AND c.status = 'published'
+      WHERE r.status = 'published'
+      ORDER BY r.id, COALESCE(c.published_at, c.created_at) DESC
+    ),
+    latest_edition AS (
+      SELECT DISTINCT ON (release_id)
+             release_id, id AS edition_id, slug AS edition_slug, format, quality_tier, created_at
+      FROM editions
+      WHERE status = 'published'
+      ORDER BY release_id, created_at DESC
+    )
+    SELECT DISTINCT ON (r.id)
+           CASE WHEN lc.chapter_id IS NOT NULL THEN 'new_chapter' ELSE 'new_edition' END AS event_type,
            r.id AS release_id, r.title AS release_title, r.slug AS release_slug, r.cover_image,
-           e.id AS edition_id, e.slug AS edition_slug, e.format,
-           NULL AS chapter_title, NULL AS chapter_index,
-           e.created_at AS event_at
-    FROM editions e
-    JOIN releases r ON r.id = e.release_id
-    WHERE e.status = 'published' AND r.status = 'published'
-
-    UNION ALL
-
-    SELECT 'new_chapter' AS event_type,
-           r.id AS release_id, r.title AS release_title, r.slug AS release_slug, r.cover_image,
-           e.id AS edition_id, e.slug AS edition_slug, e.format,
-           c.title AS chapter_title, c.chapter_index,
-           COALESCE(c.published_at, c.created_at) AS event_at
-    FROM chapters c
-    JOIN editions e ON e.id = c.edition_id
-    JOIN releases r ON r.id = e.release_id
-    WHERE c.status = 'published'
-      AND e.status = 'published'
-      AND r.status = 'published'
-
-    ORDER BY event_at DESC
+           COALESCE(lc.edition_id, le.edition_id) AS edition_id,
+           COALESCE(lc.edition_slug, le.edition_slug) AS edition_slug,
+           COALESCE(lc.format, le.format) AS format,
+           COALESCE(lc.quality_tier, le.quality_tier) AS quality_tier,
+           lc.chapter_title,
+           lc.chapter_index,
+           (SELECT COUNT(*)::int FROM chapters c
+            JOIN editions e2 ON e2.id = c.edition_id
+            WHERE e2.release_id = r.id AND c.status = 'published') AS new_chapters_count,
+           (SELECT COUNT(*)::int FROM editions e3
+            WHERE e3.release_id = r.id AND e3.status = 'published') AS new_editions_count,
+           COALESCE(lc.chapter_at, le.created_at) AS event_at
+    FROM releases r
+    LEFT JOIN latest_chapter lc ON lc.release_id = r.id
+    LEFT JOIN latest_edition le ON le.release_id = r.id
+    WHERE r.status = 'published'
+    ORDER BY r.id, COALESCE(lc.chapter_at, le.created_at) DESC
     LIMIT $1
     `,
     [limit],

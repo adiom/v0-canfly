@@ -194,8 +194,11 @@ export interface ReleaseEvent {
   edition_id: string
   edition_slug: string
   format: EditionFormat
+  quality_tier: QualityTier | null
   chapter_title: string | null
   chapter_index: number | null
+  new_chapters_count: number
+  new_editions_count: number
   event_at: string
 }
 

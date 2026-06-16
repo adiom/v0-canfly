@@ -73,7 +73,7 @@ export default async function Home() {
               <div className="h-12 w-40 animate-pulse rounded bg-cf-text-1/10" />
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, i) => (
+              {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="aspect-[4/5] rounded bg-cf-text-1/10" />
                   <div className="mt-3 h-6 rounded bg-cf-text-1/10" />
