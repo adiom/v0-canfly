@@ -309,6 +309,28 @@ export async function updateChapterAction(id: string, data: {
   return updated
 }
 
+export async function updateComicChapterPagesAction(chapterId: string, pages: string[]) {
+  await requireChapterOwnership(chapterId)
+  const content = JSON.stringify(pages)
+  const chapter = await chaptersDb.fetchChapterById(chapterId)
+  if (!chapter) throw new Error('Глава не найдена')
+
+  if (chapter.content !== content) {
+    await chaptersDb.createChapterVersion(chapterId, chapter.content ?? '')
+  }
+
+  const updated = await chaptersDb.updateChapter(chapterId, {
+    title: chapter.title,
+    content,
+    chapter_index: chapter.chapter_index,
+    status: chapter.status,
+    word_count: 0,
+  })
+
+  revalidatePath(`/studio/editions/${chapter.edition_id}`)
+  return updated
+}
+
 export async function finalizeAudioChapterUploadAction(id: string, data: {
   url: string
   pathname: string

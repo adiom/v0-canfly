@@ -4,10 +4,9 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import type { Edition, Release, ReleaseCharacter, ReleaseSeries, Series, QualityTier } from '@/lib/releases-types'
+import type { Edition, Release, ReleaseCharacter, ReleaseSeries, Series } from '@/lib/releases-types'
 import { updateEditionSetupAction } from '@/lib/actions/studio'
 import { generateSlug } from '@/lib/slug-utils'
-import { ComicPagesEditor } from '@/components/studio/comic-pages-editor'
 import { CoverImageUploader } from '@/components/studio/cover-image-uploader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -275,12 +274,6 @@ export function EditionSetupPage({ data }: { data: SetupData }) {
             </div>
           </div>
         </div>
-
-        {edition.format === 'comic' && (
-          <div className="bg-white/60 backdrop-blur-md border border-white/70 rounded-2xl shadow-sm shadow-black/5 p-5 md:p-6">
-            <ComicPagesEditor editionId={edition.id} />
-          </div>
-        )}
 
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={() => router.push(`/studio/releases/${edition.release_id}`)} className="rounded-xl border-white/70 bg-white/60 text-gray-600 hover:bg-white/80">

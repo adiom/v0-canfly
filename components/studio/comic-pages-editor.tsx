@@ -1,18 +1,35 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Check, Loader2 } from 'lucide-react'
+import { updateComicChapterPagesAction } from '@/lib/actions/studio'
 
-interface ComicPage {
-  url: string
+interface ComicPagesEditorProps {
+  chapterId: string
+  initialPages: string[]
 }
 
-export function ComicPagesEditor({ editionId: _editionId }: { editionId: string }) {
-  const [pages, setPages] = useState<ComicPage[]>([])
+export function ComicPagesEditor({ chapterId, initialPages }: ComicPagesEditorProps) {
+  const [pages, setPages] = useState<string[]>(initialPages)
   const [uploading, setUploading] = useState(false)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [isPending, startTransition] = useTransition()
+  const [saved, setSaved] = useState(false)
+
+  function persist(newPages: string[]) {
+    setSaved(false)
+    startTransition(async () => {
+      try {
+        await updateComicChapterPagesAction(chapterId, newPages)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      } catch {
+        toast.error('Ошибка сохранения')
+      }
+    })
+  }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files
@@ -40,8 +57,9 @@ export function ComicPagesEditor({ editionId: _editionId }: { editionId: string 
         uploadedUrls.push(data.url)
       }
 
-      const newPages = [...pages, ...uploadedUrls.map(url => ({ url }))]
+      const newPages = [...pages, ...uploadedUrls]
       setPages(newPages)
+      persist(newPages)
       toast.success(`Загружено ${uploadedUrls.length} страниц`)
     } catch {
       toast.error('Ошибка загрузки')
@@ -54,12 +72,16 @@ export function ComicPagesEditor({ editionId: _editionId }: { editionId: string 
   function handleAddByUrl() {
     const url = window.prompt('URL изображения:')
     if (url) {
-      setPages([...pages, { url }])
+      const newPages = [...pages, url]
+      setPages(newPages)
+      persist(newPages)
     }
   }
 
   function handleDelete(index: number) {
-    setPages(pages.filter((_, i) => i !== index))
+    const newPages = pages.filter((_, i) => i !== index)
+    setPages(newPages)
+    persist(newPages)
     toast.success('Страница удалена')
   }
 
@@ -81,13 +103,23 @@ export function ComicPagesEditor({ editionId: _editionId }: { editionId: string 
   }
 
   function handleDragEnd() {
+    if (draggedIndex !== null) {
+      persist(pages)
+    }
     setDraggedIndex(null)
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold">Страницы комикса ({pages.length})</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="font-semibold">Страницы комикса ({pages.length})</h3>
+          <span className="text-xs text-muted-foreground">
+            {isPending && <Loader2 className="inline h-3 w-3 animate-spin mr-1" />}
+            {!isPending && saved && <Check className="inline h-3 w-3 text-emerald-500 mr-1" />}
+            {isPending ? 'Сохраняю...' : saved ? 'Сохранено' : ''}
+          </span>
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleAddByUrl}>
             + URL
@@ -119,25 +151,25 @@ export function ComicPagesEditor({ editionId: _editionId }: { editionId: string 
       </div>
 
       {pages.length === 0 ? (
-        <div className="rounded-lg border border-dashed py-12 text-center text-muted-foreground">
-          Страницы не добавлены. Загрузите изображения или добавьте по URL.
+        <div className="rounded-xl border border-dashed border-gray-200/80 bg-white/30 backdrop-blur-sm py-16 text-center">
+          <p className="text-gray-400">Страницы не добавлены. Загрузите изображения или добавьте по URL.</p>
         </div>
       ) : (
         <div className="grid grid-cols-4 gap-3">
-          {pages.map((page, index) => (
+          {pages.map((url, index) => (
             <div
-              key={index}
+              key={`${url}-${index}`}
               draggable
               onDragStart={() => handleDragStart(index)}
               onDragOver={e => handleDragOver(e, index)}
               onDragEnd={handleDragEnd}
-              className={`relative group cursor-move border rounded overflow-hidden ${
+              className={`relative group cursor-move rounded-xl overflow-hidden border border-white/70 shadow-sm ${
                 draggedIndex === index ? 'opacity-50' : ''
               }`}
             >
               <div className="aspect-[3/4] bg-muted">
                 <img
-                  src={page.url}
+                  src={url}
                   alt={`Страница ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
