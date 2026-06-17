@@ -158,7 +158,7 @@ export function ReleasePagePublic({
             {/* Аннотация */}
             {release.annotation && (
               <p className="mt-6 font-[family-name:var(--font-cormorant)] text-lg italic leading-relaxed text-cf-text-caption md:text-xl">
-                {release.annotation}
+                {release.description}
               </p>
             )}
 
@@ -223,15 +223,6 @@ export function ReleasePagePublic({
           </div>
         </div>
       </section>
-
-      {/* Полное описание */}
-      {release.description && (
-        <div className="mx-auto max-w-6xl px-5 pb-24 md:px-8">
-          <section className="border-t border-cf-text-1/10 py-10 md:py-14">
-            <div className="whitespace-pre-line leading-7 text-cf-text-caption">{release.description}</div>
-          </section>
-        </div>
-      )}
 
       {!published.length && (
         <div className="mx-auto max-w-6xl px-5 pb-24 md:px-8">

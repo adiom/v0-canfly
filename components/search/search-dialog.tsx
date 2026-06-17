@@ -25,22 +25,22 @@ export function SearchDialog() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
+  const handleOpenChange = useCallback((next: boolean) => {
+    setOpen(next)
+    if (next) setRecents(getRecentSearches())
+  }, [])
+
   // Cmd/Ctrl+K shortcut
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        setOpen((o) => !o)
+        handleOpenChange(true)
       }
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [])
-
-  // Загрузить недавние при открытии
-  useEffect(() => {
-    if (open) setRecents(getRecentSearches())
-  }, [open])
+  }, [handleOpenChange])
 
   const fetchResults = useCallback(async (q: string) => {
     if (q.length < 2) {
@@ -126,14 +126,14 @@ export function SearchDialog() {
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => handleOpenChange(true)}
         className="flex h-10 w-10 cursor-pointer touch-manipulation items-center justify-center rounded-sm border border-cf-text-1/12 text-cf-text-2 transition-colors hover:bg-cf-text-1/8"
         aria-label="Поиск (Cmd+K)"
       >
         <Search className="h-5 w-5" />
       </button>
 
-      <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
+      <CommandDialog open={open} onOpenChange={handleOpenChange} shouldFilter={false}>
         <CommandInput
           placeholder="Книги, персонажи, новости…"
           value={query}

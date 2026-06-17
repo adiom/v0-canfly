@@ -2,6 +2,12 @@
 
 ---
 
+## [17 июня 2026] Фикс ESLint: setState в useEffect (search-dialog)
+- Убран `useEffect` для загрузки недавних запросов — заменён на `handleOpenChange`
+- Исправляет ошибку `react-hooks/set-state-in-effect` (блокировала `pnpm build`)
+
+---
+
 ## Редизайн страницы релиза в стиле Marginalia (17 июня 2026)
 
 ### Что изменено
