@@ -1,10 +1,6 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Next.js: Читай документацию перед кодом
 
-# Next.js: ALWAYS read docs before coding
-
-Before any Next.js work, find and read the relevant doc in `node_modules/next/dist/docs/`. Your training data is outdated — the docs are the source of truth.
-
-<!-- END:nextjs-agent-rules -->
+Правила см. в `docs/nextjs-rules.md` и `node_modules/next/dist/docs/`.
 
 
 # AGENTS.md — Инструкции для AI-агентов
@@ -549,7 +545,16 @@ pnpm test:e2e
 - Следовать цветовой палитре проекта
 - Для новых серверных функций — добавлять в `lib/server/`
 - Тестировать изменения локально
-- Обновлять `UPDATES.md` перед каждым git commit
+
+### ⚠️ Перед каждым git commit
+**ОБЯЗАТЕЛЬНО** обновлять `UPDATES.md` — добавить запись в формате:
+```
+## [дата] Название изменения
+- Что изменено
+- Зачем
+- Как использовать
+```
+Без записи в `UPDATES.md` — не коммитить.
 
 ## Дизайн-система
 
