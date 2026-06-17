@@ -92,7 +92,7 @@ export default async function NewsPage() {
 
       <footer className="border-t border-cf-text-1/10 bg-cf-footer-bg px-4 py-8 md:px-8">
         <div className="mx-auto max-w-7xl text-center text-sm text-cf-text-4">
-          © 2005-2026 canfly. Литературная вселенная Адиома Тимура.
+          © 2005-2026 canfly | культура твоего сознания.
         </div>
       </footer>
     </main>

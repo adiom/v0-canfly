@@ -104,7 +104,7 @@
               - generic [ref=e100] [box=862,1202,49,18]: Книга
             - paragraph [ref=e101] [box=853,1485,189,15]: Маша, можно!
             - paragraph [ref=e102] [box=853,1502,189,15]: city issue
-    - paragraph [ref=e105] [box=32,1693,1216,20]: © 2005-2026 canfly. Литературная вселенная Адиома Тимура.
+    - paragraph [ref=e105] [box=32,1693,1216,20]: © 2005-2026 canfly | культура твоего сознания.
   - button "Open Next.js Dev Tools" [ref=e111] [cursor=pointer] [box=22,523,32,32]:
     - img [ref=e112] [box=22,519,40,40]
   - alert [ref=e115] [box=-1,1744,1,1]: Релизы | canfly — литературная вселенная
