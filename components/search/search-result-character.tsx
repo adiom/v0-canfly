@@ -1,12 +1,14 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { SearchResultCharacter } from '@/lib/server/search'
+import { highlight } from '@/lib/search-highlight'
 
 interface SearchResultCharacterRowProps {
   character: SearchResultCharacter
+  query?: string
 }
 
-export function SearchResultCharacterRow({ character }: SearchResultCharacterRowProps) {
+export function SearchResultCharacterRow({ character, query = '' }: SearchResultCharacterRowProps) {
   return (
     <li>
       <Link
@@ -23,10 +25,14 @@ export function SearchResultCharacterRow({ character }: SearchResultCharacterRow
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-[#f4efe5] group-hover:text-white">{character.name}</p>
+          <p className="truncate text-sm font-bold text-[#f4efe5] group-hover:text-white">
+            {highlight(character.name, query)}
+          </p>
           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[#9f978b]">Персонаж</span>
           {character.bio && (
-            <p className="mt-1 line-clamp-1 text-xs text-[#6b6560]">{character.bio}</p>
+            <p className="mt-1 line-clamp-1 text-xs text-[#6b6560]">
+              {highlight(character.bio, query)}
+            </p>
           )}
         </div>
       </Link>

@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import { SearchResultNews } from '@/lib/server/search'
+import { highlight } from '@/lib/search-highlight'
 
 interface SearchResultNewsRowProps {
   item: SearchResultNews
+  query?: string
 }
 
-export function SearchResultNewsRow({ item }: SearchResultNewsRowProps) {
+export function SearchResultNewsRow({ item, query = '' }: SearchResultNewsRowProps) {
   return (
     <li>
       <Link
@@ -26,9 +28,9 @@ export function SearchResultNewsRow({ item }: SearchResultNewsRowProps) {
               </>
             )}
           </div>
-          <p className="truncate text-sm font-bold text-[#f4efe5] group-hover:text-white">{item.title}</p>
+          <p className="truncate text-sm font-bold text-[#f4efe5] group-hover:text-white">{highlight(item.title, query)}</p>
           {item.snippet && (
-            <p className="mt-1 line-clamp-1 text-xs text-[#6b6560]">{item.snippet}</p>
+            <p className="mt-1 line-clamp-1 text-xs text-[#6b6560]">{highlight(item.snippet, query)}</p>
           )}
         </div>
       </Link>

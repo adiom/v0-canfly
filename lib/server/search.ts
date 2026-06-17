@@ -18,7 +18,18 @@ export interface SearchResultNews {
   snippet: string | null
 }
 
+export interface SearchResultRelease {
+  kind: 'release'
+  id: string
+  title: string
+  slug: string
+  genre: string | null
+  cover_image: string | null
+  snippet: string | null
+}
+
 export interface SearchResults {
+  releases: SearchResultRelease[]
   characters: SearchResultCharacter[]
   news: SearchResultNews[]
   total: number
@@ -26,7 +37,7 @@ export interface SearchResults {
 }
 
 export interface AutocompleteItem {
-  kind: 'character' | 'news'
+  kind: 'character' | 'news' | 'release'
   id: string
   title: string
   subtitle: string
@@ -35,7 +46,9 @@ export interface AutocompleteItem {
 }
 
 export async function searchAll(q: string): Promise<SearchResults> {
-  const pattern = `%${q.trim()}%`
+  const trimmed = q.trim()
+  const pattern = `%${trimmed}%`
+  const prefix = `${trimmed}%`
 
   const rows = await dbQuery<{
     kind: string
@@ -51,8 +64,43 @@ export async function searchAll(q: string): Promise<SearchResults> {
     section: string | null
     tag: string | null
     snippet: string | null
+    view_count: number | null
   }>(
     `
+    SELECT
+      'release'       AS kind,
+      id::text,
+      title,
+      slug,
+      genre           AS type,
+      description,
+      cover_image,
+      NULL::text      AS label,
+      NULL::text      AS bio,
+      NULL::text      AS avatar,
+      NULL::text      AS section,
+      NULL::text      AS tag,
+      LEFT(COALESCE(annotation, description), 160) AS snippet,
+      view_count,
+      CASE
+        WHEN LOWER(title) = LOWER($2)            THEN 1
+        WHEN LOWER(title) LIKE LOWER($3)         THEN 2
+        WHEN LOWER(title) LIKE LOWER($1)         THEN 3
+        ELSE 4
+      END AS rank
+    FROM releases
+    WHERE status = 'published'
+      AND (
+        LOWER(title) LIKE LOWER($1)
+        OR LOWER(COALESCE(annotation, '')) LIKE LOWER($1)
+        OR LOWER(COALESCE(description, '')) LIKE LOWER($1)
+        OR LOWER(COALESCE(genre, '')) LIKE LOWER($1)
+        OR LOWER(COALESCE(authors::text, '')) LIKE LOWER($1)
+        OR word_similarity($2, title) >= 0.4
+      )
+
+    UNION ALL
+
     SELECT
       'character'     AS kind,
       id::text,
@@ -67,11 +115,18 @@ export async function searchAll(q: string): Promise<SearchResults> {
       NULL::text      AS section,
       NULL::text      AS tag,
       NULL::text      AS snippet,
-      CASE WHEN LOWER(name) LIKE LOWER($1) THEN 1 ELSE 2 END AS rank
+      NULL::integer   AS view_count,
+      CASE
+        WHEN LOWER(name) = LOWER($2)             THEN 1
+        WHEN LOWER(name) LIKE LOWER($3)          THEN 2
+        WHEN LOWER(name) LIKE LOWER($1)          THEN 3
+        ELSE 4
+      END AS rank
     FROM characters
     WHERE LOWER(name) LIKE LOWER($1)
        OR LOWER(bio) LIKE LOWER($1)
        OR LOWER(full_description) LIKE LOWER($1)
+       OR word_similarity($2, name) >= 0.4
 
     UNION ALL
 
@@ -89,7 +144,13 @@ export async function searchAll(q: string): Promise<SearchResults> {
       section,
       tag,
       LEFT(content, 160) AS snippet,
-      CASE WHEN LOWER(title) LIKE LOWER($1) THEN 1 ELSE 2 END AS rank
+      NULL::integer   AS view_count,
+      CASE
+        WHEN LOWER(title) = LOWER($2)            THEN 1
+        WHEN LOWER(title) LIKE LOWER($3)         THEN 2
+        WHEN LOWER(title) LIKE LOWER($1)         THEN 3
+        ELSE 4
+      END AS rank
     FROM news_posts
     WHERE is_active = true
       AND (
@@ -97,19 +158,31 @@ export async function searchAll(q: string): Promise<SearchResults> {
         OR LOWER(content) LIKE LOWER($1)
         OR LOWER(tag)     LIKE LOWER($1)
         OR LOWER(section) LIKE LOWER($1)
+        OR word_similarity($2, title) >= 0.4
       )
 
-    ORDER BY rank ASC, title ASC
+    ORDER BY rank ASC, view_count DESC NULLS LAST, title ASC
     LIMIT 50
     `,
-    [pattern],
+    [pattern, trimmed, prefix],
   )
 
+  const releases: SearchResultRelease[] = []
   const characters: SearchResultCharacter[] = []
   const news: SearchResultNews[] = []
 
   for (const row of rows) {
-    if (row.kind === 'character') {
+    if (row.kind === 'release') {
+      releases.push({
+        kind: 'release',
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        genre: row.type,
+        cover_image: row.cover_image,
+        snippet: row.snippet,
+      })
+    } else if (row.kind === 'character') {
       characters.push({
         kind: 'character',
         id: row.id,
@@ -130,12 +203,21 @@ export async function searchAll(q: string): Promise<SearchResults> {
     }
   }
 
-  return { characters, news, total: characters.length + news.length, query: q }
+  return {
+    releases,
+    characters,
+    news,
+    total: releases.length + characters.length + news.length,
+    query: q,
+  }
 }
 
 export async function searchAutocomplete(q: string, limit = 5): Promise<AutocompleteItem[]> {
-  const pattern = `%${q.trim()}%`
-  const perKind = Math.max(2, Math.floor(limit / 2))
+  const trimmed = q.trim()
+  const pattern = `%${trimmed}%`
+  const prefix = `${trimmed}%`
+  const releaseLimit = Math.max(2, Math.ceil(limit / 2))
+  const otherLimit = Math.max(1, Math.floor(limit / 3))
 
   const rows = await dbQuery<{
     kind: string
@@ -150,12 +232,44 @@ export async function searchAutocomplete(q: string, limit = 5): Promise<Autocomp
   }>(
     `
     (
+      SELECT 'release' AS kind, id::text, title, slug, genre AS type,
+             cover_image, NULL AS avatar, NULL AS label, NULL AS section
+      FROM releases
+      WHERE status = 'published'
+        AND (
+          LOWER(title) LIKE LOWER($1)
+          OR LOWER(COALESCE(annotation, '')) LIKE LOWER($1)
+          OR LOWER(COALESCE(genre, '')) LIKE LOWER($1)
+          OR LOWER(COALESCE(authors::text, '')) LIKE LOWER($1)
+          OR word_similarity($2, title) >= 0.4
+        )
+      ORDER BY
+        CASE
+          WHEN LOWER(title) = LOWER($2)   THEN 1
+          WHEN LOWER(title) LIKE LOWER($3) THEN 2
+          WHEN LOWER(title) LIKE LOWER($1) THEN 3
+          ELSE 4
+        END ASC,
+        view_count DESC NULLS LAST,
+        title ASC
+      LIMIT $4
+    )
+    UNION ALL
+    (
       SELECT 'character' AS kind, id::text, name AS title, slug, NULL AS type,
              NULL AS cover_image, avatar, NULL AS label, NULL AS section
       FROM characters
       WHERE LOWER(name) LIKE LOWER($1) OR LOWER(bio) LIKE LOWER($1)
-      ORDER BY CASE WHEN LOWER(name) LIKE LOWER($1) THEN 1 ELSE 2 END ASC, name ASC
-      LIMIT $2
+         OR word_similarity($2, name) >= 0.4
+      ORDER BY
+        CASE
+          WHEN LOWER(name) = LOWER($2)    THEN 1
+          WHEN LOWER(name) LIKE LOWER($3) THEN 2
+          WHEN LOWER(name) LIKE LOWER($1) THEN 3
+          ELSE 4
+        END ASC,
+        name ASC
+      LIMIT $5
     )
     UNION ALL
     (
@@ -163,16 +277,33 @@ export async function searchAutocomplete(q: string, limit = 5): Promise<Autocomp
              NULL AS cover_image, NULL AS avatar, NULL AS label, section
       FROM news_posts
       WHERE is_active = true
-        AND (LOWER(title) LIKE LOWER($1) OR LOWER(content) LIKE LOWER($1))
-      ORDER BY CASE WHEN LOWER(title) LIKE LOWER($1) THEN 1 ELSE 2 END ASC, title ASC
-      LIMIT $3
+        AND (LOWER(title) LIKE LOWER($1) OR LOWER(content) LIKE LOWER($1)
+             OR word_similarity($2, title) >= 0.4)
+      ORDER BY
+        CASE
+          WHEN LOWER(title) = LOWER($2)    THEN 1
+          WHEN LOWER(title) LIKE LOWER($3) THEN 2
+          WHEN LOWER(title) LIKE LOWER($1) THEN 3
+          ELSE 4
+        END ASC,
+        title ASC
+      LIMIT $6
     )
     `,
-    [pattern, perKind, Math.max(1, limit - perKind * 2)],
+    [pattern, trimmed, prefix, releaseLimit, otherLimit, otherLimit],
   )
 
   return rows.map((row) => {
-    if (row.kind === 'character') {
+    if (row.kind === 'release') {
+      return {
+        kind: 'release' as const,
+        id: row.id,
+        title: row.title,
+        subtitle: row.type ? `Релиз · ${row.type}` : 'Релиз',
+        href: `/release/${row.slug}`,
+        image: row.cover_image,
+      }
+    } else if (row.kind === 'character') {
       return {
         kind: 'character' as const,
         id: row.id,

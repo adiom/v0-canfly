@@ -56,6 +56,27 @@
   --color-cf-tan: var(--cf-tan);
   --font-cormorant: var(--font-cormorant, 'Cormorant Garamond', Georgia, serif);
   --font-cormorant-serif: var(--font-cormorant, 'Cormorant Garamond', Georgia, serif);
+
+  /* shadcn/ui semantic tokens → проектная палитра cf-* (адаптируются к light/dark) */
+  --color-background: var(--cf-bg);
+  --color-foreground: var(--cf-text-1);
+  --color-card: var(--cf-bg-2);
+  --color-card-foreground: var(--cf-text-1);
+  --color-popover: var(--cf-bg-2);
+  --color-popover-foreground: var(--cf-text-1);
+  --color-primary: var(--cf-accent);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--cf-bg-2);
+  --color-secondary-foreground: var(--cf-text-1);
+  --color-muted: var(--cf-bg-2);
+  --color-muted-foreground: var(--cf-text-3);
+  --color-accent: color-mix(in srgb, var(--cf-text-1) 8%, transparent);
+  --color-accent-foreground: var(--cf-text-heading);
+  --color-destructive: var(--cf-accent);
+  --color-destructive-foreground: #ffffff;
+  --color-border: color-mix(in srgb, var(--cf-text-1) 12%, transparent);
+  --color-input: color-mix(in srgb, var(--cf-text-1) 12%, transparent);
+  --color-ring: var(--cf-accent);
 }
 
 @keyframes cf-artifact-in {

@@ -5,9 +5,7 @@ import type { Metadata } from 'next'
 
 import { searchAll } from '@/lib/server/search'
 import { fetchCharactersList } from '@/lib/server/characters'
-import { SearchResultSection } from '@/components/search/search-result-section'
-import { SearchResultCharacterRow } from '@/components/search/search-result-character'
-import { SearchResultNewsRow } from '@/components/search/search-result-news'
+import { SearchResultsTabs } from '@/components/search/search-results-tabs'
 import { SearchNoResults } from '@/components/search/search-no-results'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
@@ -104,32 +102,9 @@ export default async function SearchPage({
 
         {/* Results */}
         {results && results.total === 0 && <SearchNoResults query={query} />}
-
-          {results && results.total > 0 && (
-          <div>
-            <p className="mb-8 text-xs text-cf-text-3">
-              Найдено {results.total} {results.total === 1 ? 'результат' : results.total < 5 ? 'результата' : 'результатов'} по запросу{' '}
-              <span className="text-cf-text-2">«{query}»</span>
-            </p>
-
-            {results.characters.length > 0 && (
-              <SearchResultSection title={`Персонажи (${results.characters.length})`}>
-                {results.characters.map((character) => (
-                  <SearchResultCharacterRow key={character.id} character={character} />
-                ))}
-              </SearchResultSection>
-            )}
-
-            {results.news.length > 0 && (
-              <SearchResultSection title={`Новости (${results.news.length})`}>
-                {results.news.map((item) => (
-                  <SearchResultNewsRow key={item.id} item={item} />
-                ))}
-              </SearchResultSection>
-            )}
-          </div>
-        )}
+        {results && results.total > 0 && <SearchResultsTabs results={results} query={query} />}
       </div>
-      <SiteFooter />\n    </main>
+      <SiteFooter />
+    </main>
   )
 }
