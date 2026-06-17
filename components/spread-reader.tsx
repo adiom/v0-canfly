@@ -544,14 +544,15 @@ export function SpreadReader({
           <ChevronLeft className="h-5 w-5" style={{ color: t.text2 }} />
         </button>
 
-        {/* ── Книга (viewport) ── */}
-        <div className="relative flex-1" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* ── Книга (viewport) — заполняет весь экран ── */}
+        <div className="relative flex-1" style={{ height: '100%', overflow: 'hidden' }}>
           {/* Тень книги */}
           <div
-            className="pointer-events-none absolute"
+            className="pointer-events-none absolute inset-0"
             style={{
               width: spreadWidth,
-              height: pageHeight > 0 ? pageHeight : '80%',
+              left: '50%',
+              transform: 'translateX(-50%)',
               boxShadow: `0 32px 80px ${t.shadow}, 0 8px 24px ${t.shadow}`,
               borderRadius: 1,
             }}
@@ -562,9 +563,8 @@ export function SpreadReader({
             ref={viewportRef}
             className="relative"
             style={{
-              width: spreadWidth > 0 ? spreadWidth : '100%',
-              height: pageHeight > 0 ? pageHeight : '80%',
-              maxHeight: '88vh',
+              width: '100%',
+              height: '100%',
               overflow: 'hidden',
               backgroundColor: t.bg2,
               cursor: 'text',
@@ -578,6 +578,7 @@ export function SpreadReader({
                 position: 'absolute',
                 top: 0,
                 left: 0,
+                width: '100%',
                 height: '100%',
                 columnWidth: pageWidth > 0 ? pageWidth : undefined,
                 columnGap: gutter,
@@ -585,7 +586,7 @@ export function SpreadReader({
                 willChange: 'transform',
                 transform: `translateX(-${pageOffset}px)`,
                 transition: 'transform 0.32s cubic-bezier(0.22, 0.61, 0.36, 1)',
-                padding: '40px 48px',
+                padding: '40px 0',
                 boxSizing: 'border-box',
               }}
             >
