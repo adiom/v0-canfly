@@ -1,9 +1,9 @@
-import { dbQueryOne } from '@/lib/db'
+import { dbQuery, dbQueryOne } from '@/lib/db'
 
 /**
  * Прогресс чтения пользователя по главе внутри издания.
- * upsert через UNIQUE-индекс idx_reading_progress_user_unique
- * (edition_id, chapter_id, user_id) — см. 002_release_system.sql.
+ * Условный уникальный индекс (WHERE user_id IS NOT NULL) не поддерживает
+ * ON CONFLICT напрямую. Поэтому используем явный UPDATE + INSERT.
  */
 export async function upsertReadingProgress(params: {
   editionId: string
@@ -12,11 +12,22 @@ export async function upsertReadingProgress(params: {
   progressPercent: number
 }) {
   const clamped = Math.max(0, Math.min(100, params.progressPercent))
-  return dbQueryOne(
+
+  // Сначала пробуем UPDATE
+  const updateResult = await dbQueryOne<{ id: string }>(
+    `UPDATE reading_progress
+     SET progress_percent = $1, last_read_at = NOW()
+     WHERE edition_id = $2 AND chapter_id = $3 AND user_id = $4
+     RETURNING id`,
+    [clamped, params.editionId, params.chapterId, params.userId],
+  )
+
+  // Если UPDATE ничего не обновил, INSERT новую запись
+  if (updateResult) return updateResult
+
+  return dbQueryOne<{ id: string }>(
     `INSERT INTO reading_progress (edition_id, chapter_id, user_id, progress_percent, last_read_at)
      VALUES ($1, $2, $3, $4, NOW())
-     ON CONFLICT (edition_id, chapter_id, user_id)
-     DO UPDATE SET progress_percent = EXCLUDED.progress_percent, last_read_at = NOW()
      RETURNING id`,
     [params.editionId, params.chapterId, params.userId, clamped],
   )
