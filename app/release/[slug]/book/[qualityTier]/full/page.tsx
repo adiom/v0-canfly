@@ -76,7 +76,7 @@ export default async function EditionFullPage({
   }
   const breadcrumbSchema = generateBreadcrumbSchema([
     { label: 'canfly', url: `${BASE_URL}/` },
-    { label: 'Релизы', url: `${BASE_URL}/release/` },
+    { label: 'Релизы', url: `${BASE_URL}/releases/` },
     { label: release.title, url: `${BASE_URL}/release/${release.slug}` },
     { label: tierBreadcrumbLabel[qualityTier] ?? 'Книга', url: `${BASE_URL}/release/${release.slug}/book/${qualityTier}/full` },
     { label: 'Полная версия', url: `${BASE_URL}/release/${release.slug}/book/${qualityTier}/full` },

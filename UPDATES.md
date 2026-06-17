@@ -2,6 +2,51 @@
 
 ---
 
+## v6.5 — Слова песни + умный CTA для аудиорелизов (17 июня 2026)
+
+### Что изменено
+
+**1. Синхронизированные слова песни (Lyrics)**
+- `lib/utils/lyrics.ts` — парсер LRC-формата (`[mm:ss.ms] текст`), сериализация LRC, `findActiveLine()` для подсветки по времени
+- `lib/releases-types.ts` — типы `LyricLine`, `ChapterLyrics`, хелпер `extractLyrics()` для чтения из `audio_metadata`
+- `lib/schemas/studio.ts` — zod-схемы `lyricLineSchema`, `lyricsSchema` для валидации
+- `components/studio/audio-chapter-editor.tsx` — три режима:
+  - **Ввод** — textarea с LRC-парсингом, автоопределение формата (synced/plain)
+  - **Синхронизация** — ручная простановка таймкодов под играющий превью-аудио, кнопки «Поставить метку», «← Назад», «След. →»
+  - **Превью** — тёмный плеер с подсветкой активной строки и перемоткой по клику
+- `components/release-audio-player.tsx` — кнопка «Слова» в хедере, боковая панель с подсветкой активной строки (synced) или читаемым текстом (plain), автоскролл, клик по строке → перемотка
+- Хранение: `audio_metadata.lyrics` в JSONB (без миграции БД)
+
+**2. Навигация аудиоплеер → страница релиза**
+- `components/release-audio-player.tsx` — pill-кнопка `← О релизе` в header, accent border, ведёт на `/release/${release.slug}`
+
+**3. Format-aware hero CTA на странице релиза**
+- `components/release-page.tsx` — CTA зависит от primary edition:
+  - `audiorelease` → «Слушать релиз» + Disc3
+  - `album` → «Слушать альбом» + Music2
+  - `audiobook` → «Слушать аудиокнигу» + Headphones
+  - `book` → «Читать» + BookOpen (как было)
+  - `comic/magazine` → «Смотреть» / «Читать выпуск»
+- `Одним файлом` показывается только для non-audio primary
+- Alternate CTA: если primary = audio, но есть book → кнопка «Читать»; если primary = book, но есть audio → кнопка «Слушать»
+
+**4. Smart meta chips**
+- Audio primary: «N треков» + длительность
+- Book primary: «N глав» + слов + время чтения
+- `app/release/[slug]/page.tsx` — `meta.durationSeconds` суммарная длительность треков
+
+**5. Багфикс: кнопка «Поставить метку» работала один раз**
+- `stampCurrentLine()` проверял `lyrics.format !== 'plain'` — после первой метки блокировался. Убрано условие, теперь можно ставить/переставлять метки на любых строках
+
+**6. Квадратная обложка для аудио**
+- `components/release-page.tsx` — если primary edition = audiorelease/album/audiobook → `aspect-square rounded-xl`, иначе `aspect-[2/3] rounded-sm`
+
+### Проверка
+- `pnpm build` — успешно
+- `pnpm lint` — 0 errors, pre-existing warnings only
+
+---
+
 ## v6.4 — Lint cleanup + audiorelease zod-fix (16 июня 2026)
 
 ### Что изменено

@@ -96,6 +96,23 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // --- Редирект /release → /releases (каталог) ---
+  if (pathname === '/release') {
+    return NextResponse.redirect(new URL('/releases/', request.url), 301)
+  }
+
+  // --- Lowercase slug для /release/[slug]/... ---
+  if (pathname.startsWith('/release/')) {
+    const segments = pathname.split('/')
+    const slug = segments[2]
+    if (slug && slug !== slug.toLowerCase()) {
+      segments[2] = slug.toLowerCase()
+      const url = request.nextUrl.clone()
+      url.pathname = segments.join('/')
+      return NextResponse.redirect(url, 301)
+    }
+  }
+
   // --- Редиректы со старой системы книг на Release ---
   if (pathname === '/books') {
     return NextResponse.redirect(new URL('/releases/', request.url))
@@ -103,7 +120,7 @@ export async function proxy(request: NextRequest) {
 
   if (pathname.startsWith('/books/')) {
     // /books/[slug]/[chapter] или /books/[slug]/full -> /release/[slug]
-    const slug = pathname.split('/')[2]
+    const slug = pathname.split('/')[2].toLowerCase()
     return NextResponse.redirect(new URL(`/release/${slug}`, request.url))
   }
 
@@ -121,6 +138,8 @@ export const config = {
     '/admin/:path*',
     '/studio/:path*',
     '/login',
+    '/release',
+    '/release/:path*',
     '/books/:path*',
     '/shop/:path*',
     '/cart/:path*',

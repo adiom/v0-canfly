@@ -111,7 +111,7 @@ export default async function Home() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            <Link href="/release/" className="group border border-cf-text-1/10 bg-cf-bg p-4 hover:border-cf-warm/45 sm:p-6">
+            <Link href="/releases/" className="group border border-cf-text-1/10 bg-cf-bg p-4 hover:border-cf-warm/45 sm:p-6">
               <BookOpen className="mb-8 h-7 w-7 text-cf-warm sm:mb-10" />
               <h3 className="text-xl font-black uppercase text-cf-text-heading sm:text-2xl">Книги</h3>
               <p className="mt-3 leading-7 text-cf-text-caption sm:mt-4">Романы, повести и циклы как самостоятельные точки входа.</p>

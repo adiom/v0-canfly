@@ -96,7 +96,7 @@ export default async function ReleasePublicPage({ params }: { params: Promise<{ 
   const releaseSchema = generateReleaseSchema(release, formats, BASE_URL, bookEditions, characters)
   const breadcrumbSchema = generateBreadcrumbSchema([
     { label: 'canfly', url: `${BASE_URL}/` },
-    { label: 'Релизы', url: `${BASE_URL}/release/` },
+    { label: 'Релизы', url: `${BASE_URL}/releases/` },
     { label: release.title, url: `${BASE_URL}/release/${release.slug}` },
   ])
 

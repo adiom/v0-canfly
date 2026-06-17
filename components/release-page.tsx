@@ -127,6 +127,7 @@ export function ReleasePagePublic({
 
   const primaryEdition = published.find(e => e.slug === primaryEditionSlug) ?? null
   const primaryIsAudio = primaryEdition ? audioFormats.has(primaryEdition.format) : false
+  const coverIsSquare = primaryIsAudio
   const readUrl = primaryEdition ? getEditionReadUrl(release, primaryEdition) : null
   const fullUrl = primaryEdition && !primaryIsAudio ? getEditionFullUrl(release, primaryEdition) : null
 
@@ -181,7 +182,9 @@ export function ReleasePagePublic({
             {/* Обложка */}
             <div className="mx-auto w-44 sm:w-56 md:mx-0 md:w-full">
               <div
-                className="relative aspect-[2/3] overflow-hidden rounded-sm shadow-2xl"
+                className={`relative overflow-hidden shadow-2xl ${
+                  coverIsSquare ? 'aspect-square rounded-xl' : 'aspect-[2/3] rounded-sm'
+                }`}
                 style={{ boxShadow: `0 30px 80px -30px ${accent}55, 0 10px 30px rgba(0,0,0,0.6)` }}
               >
                 {release.cover_image ? (

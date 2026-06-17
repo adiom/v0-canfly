@@ -102,7 +102,7 @@ export default async function ChapterPublicPage({
   }
   const breadcrumbSchema = generateBreadcrumbSchema([
     { label: 'canfly', url: `${BASE_URL}/` },
-    { label: 'Релизы', url: `${BASE_URL}/release/` },
+    { label: 'Релизы', url: `${BASE_URL}/releases/` },
     { label: release.title, url: `${BASE_URL}/release/${release.slug}` },
     { label: tierBreadcrumbLabel[qualityTier] ?? 'Книга', url: `${BASE_URL}/release/${release.slug}/book/${qualityTier}/1` },
     { label: `Глава ${chapterNumber}`, url: `${BASE_URL}/release/${release.slug}/book/${qualityTier}/${chapterNumber}` },
