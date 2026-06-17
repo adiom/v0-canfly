@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import type { Release, EditionFormat } from '@/lib/releases-types'
 import { ReleaseCardBookmate } from '@/components/release-card-bookmate'
 import { SiteHeader } from '@/components/site-header'
@@ -18,63 +17,12 @@ const CATEGORY_PILLS: { label: string; value: EditionFormat | 'all' }[] = [
   { label: 'Альбомы', value: 'album' },
 ]
 
-function ShelfSection({
-  title,
-  linkHref,
-  releases,
-  priority = false,
-}: {
-  title: string
-  linkHref: string
-  releases: ReleaseWithFormats[]
-  priority?: boolean
-}) {
-  if (releases.length === 0) return null
-
-  return (
-    <section className="py-6">
-      <div className="flex items-baseline justify-between mb-4">
-        <h2 className="text-2xl font-bold text-[#302119]">
-          <Link href={linkHref} className="hover:underline">
-            {title}
-          </Link>
-        </h2>
-        <Link
-          href={linkHref}
-          className="text-sm font-bold text-[#3456f3] hover:underline"
-        >
-          Все
-        </Link>
-      </div>
-      <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden">
-        {releases.map((r) => (
-          <ReleaseCardBookmate key={r.id} release={r} priority={priority} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
 interface ReleasesPageBookmateProps {
   releases: ReleaseWithFormats[]
 }
 
 export function ReleasesPageBookmate({ releases }: ReleasesPageBookmateProps) {
   const [activeCategory, setActiveCategory] = useState<EditionFormat | 'all'>('all')
-
-  const newest = [...releases].sort(
-    (a, b) =>
-      new Date(b.release_date ?? b.created_at).getTime() -
-      new Date(a.release_date ?? a.created_at).getTime(),
-  )
-
-  const popular = [...releases].sort((a, b) => b.view_count - a.view_count)
-
-  const comics = releases.filter((r) => r.formats.includes('comic'))
-  const books = releases.filter((r) => r.formats.includes('book'))
-  const audio = releases.filter((r) =>
-    r.formats.some((f) => f === 'audiobook' || f === 'audiorelease'),
-  )
 
   const filtered =
     activeCategory === 'all'
@@ -109,43 +57,6 @@ export function ReleasesPageBookmate({ releases }: ReleasesPageBookmateProps) {
             </button>
           ))}
         </nav>
-
-        {activeCategory === 'all' && (
-          <>
-            <ShelfSection
-              title="Новинки"
-              linkHref="/releases?ab=bookmate&sort=new"
-              releases={newest.slice(0, 20)}
-              priority
-            />
-            <ShelfSection
-              title="Популярное"
-              linkHref="/releases?ab=bookmate&sort=popular"
-              releases={popular.slice(0, 20)}
-            />
-            {comics.length > 0 && (
-              <ShelfSection
-                title="Комиксы"
-                linkHref="/releases?ab=bookmate&cat=comic"
-                releases={comics}
-              />
-            )}
-            {books.length > 0 && (
-              <ShelfSection
-                title="Книги"
-                linkHref="/releases?ab=bookmate&cat=book"
-                releases={books}
-              />
-            )}
-            {audio.length > 0 && (
-              <ShelfSection
-                title="Аудиокниги"
-                linkHref="/releases?ab=bookmate&cat=audiobook"
-                releases={audio}
-              />
-            )}
-          </>
-        )}
 
         {filtered.length > 0 ? (
           <section className="py-8">

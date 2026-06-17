@@ -251,7 +251,7 @@ export function ReleaseComicReader({ release, chapters }: ReleaseComicReaderProp
                   style={i === currentPage ? { borderColor: accent } : {}}
                   aria-label={`Страница ${i + 1}`}
                 >
-                  <img src={page.url} alt="" className="w-full h-full object-cover" />
+                  <img src={page.url} alt={`Страница ${i + 1}`} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

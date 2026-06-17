@@ -76,7 +76,7 @@ export function BooksClient({ books }: BooksClientProps) {
             {book.cover_image ? (
               <Image
                 src={book.cover_image}
-                alt=""
+                alt={book.title}
                 fill
                 priority={i < 3}
                 className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
@@ -122,7 +122,7 @@ export function BooksClient({ books }: BooksClientProps) {
                   >
                     {ch.avatar ? (
                       <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-cf-bg">
-                        <Image src={ch.avatar} alt="" fill className="object-cover" sizes="24px" />
+                        <Image src={ch.avatar} alt={ch.name} fill className="object-cover" sizes="24px" />
                       </span>
                     ) : null}
                     <span className="truncate font-medium">{ch.name}</span>

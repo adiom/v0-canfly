@@ -19,16 +19,28 @@ const cormorant = Cormorant_Garamond({
   variable: '--font-cormorant',
 })
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(BASE_URL),
   title: 'canfly | культура твоего сознания',
   description: 'Артхаусное издательство с комиксами, книгами и аудиокнигами. Встреться с персонажами и поговори с ними через AI.',
   icons: {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
+  openGraph: {
+    title: 'canfly | культура твоего сознания',
+    description: 'Артхаусное издательство с комиксами, книгами и аудиокнигами. Встреться с персонажами и поговори с ними через AI.',
+    url: BASE_URL,
+    siteName: 'canfly',
+    locale: 'ru_RU',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
 }
-
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
 const organizationSchema = generateOrganizationSchema(BASE_URL)
 
 export default function RootLayout({

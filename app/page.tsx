@@ -12,6 +12,9 @@ import {
 import { HomepageSlide } from '@/lib/types'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
+import { generateWebSiteSchema } from '@/lib/seo/schema'
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
 
 export const revalidate = 60
 
@@ -19,6 +22,21 @@ export const metadata = {
   title: 'canfly | культура твоего сознания',
   description:
     'canfly — литературная вселенная о тревоге, ремесле, памяти, цифровой усталости и людях, которые продолжают функционировать.',
+  openGraph: {
+    title: 'canfly | культура твоего сознания',
+    description:
+      'canfly — литературная вселенная о тревоге, ремесле, памяти, цифровой усталости и людях, которые продолжают функционировать.',
+    url: BASE_URL,
+    siteName: 'canfly',
+    locale: 'ru_RU',
+    type: 'website' as const,
+  },
+  twitter: {
+    card: 'summary_large_image' as const,
+  },
+  alternates: {
+    canonical: BASE_URL,
+  },
 }
 
 export default async function Home() {
@@ -35,8 +53,14 @@ export default async function Home() {
     isMigrationMissing = true
   }
 
+  const webSiteSchema = generateWebSiteSchema(BASE_URL)
+
   return (
     <main className="min-h-screen bg-cf-bg text-cf-text-1">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteSchema) }}
+      />
       <SiteHeader activePath="/" />
 
       {slides.length > 0 ? (

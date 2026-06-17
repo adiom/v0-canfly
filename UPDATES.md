@@ -2,6 +2,36 @@
 
 ---
 
+## [17 июня 2026] SEO-улучшения + редизайн /releases
+
+### Что изменено
+
+**SEO (14 файлов):**
+- `app/layout.tsx` — добавлены `metadataBase`, корневой `openGraph`, `twitter: summary_large_image`
+- `app/page.tsx` — OG + twitter + canonical + `WebSite` JSON-LD с SearchAction
+- `app/releases/page.tsx`, `app/characters/page.tsx`, `app/books/page.tsx`, `app/colors/page.tsx` — добавлены OG, twitter, canonical
+- `app/release/[slug]/[editionSlug]/[chapterIndex]/page.tsx` — новый `generateMetadata` (title/description/OG/twitter/canonical)
+- `app/sitemap.ts` — добавлены `/releases`, `/colors`
+- `lib/seo/schema.ts` — новый `generateWebSiteSchema` с SearchAction
+- `components/release-page.tsx` — `<img>` → `<Image>` (next/image)
+- `components/books-client.tsx` — `alt=""` → `alt={book.title}`, `alt={ch.name}`
+- `components/comic-reader.tsx`, `components/release-comic-reader.tsx` — `alt=""` → `alt={Страница N}`
+
+**Редизайн /releases:**
+- `components/releases-page-bookmate.tsx` — убраны `ShelfSection`, «Новинки», «Популярное»; сетка книг сразу на странице
+- `app/releases/page.tsx` — убран A/B тест `?ab=bookmate`, bookmate-дизайн стал основным
+
+### Зачем
+- Яндекс и Google будут корректно индексировать страницы и показывать превью при шаринге
+- `/releases` теперь чистая сетка с category pills вместо hero + шельфов
+
+### Как использовать
+- `/releases` — сетка книг с фильтрами (Всё / Комиксы / Книги / Аудио / Журналы / Альбомы)
+- `/releases?ab=bookmate` — тот же дизайн (A/B тест больше не нужен)
+- Все страницы имеют OG, twitter cards и canonical URLs
+
+---
+
 ## [17 июня 2026] Фикс ESLint: setState в useEffect (search-dialog)
 - Убран `useEffect` для загрузки недавних запросов — заменён на `handleOpenChange`
 - Исправляет ошибку `react-hooks/set-state-in-effect` (блокировала `pnpm build`)

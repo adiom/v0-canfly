@@ -43,6 +43,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
+      url: `${BASE_URL}/releases`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
       url: `${BASE_URL}/news`,
       lastModified: new Date(),
       changeFrequency: 'daily',
@@ -53,6 +59,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/colors`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
     },
     ...releaseEntries,
     ...newsEntries,

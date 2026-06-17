@@ -11,10 +11,27 @@ import { SiteFooter } from '@/components/site-footer'
 
 export const dynamic = 'force-dynamic'
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
+
 export const metadata = {
   title: 'Книги | canfly — литературная вселенная',
   description:
     'Каталог изданий вселенной canfly: романы, комиксы и аудио. Превью, персонажи и точки входа в мир.',
+  openGraph: {
+    title: 'Книги | canfly — литературная вселенная',
+    description:
+      'Каталог изданий вселенной canfly: романы, комиксы и аудио. Превью, персонажи и точки входа в мир.',
+    url: `${BASE_URL}/books`,
+    siteName: 'canfly',
+    locale: 'ru_RU',
+    type: 'website' as const,
+  },
+  twitter: {
+    card: 'summary_large_image' as const,
+  },
+  alternates: {
+    canonical: `${BASE_URL}/books`,
+  },
 }
 
 function typeLabel(type: BookType): string {
@@ -43,8 +60,6 @@ async function getBooks(): Promise<BookWithCharacters[]> {
     return []
   }
 }
-
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
 
 export default async function BooksHubPage() {
   const booksRaw = await getBooks()
@@ -148,7 +163,7 @@ function FeaturedCard({ book }: { book: BookWithCharacters }) {
         <Link href={`/books/${book.slug}`} className="relative mb-5 block aspect-[4/5] overflow-hidden bg-cf-footer-bg">
           <Image
             src={book.cover_image}
-            alt=""
+            alt={book.title}
             fill
             className="object-cover"
             sizes="(max-width: 1024px) 100vw, 33vw"

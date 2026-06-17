@@ -8,10 +8,26 @@ import { SiteFooter } from '@/components/site-footer';
 
 export const dynamic = 'force-dynamic';
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://canfly.org'
+
 export const metadata = {
   title: 'Персонажи | canfly — культура твоего сознания',
   description: 'Встретьте героев вселенной и откройте их взаимосвязи',
-};
+  openGraph: {
+    title: 'Персонажи | canfly — культура твоего сознания',
+    description: 'Встретьте героев вселенной и откройте их взаимосвязи',
+    url: `${BASE_URL}/characters`,
+    siteName: 'canfly',
+    locale: 'ru_RU',
+    type: 'website' as const,
+  },
+  twitter: {
+    card: 'summary_large_image' as const,
+  },
+  alternates: {
+    canonical: `${BASE_URL}/characters`,
+  },
+}
 
 
 async function CharactersContent() {

@@ -136,6 +136,26 @@ export function generateReleaseSchema(
   }
 }
 
+export function generateWebSiteSchema(baseUrl: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'canfly',
+    url: baseUrl,
+    description:
+      'Литературная вселенная о тревоге, ремесле, памяти, цифровой усталости и людях, которые продолжают функционировать.',
+    inLanguage: 'ru-RU',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: baseUrl + '/search?q={search_term_string}',
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  }
+}
+
 export function generateOrganizationSchema(baseUrl: string) {
   const id = baseUrl + '/#organization'
 

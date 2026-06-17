@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   BookOpen, ArrowRight, Heart,
 } from 'lucide-react'
@@ -106,7 +107,7 @@ export function ReleasePagePublic({
           <div className="mx-auto w-44 sm:w-56 md:mx-0 md:w-full">
             <div className="relative aspect-[2/3] overflow-hidden rounded-sm shadow-2xl">
               {release.cover_image ? (
-                <img src={release.cover_image} alt={release.title} className="h-full w-full object-cover" />
+                <Image src={release.cover_image} alt={release.title} fill sizes="(max-width: 768px) 176px, 320px" className="object-cover" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-cf-bg-2">
                   <BookOpen className="h-10 w-10 text-cf-text-3 opacity-30" />
