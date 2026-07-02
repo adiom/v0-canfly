@@ -10,7 +10,8 @@
     "db:structure": "node scripts/read-db-structure.mjs",
     "lint": "eslint .",
     "test:e2e": "playwright test",
-    "test:smoke": "playwright test e2e/smoke.spec.ts"
+    "test:smoke": "playwright test e2e/smoke.spec.ts",
+    "sync:tasks": "node scripts/sync-issues.mjs"
   },
   "dependencies": {
     "@artginzburg/next-ym": "^1.3.7",

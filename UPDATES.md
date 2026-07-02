@@ -2,6 +2,25 @@
 
 ---
 
+## [2 июля 2026] Единый вход canfly SSO
+
+### Что изменено
+- Добавлен OAuth-провайдер GitHub в next-auth.
+- Добавлен OIDC-провайдер `canfly` для поддоменов и внешних приложений.
+- На `/login` добавлена кнопка «Войти через GitHub» и условная кнопка «Войти через canfly».
+- Убран OAuth-провайдер Apple.
+- Обновлены `.env.example`, `QUICKSTART.md`, `README.md`, `docs/sso.md`, `docs/CANFLY_SSO.md`.
+
+### Зачем
+- `canfly.org` становится центром аккаунта, а поддомены используют единый вход через OIDC.
+
+### Как использовать
+- Добавить `AUTH_GITHUB_CLIENT_ID` и `AUTH_GITHUB_CLIENT_SECRET` в `.env.local`
+- Callback URL для GitHub OAuth App: `https://<домен>/api/auth/callback/github`
+- `avatars.githubusercontent.com` добавлен в `next.config.mjs` images.remotePatterns
+
+---
+
 ## [17 июня 2026] Новая читалка-разворот `/reader/[editionId]`
 
 ### Что изменено

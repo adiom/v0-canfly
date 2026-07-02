@@ -3,11 +3,21 @@ import type { DefaultJWT } from 'next-auth/jwt'
 import Credentials from 'next-auth/providers/credentials'
 import Yandex from 'next-auth/providers/yandex'
 import Google from 'next-auth/providers/google'
+import GitHub from 'next-auth/providers/github'
 
 import { dbQuery, dbQueryOne } from '@/lib/db'
 import type { UserProfile } from '@/lib/types'
 
 export type UserType = 'regular'
+
+interface CanflyOidcProfile {
+  sub: string
+  email?: string | null
+  name?: string | null
+  picture?: string | null
+  handle?: string | null
+  login?: string | null
+}
 
 declare module 'next-auth' {
   interface Session extends DefaultSession {
@@ -67,6 +77,11 @@ async function findOrCreateUserByEmail(email: string, name?: string | null): Pro
   return created
 }
 
+const canflyIssuer = process.env.AUTH_CANFLY_ISSUER?.replace(/\/$/, '')
+const canflyWellKnown =
+  process.env.AUTH_CANFLY_WELL_KNOWN ??
+  (canflyIssuer ? `${canflyIssuer}/.well-known/openid-configuration` : undefined)
+
 export const authConfig = {
   trustHost: true,
   pages: {
@@ -110,6 +125,44 @@ export const authConfig = {
             clientId: process.env.AUTH_GOOGLE_CLIENT_ID,
             clientSecret: process.env.AUTH_GOOGLE_CLIENT_SECRET,
           }),
+        ]
+      : []),
+
+    ...(process.env.AUTH_GITHUB_CLIENT_ID && process.env.AUTH_GITHUB_CLIENT_SECRET
+      ? [
+          GitHub({
+            clientId: process.env.AUTH_GITHUB_CLIENT_ID,
+            clientSecret: process.env.AUTH_GITHUB_CLIENT_SECRET,
+          }),
+        ]
+      : []),
+
+
+    ...(canflyIssuer &&
+    canflyWellKnown &&
+    process.env.AUTH_CANFLY_CLIENT_ID &&
+    process.env.AUTH_CANFLY_CLIENT_SECRET
+      ? [
+          {
+            id: 'canfly',
+            name: 'canfly',
+            type: 'oidc' as const,
+            issuer: canflyIssuer,
+            wellKnown: canflyWellKnown,
+            clientId: process.env.AUTH_CANFLY_CLIENT_ID,
+            clientSecret: process.env.AUTH_CANFLY_CLIENT_SECRET,
+            profile(profile: CanflyOidcProfile) {
+              return {
+                id: profile.sub,
+                email: profile.email,
+                name: profile.name,
+                image: profile.picture,
+                type: 'regular' as UserType,
+                login: profile.login,
+                handle: profile.handle,
+              }
+            },
+          },
         ]
       : []),
   ],

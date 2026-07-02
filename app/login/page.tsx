@@ -8,6 +8,8 @@ import { signIn, useSession } from 'next-auth/react'
 import { MagicLinkForm } from '@/components/magic-link-form'
 import { Button } from '@/components/ui/button'
 
+const isCanflySsoEnabled = process.env.NEXT_PUBLIC_CANFLY_SSO_ENABLED === 'true'
+
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -47,7 +49,7 @@ function LoginForm() {
         router.refresh()
       })
     })
-  }, [searchParams, signIn, updateSession, router, loginTriggered])
+  }, [searchParams, updateSession, router, loginTriggered])
 
   const errorParam = searchParams.get('error')
   const errorMessages: Record<string, string> = {
@@ -84,6 +86,17 @@ function LoginForm() {
       </div>
 
       <div className="mt-4 flex flex-col gap-3">
+        {isCanflySsoEnabled && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => signIn('canfly', { callbackUrl: searchParams.get('redirect') || '/' })}
+            className="h-11 w-full border-[#f6d6a8]/35 bg-[#f6d6a8]/10 text-sm font-black uppercase text-[#f6d6a8] hover:bg-[#f6d6a8]/15"
+          >
+            Войти через canfly
+          </Button>
+        )}
+
         <Button
           type="button"
           variant="outline"
@@ -101,6 +114,17 @@ function LoginForm() {
         >
           Войти через Google
         </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => signIn('github', { callbackUrl: searchParams.get('redirect') || '/' })}
+          className="h-11 w-full border-[#f4efe5]/10 text-sm font-bold uppercase text-[#ded7cc] hover:bg-[#f4efe5]/5"
+        >
+          Войти через GitHub
+        </Button>
+
+
       </div>
     </div>
   )

@@ -373,11 +373,17 @@ return result.toDataStreamResponse()
 - 5 тем: `atelier`, `night-city`, `pvz`, `volga`, `dreams`
 - Авторотация 8.5с, Embla Carousel
 
-## Известные баги
+## Известные баги и задачи
 
-1. **Email не отправляется** — `app/(auth)/actions.ts` содержит TODO. Magic link работает только в dev-консоли; в prod токен возвращается в ответе (требует интеграции с Resend/Nodemailer).
+Баги и фичи ведутся через **GitHub Issues** с лейблами `bug` / `enhancement` + `priority-*`. Перед началом работы AI-агент должен прочитать `BUGS.md` и `TASKS.md` (авто-генерируются из Issues).
 
-> Устаревшие записи удалены: баг `/api/admin/logout` (вызов отсутствует в коде) и hardcoded service keys в legacy-скриптах (grep чист).
+**Как обновить:**
+```bash
+pnpm sync:tasks
+```
+
+**Как добавить баг/задачу:**
+Создать Issue на GitHub с лейблами `bug` или `enhancement` + приоритет, затем запустить синхронизацию.
 
 ## Частые задачи
 
@@ -547,7 +553,8 @@ pnpm test:e2e
 - Тестировать изменения локально
 
 ### ⚠️ Перед каждым git commit
-**ОБЯЗАТЕЛЬНО** обновлять `UPDATES.md` — добавить запись в формате:
+- [ ] **Синхронизировать таски**: `pnpm sync:tasks` (если менялись GitHub Issues)
+- [ ] **Обновить `UPDATES.md`** — добавить запись в формате:
 ```
 ## [дата] Название изменения
 - Что изменено

@@ -17,6 +17,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: '**.author.today',
       },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+      },
     ],
   },
   allowedDevOrigins: ['192.168.199.12', '192.168.199.13', '192.168.203.1'],

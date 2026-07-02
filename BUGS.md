@@ -1,0 +1,89 @@
+# Баги
+
+Авто-сгенерировано из GitHub Issues. Не редактировать вручную.
+Синхронизировано: 2 июля 2026 г.
+
+---
+
+### Bug: #3 — Magic link: email не отправляется в production
+- Приоритет: `priority-high`
+- Статус: `open`
+- Обновлено: 02.07.2026
+
+Описание
+
+В production magic link токен не отправляется на email — возвращается в теле response. Интеграция с Resend/Nodemailer не реализована.
+
+Где
+
+app/(auth)/actions.ts:66-75 — в development режиме токен выводится в консоль, в production — та же логика.
+
+Ожидание
+
+После создания magic link пользо
+
+---
+
+### Bug: #6 — Техдолг: 17 eslint-disable в production-коде
+- Приоритет: `priority-medium`
+- Статус: `open`
+- Обновлено: 02.07.2026
+
+Описание
+
+В 11 файлах используются eslint-disable для подавления React Compiler strict-mode ошибок. Большинство — react-hooks/set-state-in-effect и @next/next/no-img-element.
+
+Файлы
+
+
+components/book-reader.tsx
+components/character-profile-tabs.tsx
+components/character-profile-header.tsx
+components/
+
+---
+
+### Bug: #4 — Turbopack: ChunkLoadError при HMR в dev-режиме
+- Приоритет: `priority-medium`
+- Статус: `open`
+- Обновлено: 02.07.2026
+
+Описание
+
+Next.js 16 Turbopack иногда выдаёт ChunkLoadError при быстром HMR — компонент не найден, страница падает. Помогает только Cmd+Shift+R.
+
+Где
+
+Известная проблема Turbopack в Next.js 16. Описана в TROUBLESHOOTING.md.
+
+Ожидание
+
+HMR работает стабильно, без потери чанков.
+
+Реальность
+
+Редкий, н
+
+---
+
+### Bug: #5 — Neon холодный старт: первый запрос 5+ секунд
+- Приоритет: `priority-low`
+- Статус: `open`
+- Обновлено: 02.07.2026
+
+Описание
+
+Бесплатный план Neon «засыпает» через 5 минут бездействия. Первый запрос после паузы длится до 5 секунд вместо обычных 20-50мс.
+
+Где
+
+lib/db.ts — pg Pool, без keepalive.
+
+Ожидание
+
+Приемлемое время первого запроса (менее 1с) или прозрачная обработка задержки (скелетон/лоадер).
+
+Варианты ре
+
+---
+

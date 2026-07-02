@@ -3,6 +3,8 @@
   "instructions": [
     "docs/nextjs-rules.md",
     "docs/design-system.md",
-    "UPDATES.md"
+    "UPDATES.md",
+    "TASKS.md",
+    "BUGS.md"
   ]
 }

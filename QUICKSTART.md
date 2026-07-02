@@ -25,10 +25,18 @@ DATABASE_URL=postgres://user:password@host/db?sslmode=require
 
 # next-auth v5
 AUTH_SECRET=xxx
-AUTH_YANDEX_ID=xxx
-AUTH_YANDEX_SECRET=xxx
-AUTH_GOOGLE_ID=xxx
-AUTH_GOOGLE_SECRET=xxx
+AUTH_YANDEX_CLIENT_ID=xxx
+AUTH_YANDEX_CLIENT_SECRET=xxx
+AUTH_GOOGLE_CLIENT_ID=xxx
+AUTH_GOOGLE_CLIENT_SECRET=xxx
+AUTH_GITHUB_CLIENT_ID=xxx
+AUTH_GITHUB_CLIENT_SECRET=xxx
+
+# canfly SSO client mode для поддоменов
+AUTH_CANFLY_ISSUER=https://canfly.org/oidc
+AUTH_CANFLY_CLIENT_ID=xxx
+AUTH_CANFLY_CLIENT_SECRET=xxx
+NEXT_PUBLIC_CANFLY_SSO_ENABLED=false
 
 # OpenAI (чат с персонажами)
 OPENAI_API_KEY=sk-xxx

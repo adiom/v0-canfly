@@ -244,7 +244,15 @@ INSERT INTO character_relationships (
 DATABASE_URL                    # Основная строка подключения Neon/Postgres
 # или POSTGRES_URL              # Vercel Postgres/Neon integration
 NEXT_PUBLIC_BASE_URL            # URL приложения
-ADMIN_PASSWORD                  # Пароль администратора
+AUTH_SECRET                     # Секрет next-auth
+AUTH_GOOGLE_CLIENT_ID           # OAuth Google client id
+AUTH_GOOGLE_CLIENT_SECRET       # OAuth Google secret
+AUTH_GITHUB_CLIENT_ID           # OAuth GitHub client id
+AUTH_GITHUB_CLIENT_SECRET       # OAuth GitHub client secret
+AUTH_CANFLY_ISSUER              # Issuer общего canfly OIDC/Logto
+AUTH_CANFLY_CLIENT_ID           # Client id поддомена в canfly SSO
+AUTH_CANFLY_CLIENT_SECRET       # Client secret поддомена в canfly SSO
+NEXT_PUBLIC_CANFLY_SSO_ENABLED  # true показывает кнопку «Войти через canfly»
 ```
 
 ## 🐛 Решение проблем

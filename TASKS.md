@@ -1,0 +1,182 @@
+# Задачи (Features)
+
+Авто-сгенерировано из GitHub Issues. Не редактировать вручную.
+Синхронизировано: 2 июля 2026 г.
+
+---
+
+### Feature: #11 — Пагинация на /releases
+- Приоритет: `priority-high`
+- Статус: `open`
+- Обновлено: 02.07.2026
+
+Описание
+
+Сейчас /releases (и /releases?category=book) загружает все релизы разом. При 50+ релизах страница тормозит, при 200+ — упадёт.
+
+Что нужно
+
+- Пагинация: offset/limit или cursor-based (created_at DESC)
+- UI: «Загрузить ещё» (infinite scroll) или страницы (pagination controls)
+- Server Compon
+
+---
+
+### Feature: #7 — Страница серии /series/[slug]
+- Приоритет: `priority-high`
+- Статус: `open`
+- Обновлено: 02.07.2026
+
+Описание
+
+Таблица series в БД есть (002_release_system.sql), server actions для создания и обновления есть, а публичной страницы /series/[slug] — нет.
+
+Что нужно
+
+- Маршрут app/release/series/[slug]/page.tsx
+- Загрузка серии + список релизов в ней
+- Server Component + publish-фильтр (только publishe
+
+---
+
+### Feature: #13 — Кэширование частых запросов к БД
+- Приоритет: `priority-medium`
+- Статус: `open`
+- Обновлено: 02.07.2026
+
+Описание
+
+Страницы /releases и /release/[slug] делают множественные запросы к БД без кэширования. Особенно заметно на Neon (холодный старт).
+
+Где
+
+- lib/server/releases.ts — каждый запрос к /releases делает 3-4 SELECT
+- components/release-page.tsx — загрузка релиза + издания + главы + серии
+
+Вариант
+
+---
+
+### Feature: #12 — Полнотекстовый поиск по главам релизов
+- Приоритет: `priority-medium`
+- Статус: `open`
+- Обновлено: 02.07.2026
+
+Описание
+
+Текущий поиск (lib/server/search.ts) ищет только по метаданным: title, annotation, genre. Содержимое глав не индексируется.
+
+Что нужно
+
+- Полнотекстовый индекс по таблице chapters (content_markdown)
+- PostgreSQL tsvector + tsquery или pg_trgm
+- Результаты — ссылка на конкретную главу релиз
+
+---
+
+### Feature: #10 — Реакции к постам персонажей (лайки/комментарии)
+- Приоритет: `priority-medium`
+- Статус: `open`
+- Обновлено: 02.07.2026
+
+Описание
+
+Упомянуто в v2.0 «Следующие шаги». Посты персонажей (character_posts) сейчас read-only — нельзя лайкнуть или ответить.
+
+Что нужно
+
+- Таблица character_post_likes (user_id, post_id, created_at)
+- Таблица character_post_replies (раскомментировать/создать)
+- Кнопка «❤️» под постом
+- Счётчик л
+
+---
+
+### Feature: #8 — Система комментирования релизов
+- Приоритет: `priority-medium`
+- Статус: `open`
+- Обновлено: 02.07.2026
+
+Описание
+
+Таблица comments есть в схеме 002_release_system.sql, но UI и API для комментирования не реализованы.
+
+Что нужно
+
+- Компонент components/release-comments.tsx
+- API: CRUD комментариев
+- Только авторизованные пользователи
+- Вложенные ответы (threaded comments)
+- Редактирование/удаление своих
+
+---
+
+### Feature: #16 — Удалить старую систему /books/, /admin (legacy)
+- Приоритет: `priority-low`
+- Статус: `open`
+- Обновлено: 02.07.2026
+
+Описание
+
+В проекте две параллельные системы: новая Release-система (/release/, /studio/) и старая (/books/, /admin/). Старая система дублирует функциональность и создаёт риск регрессий.
+
+Что нужно
+
+1. Перенести данные из таблиц books, book_characters в releases, editions, release_characters
+2. Реди
+
+---
+
+### Feature: #15 — Заменить <img> на <Image> из next/image в компонентах
+- Приоритет: `priority-low`
+- Статус: `open`
+- Обновлено: 02.07.2026
+
+Описание
+
+5 компонентов используют нативный <img> вместо <Image> из next/image. Это влияет на LCP, оптимизацию изображений и SEO.
+
+Файлы
+
+| Файл | Строка |
+|---|---|
+| components/release-comic-reader.tsx | 254 |
+| components/highlight-artifact.tsx | 626 |
+| components/spread-reader.tsx | 827 |
+| com
+
+---
+
+### Feature: #14 — Добавить ссылку на читалку-разворот /reader/[editionId] из UI
+- Приоритет: `priority-low`
+- Статус: `open`
+- Обновлено: 02.07.2026
+
+Описание
+
+Читалка-разворот (components/spread-reader.tsx) существует и работает, но попасть в неё можно только по прямому UUID издания. В UI ни одна ссылка не ведёт на /reader/[editionId].
+
+Что нужно
+
+- На странице релиза /release/[slug] — для book-изданий добавить кнопку «Читать в развороте» рядом 
+
+---
+
+### Feature: #9 — Закладки (bookmarks) для релизов
+- Приоритет: `priority-low`
+- Статус: `open`
+- Обновлено: 02.07.2026
+
+Описание
+
+Таблица bookmarks есть в схеме 002_release_system.sql, UI нет.
+
+Что нужно
+
+- Кнопка «Добавить в закладки» в читалке (release-book-reader.tsx, spread-reader.tsx)
+- Страница /profile/bookmarks со списком закладок пользователя
+- API: CRUD закладок
+- Поддержка заметок к закладке (пользователь 
+
+---
+
